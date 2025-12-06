@@ -17,6 +17,13 @@ cd "$(dirname "$0")/../platforms/macos"
 if [ -d "GoNhanh.xcodeproj" ]; then
     echo "Building with Xcode..."
     xcodebuild -scheme GoNhanh -configuration Release
+
+    # Copy app from DerivedData to local build directory
+    echo "Copying app to build directory..."
+    DERIVED_DATA=$(xcodebuild -scheme GoNhanh -configuration Release -showBuildSettings | grep -m 1 "BUILD_DIR" | sed 's/.*= //')
+    mkdir -p build/Release
+    cp -R "${DERIVED_DATA}/Release/GoNhanh.app" build/Release/
+
     echo "✅ macOS app built successfully!"
     echo "📦 App: platforms/macos/build/Release/GoNhanh.app"
 else
