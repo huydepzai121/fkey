@@ -56,7 +56,7 @@ Expected: `platforms/macos/libgonhanh_core.a` created
    - `ContentView.swift`
    - `GoNhanhApp.swift`
 
-2. **Drag** these files from Finder to Xcode:
+2. **Drag** these files from `platforms/macos/` folder to Xcode:
    - `App.swift`
    - `MenuBar.swift`
    - `SettingsView.swift`
@@ -80,7 +80,7 @@ Expected: `platforms/macos/libgonhanh_core.a` created
 
 1. Select `Info.plist` in Xcode
 2. Right-click → **"Open As"** → **"Source Code"**
-3. Replace contents with `platforms/macos/GoNhanh/Info.plist`
+3. Replace contents with contents from `platforms/macos/Info.plist`
 
 ### 7️⃣ Build & Run
 
