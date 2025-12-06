@@ -9,7 +9,7 @@ repository = "https://github.com/yourusername/gonhanh.org"
 
 [lib]
 name = "gonhanh_core"
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["staticlib", "cdylib", "rlib"]  # Add rlib for tests
 
 [dependencies]
 rdev = "0.5"
