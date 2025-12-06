@@ -14,11 +14,13 @@ Bộ gõ tiếng Việt hiệu suất cao, native cho macOS và Windows.
 
 ```
 gonhanh.org/
-├── core/           # Rust core engine (cross-platform)
-├── platforms/      # Platform-specific apps
-│   ├── macos/      # macOS (SwiftUI)
-│   └── windows/    # Windows (WPF) - coming soon
-└── scripts/        # Build scripts
+├── core/                # Rust core engine (cross-platform)
+├── platforms/           # Platform-specific apps
+│   ├── macos/          # macOS SwiftUI app
+│   │   ├── *.swift     # Swift source files
+│   │   └── Info.plist
+│   └── windows/         # Windows (WPF) - coming soon
+└── scripts/             # Build scripts
 ```
 
 ## 🚀 Build
