@@ -1,26 +1,26 @@
-name: ✨ Feature Request
-description: Suggest a new feature
+name: ✨ Đề xuất tính năng
+description: Đề xuất tính năng mới
 labels: ["enhancement"]
 body:
   - type: textarea
     id: description
     attributes:
-      label: Feature description
-      placeholder: What would you like?
+      label: Mô tả tính năng
+      placeholder: Bạn muốn tính năng gì?
     validations:
       required: true
 
   - type: textarea
     id: use-case
     attributes:
-      label: Use case
-      placeholder: Why is this useful?
+      label: Lý do
+      placeholder: Tại sao tính năng này hữu ích?
 
   - type: dropdown
     id: platform
     attributes:
-      label: Platform
+      label: Nền tảng
       options:
-        - All
+        - Tất cả
         - macOS
         - Windows

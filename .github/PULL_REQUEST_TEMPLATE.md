@@ -1,13 +1,13 @@
-## Description
-<!-- What does this PR do? -->
+## Mô tả
+<!-- PR này làm gì? -->
 
-## Type
-- [ ] 🐛 Bug fix
-- [ ] ✨ New feature
-- [ ] 📝 Documentation
+## Loại thay đổi
+- [ ] 🐛 Sửa lỗi
+- [ ] ✨ Tính năng mới
+- [ ] 📝 Tài liệu
 - [ ] ♻️ Refactor
 
 ## Checklist
 - [ ] Tests pass (`cargo test`)
 - [ ] Code formatted (`cargo fmt`)
-- [ ] No clippy warnings
+- [ ] Không có clippy warnings

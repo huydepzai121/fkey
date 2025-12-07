@@ -1,25 +1,25 @@
-name: 🐛 Bug Report
-description: Report a bug
+name: 🐛 Báo lỗi
+description: Báo cáo lỗi phần mềm
 labels: ["bug"]
 body:
   - type: textarea
     id: description
     attributes:
-      label: What happened?
-      placeholder: Describe the bug
+      label: Mô tả lỗi
+      placeholder: Lỗi gì đã xảy ra?
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
-      placeholder: What should happen?
+      label: Kết quả mong đợi
+      placeholder: Bạn mong đợi điều gì xảy ra?
 
   - type: textarea
     id: reproduce
     attributes:
-      label: Steps to reproduce
+      label: Các bước tái hiện
       placeholder: |
         1. ...
         2. ...
@@ -27,7 +27,7 @@ body:
   - type: dropdown
     id: os
     attributes:
-      label: OS
+      label: Hệ điều hành
       options:
         - macOS 15 (Sequoia)
         - macOS 14 (Sonoma)
@@ -40,5 +40,5 @@ body:
   - type: input
     id: version
     attributes:
-      label: GoNhanh version
+      label: Phiên bản GoNhanh
       placeholder: "1.0.0"
