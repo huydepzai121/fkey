@@ -145,6 +145,97 @@ fn vni_ua_vs_qua_patterns() {
     ]);
 }
 
+#[test]
+fn vni_uo_compound_with_marks() {
+    // ươ compound vowel patterns - mark on ơ (2nd vowel with diacritic)
+    run_vni(&[
+        // uo + horn on both → ươ, then mark on ơ
+        ("uo71", "ướ"),   // ươ + sắc → ướ
+        ("uo72", "ườ"),   // ươ + huyền → ườ
+        ("uo73", "ưở"),   // ươ + hỏi → ưở
+        ("uo74", "ưỡ"),   // ươ + ngã → ưỡ
+        ("uo75", "ượ"),   // ươ + nặng → ượ
+        // Alternate order: mark first, then horn
+        ("uo17", "ướ"),   // uó + horn → ướ (mark repositions)
+        ("uo27", "ườ"),   // uò + horn → ườ
+        // Horn on u first, then o, then mark
+        ("u7o71", "ướ"),  // ư + ơ + sắc → ướ
+        ("u7o72", "ườ"),  // ư + ơ + huyền → ườ
+    ]);
+}
+
+// ============================================================
+// REAL WORDS: Từ thực tế với VNI
+// ============================================================
+
+#[test]
+fn vni_real_words_with_uo() {
+    // Common words with ươ compound
+    run_vni(&[
+        ("nu7o7c1", "nước"),   // nước (water)
+        ("bu7o7m1", "bướm"),   // bướm (butterfly)
+        ("su7o7ng1", "sướng"), // sướng (happy)
+        ("lu7o7ng2", "lương"), // lương (salary)
+        ("d9u7o7ng2", "đường"), // đường (road/sugar)
+        ("tru7o7ng2", "trường"), // trường (school)
+        ("thu7o7ng2", "thường"), // thường (usually)
+        ("cu7o7ng2", "cường"),   // cường (strong)
+        ("hu7o7ng1", "hướng"),   // hướng (direction)
+        ("vu7o7n2", "vườn"),     // vườn (garden)
+    ]);
+}
+
+#[test]
+fn vni_real_words_with_ua() {
+    // Words with ua (mua type) vs qua
+    run_vni(&[
+        // mua type: u is main vowel
+        ("mua2", "mùa"),   // mùa (season)
+        ("chua1", "chúa"), // chúa (lord)
+        ("sua4", "sữa"),   // sữa (milk)
+        ("rua2", "rùa"),   // rùa (turtle)
+        ("lua1", "lúa"),   // lúa (rice plant)
+        ("thua1", "thúa"), // thúa (not common, but valid)
+        // qua type: u is medial
+        ("qua1", "quá"),   // quá (too much)
+        ("qua3", "quả"),   // quả (fruit)
+        ("que1", "qué"),   // qué (not common)
+    ]);
+}
+
+#[test]
+fn vni_real_words_with_ie() {
+    // Words with iê compound
+    run_vni(&[
+        ("vie65t", "việt"),     // Việt
+        ("tie61ng", "tiếng"),   // tiếng (sound/language)
+        ("bie63n", "biển"),     // biển (sea)
+        ("mie61ng", "miếng"),   // miếng (piece)
+        ("chie62n", "chiền"),   // chiền (not common)
+        ("die64n", "diễn"),     // diễn (perform)
+        ("kie63m", "kiểm"),     // kiểm (check)
+        ("tie62n", "tiền"),     // tiền (money)
+        ("hie63u", "hiểu"),     // hiểu (understand)
+    ]);
+}
+
+#[test]
+fn vni_real_words_mixed() {
+    // Mixed common words
+    run_vni(&[
+        ("co1", "có"),         // có (have)
+        ("kho6ng", "không"),   // không (no/not)
+        ("la2", "là"),         // là (is)
+        ("d9i", "đi"),         // đi (go)
+        ("ve62", "về"),        // về (return)
+        ("a6n", "ăn"),         // ăn (eat)
+        ("u6ng1", "ống"),      // ống (tube) - circumflex then mark
+        ("ba2n", "bàn"),       // bàn (table)
+        ("nha2", "nhà"),       // nhà (house)
+        ("ho65c", "học"),      // học (study)
+    ]);
+}
+
 // ============================================================
 // Edge case: Rapid typing patterns
 // User types faster than normal, keys arrive in quick succession
@@ -200,6 +291,92 @@ fn vni_delayed_all_patterns() {
         // Delayed đ
         ("dung9", "đung"),
         ("Dung9", "Đung"),
+    ]);
+}
+
+// ============================================================
+// REAL WORDS: Từ thực tế với Telex
+// ============================================================
+
+#[test]
+fn telex_real_words_with_uo() {
+    // Common words with ươ compound
+    run_telex(&[
+        ("nuwowcs", "nước"),     // nước (water)
+        ("buwowms", "bướm"),     // bướm (butterfly)
+        ("suwowngs", "sướng"),   // sướng (happy)
+        ("luwowngf", "lương"),   // lương (salary)
+        ("dduwowngf", "đường"),  // đường (road/sugar)
+        ("truwowngf", "trường"), // trường (school)
+        ("thuwowngf", "thường"), // thường (usually)
+        ("cuwowngf", "cường"),   // cường (strong)
+        ("huwowngs", "hướng"),   // hướng (direction)
+        ("vuwownf", "vườn"),     // vườn (garden)
+    ]);
+}
+
+#[test]
+fn telex_real_words_with_ua() {
+    // Words with ua (mua type) vs qua
+    run_telex(&[
+        // mua type: u is main vowel, mark on u
+        ("muaf", "mùa"),   // mùa (season)
+        ("chuas", "chúa"), // chúa (lord)
+        ("suax", "sữa"),   // sữa (milk)
+        ("ruaf", "rùa"),   // rùa (turtle)
+        ("luas", "lúa"),   // lúa (rice plant)
+        // qua type: u is medial, mark on a
+        ("quas", "quá"),   // quá (too much)
+        ("quar", "quả"),   // quả (fruit)
+        ("quaf", "quà"),   // quà (gift)
+    ]);
+}
+
+#[test]
+fn telex_real_words_with_ie() {
+    // Words with iê compound
+    run_telex(&[
+        ("vieetj", "việt"),     // Việt
+        ("tieengs", "tiếng"),   // tiếng (sound/language)
+        ("bieenr", "biển"),     // biển (sea)
+        ("mieengs", "miếng"),   // miếng (piece)
+        ("dieenx", "diễn"),     // diễn (perform)
+        ("kieemr", "kiểm"),     // kiểm (check)
+        ("tieenf", "tiền"),     // tiền (money)
+        ("hieeur", "hiểu"),     // hiểu (understand)
+    ]);
+}
+
+#[test]
+fn telex_real_words_mixed() {
+    // Mixed common words
+    run_telex(&[
+        ("cos", "có"),         // có (have)
+        ("khoong", "không"),   // không (no/not)
+        ("laf", "là"),         // là (is)
+        ("ddi", "đi"),         // đi (go)
+        ("veef", "về"),        // về (return)
+        ("awn", "ăn"),         // ăn (eat)
+        ("oongs", "ống"),      // ống (tube)
+        ("banf", "bàn"),       // bàn (table)
+        ("nhaf", "nhà"),       // nhà (house)
+        ("hocj", "học"),       // học (study)
+    ]);
+}
+
+#[test]
+fn telex_uo_compound_with_marks() {
+    // ươ compound vowel patterns - mark on ơ (2nd vowel with diacritic)
+    run_telex(&[
+        // Full ươ with all marks
+        ("uwows", "ướ"),   // ươ + sắc → ướ
+        ("uwowf", "ườ"),   // ươ + huyền → ườ
+        ("uwowr", "ưở"),   // ươ + hỏi → ưở
+        ("uwowx", "ưỡ"),   // ươ + ngã → ưỡ
+        ("uwowj", "ượ"),   // ươ + nặng → ượ
+        // Alternate typing patterns
+        ("uowws", "ướ"),   // uo + w (on o) + w (on u) + s
+        ("uowwf", "ườ"),   // uo + ww + huyền
     ]);
 }
 
