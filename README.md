@@ -9,21 +9,13 @@ Sức mạnh của **Rust** (Core Engine) kết hợp với **Native UI** (Swift
 
 ## Về dự án
 
-GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Việt **hoàn thiện nhất** về trải nghiệm người dùng và hiệu năng kỹ thuật:
+GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Việt **hoàn thiện nhất**, dựa trên các trụ cột: **Chuẩn hóa - Hiện đại - Tương lai**.
 
-- **Hiệu suất vượt trội**: Core engine viết bằng Rust, xử lý tức thì, không độ trễ.
-- **Đa nền tảng**: Kiến trúc Hybrid thông minh, sẵn sàng cho macOS, Windows và Linux.
-- **Hiện đại**: Hỗ trợ Unicode chuẩn, logic đặt dấu ngữ âm học, không phụ thuộc bảng mã cũ.
+- **Chuẩn hóa**: Tuyệt đối tuân thủ quy tắc chính tả chữ Quốc ngữ (theo chuẩn BGD&ĐT).
+- **Hiệu suất & Công nghệ**: Core engine viết bằng Rust kết hợp Native UI giúp xử lý tức thì, bỏ qua gánh nặng lịch sử (legacy code).
+- **Đa nền tảng & Tương lai**: Kiến trúc Hybrid sẵn sàng cho macOS, Windows, Linux và các hệ thống thế hệ mới (Wayland).
 - **Trải nghiệm mượt mà**: Giao diện thích ứng (Light/Dark mode), hoạt ảnh mượt mà, phản hồi lập tức.
 - **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
-
-### Triết lý
-
-Dự án được phát triển dựa trên 3 trụ cột:
-
-1. **Chuẩn hóa**: Tuyệt đối tuân thủ quy tắc chính tả chữ Quốc ngữ (theo chuẩn BGD&ĐT).
-2. **Hiện đại**: Tận dụng sức mạnh công nghệ mới (Rust, Native UI) để tối ưu hiệu suất, bỏ qua các gánh nặng lịch sử (legacy code).
-3. **Tương lai**: Sẵn sàng cho các nền tảng và kiến trúc hệ điều hành thế hệ mới (Wayland, macOS updates).
 
 ## Động lực
 
