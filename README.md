@@ -1,4 +1,4 @@
-# GoNhanh
+# GoNhanh (Gõ Nhanh)
 
 [![CI](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg)](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
@@ -37,15 +37,15 @@ Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn
 
 ## So sánh
 
-|                |      GoNhanh      |      EVKey      |      OpenKey      |  UniKey   |
-| :------------- | :---------------: | :-------------: | :---------------: | :-------: |
-| **Trạng thái** |   🟢 **Active**   | 🔴 Discontinued |  🟡 Maintenance   | 🟢 Stable |
-| **Nền tảng**   | macOS, Windows\*  | macOS, Windows  | macOS, Win, Linux |  Windows  |
-| Năm ra mắt     |       2025        |      2018       |       2019        |   2000    |
-| Miễn phí       |        ✅         |       ✅        |        ✅         |    ✅     |
-| Open source    |        ✅         |       ✅        |        ✅         |    ⚠️     |
-| Công nghệ      | **Rust + Native** |    C++ + Qt     |     C++ + Qt      |    C++    |
-| Chỉ Unicode    |        ✅         |       ❌        |        ❌         |    ❌     |
+|                |      GoNhanh      |      EVKey      |      OpenKey      |   UniKey   |
+| :------------- | :---------------: | :-------------: | :---------------: | :--------: |
+| **Trạng thái** |   🟢 **Active**   | 🔴 Discontinued |  🟡 Maintenance   | 🟢 Stable  |
+| **Nền tảng**   | macOS, Windows\*  | macOS, Windows  | macOS, Win, Linux |  Windows   |
+| Năm ra mắt     |       2025        |      2018       |       2019        |    2000    |
+| Miễn phí       |        ✅         |       ✅        |        ✅         |     ✅     |
+| Open source    |        ✅         |       ✅        |        ✅         |     ⚠️     |
+| Công nghệ      | **Rust + Native** |    C++ + Qt     |     C++ + Qt      |    C++     |
+| Bảng mã        |    **Unicode**    |   Đa bảng mã    |    Đa bảng mã     | Đa bảng mã |
 
 _\* Windows: đang trong lộ trình phát triển (Roadmap)._
 
