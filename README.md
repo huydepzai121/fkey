@@ -17,6 +17,18 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 - **Trải nghiệm mượt mà**: Giao diện thích ứng (Light/Dark mode), hoạt ảnh mượt mà, phản hồi lập tức.
 - **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
 
+## Động lực
+
+Dự án lấy cảm hứng từ **EVKey** - hình mẫu về sự tối giản và hiệu quả.
+
+Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn định tuyệt đối trên các công cụ hiện đại (như Claude Code, Terminal), GoNhanh ra đời để tiếp nối di sản đó khi các công cụ cũ dừng cập nhật. Chúng tôi cam kết xây dựng một sản phẩm **Mã nguồn mở - Miễn phí - Của cộng đồng**.
+
+## Ba Không
+
+- 🚫 **Không thu phí**: Miễn phí trọn đời, không có bản "Premium".
+- 🚫 **Không rác**: Không quảng cáo, không popup, không tính năng thừa thãi.
+- 🚫 **Không theo dõi**: Offline 100%, không thu thập dữ liệu, mã nguồn minh bạch.
+
 ## Triết lý sản phẩm
 
 Chúng tôi xây dựng GoNhanh dựa trên 3 trụ cột:
