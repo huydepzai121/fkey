@@ -323,10 +323,11 @@ impl Engine {
     }
 
     /// Handle tone modifier (^, ơ, ư, ă)
-    /// Applies tone to ALL eligible vowels in buffer, not just one
+    /// For uo compound: applies horn to both u and o
+    /// Otherwise: applies to specific target vowel only
     fn handle_tone(&mut self, key: u16, tone: u8, target_key: u16) -> Result {
         // Find all vowels eligible for this tone modifier
-        let eligible_vowels = self.find_eligible_vowels_for_tone(key, tone);
+        let eligible_vowels = self.find_eligible_vowels_for_tone(key, tone, target_key);
 
         if eligible_vowels.is_empty() {
             return Result::none();
@@ -355,64 +356,29 @@ impl Engine {
     }
 
     /// Find all vowels that should receive the tone modifier
-    /// For horn (7): applies to all u, o without existing tone
-    /// For circumflex (6): applies to last a/e/o without tone
-    /// For breve (8): applies to last a without tone
-    fn find_eligible_vowels_for_tone(&self, key: u16, tone: u8) -> Vec<usize> {
+    /// Special case: uo compound gets horn on BOTH vowels when typing '7' or 'w'
+    /// Otherwise: apply to specific target vowel only
+    fn find_eligible_vowels_for_tone(&self, key: u16, tone: u8, target_key: u16) -> Vec<usize> {
         let mut positions = Vec::new();
 
-        // Collect vowels without tone
-        let vowels_without_tone: Vec<(usize, u16)> = self
-            .buf
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| keys::is_vowel(c.key) && c.tone == 0)
-            .map(|(i, c)| (i, c.key))
-            .collect();
+        // Special case: uo compound with horn modifier
+        // When typing '7' (VNI) or 'w' (Telex) on uo, apply horn to both u and o
+        if tone == 2 && (key == keys::N7 || key == keys::W) {
+            let target_is_u_or_o = target_key == keys::U || target_key == keys::O;
+            if target_is_u_or_o && self.has_uo_compound() {
+                // Apply horn to all u and o in the compound
+                for (i, c) in self.buf.iter().enumerate() {
+                    if (c.key == keys::U || c.key == keys::O) && c.tone == 0 {
+                        positions.push(i);
+                    }
+                }
+                return positions;
+            }
+        }
 
-        match (key, tone) {
-            // VNI 7 or Telex 'w' for o/u → horn: apply to ALL u,o in uo compound
-            (keys::N7, 2) | (keys::W, 2) => {
-                // Check if we have uo compound (adjacent u and o)
-                let has_uo_compound = self.has_uo_compound();
-                if has_uo_compound {
-                    // Apply horn to all u and o
-                    for (pos, vkey) in &vowels_without_tone {
-                        if *vkey == keys::U || *vkey == keys::O {
-                            positions.push(*pos);
-                        }
-                    }
-                } else {
-                    // No compound, apply to last matching vowel only
-                    for (pos, vkey) in vowels_without_tone.iter().rev() {
-                        if *vkey == keys::U || *vkey == keys::O {
-                            positions.push(*pos);
-                            break;
-                        }
-                    }
-                }
-            }
-            // Other tones: apply to last matching vowel only (existing behavior)
-            _ => {
-                for (pos, vkey) in vowels_without_tone.iter().rev() {
-                    let matches = match (key, tone) {
-                        // Circumflex for a, e, o
-                        (keys::N6, 1) => matches!(*vkey, keys::A | keys::E | keys::O),
-                        (keys::A, 1) if tone == 1 => *vkey == keys::A,
-                        (keys::E, 1) if tone == 1 => *vkey == keys::E,
-                        (keys::O, 1) if tone == 1 => *vkey == keys::O,
-                        // Breve for a
-                        (keys::N8, 2) | (keys::W, 2) => *vkey == keys::A,
-                        // Horn for single vowel (non-compound case)
-                        (_, 2) => matches!(*vkey, keys::U | keys::O),
-                        _ => false,
-                    };
-                    if matches {
-                        positions.push(*pos);
-                        break;
-                    }
-                }
-            }
+        // Default: apply to the specific target vowel only
+        if let Some(pos) = self.buf.find_vowel_by_key(target_key) {
+            positions.push(pos);
         }
 
         positions
