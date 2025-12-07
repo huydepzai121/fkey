@@ -155,10 +155,10 @@ fn telex_correction_patterns() {
         // Type wrong mark, then correct (mark replacement)
         ("asf", "à"),  // á then f replaces sắc with huyền → à
         ("afs", "á"),  // à then s replaces huyền with sắc → á
-        // Backspace and retype (backspace removes last char from screen AND buffer)
-        ("aas<s", "ấ"),   // ấ + backspace (removes ấ) + ... wait, this is complex
-        // Simple case: type wrong, backspace, type correct
+        // Simple letter replacement mid-word
         ("ab<c", "ac"),  // a + b + backspace + c = ac
+        // Backspace mid-word then apply mark
+        ("toi<as", "toá"),  // to + i + backspace + á = toá
     ]);
 }
 
