@@ -3,6 +3,9 @@
 //! Marks: s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
 //! Tones: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ
 //! Remove: z
+//!
+//! Supports delayed mode: user can type tone keys after the full word
+//! Example: "vieta" -> "viêt" + "a" -> finds 'e' in buffer, applies circumflex
 
 use super::Method;
 use crate::data::keys;
@@ -36,6 +39,36 @@ impl Method for Telex {
                 keys::O => return Some(2), // ơ
                 keys::U => return Some(2), // ư
                 _ => {}
+            }
+        }
+
+        None
+    }
+
+    /// Telex delayed mode: find matching vowel anywhere in buffer
+    /// Example: "vietna" -> 'a' finds 'a' in buffer, applies circumflex
+    /// Example: "truongw" -> 'w' finds 'u' or 'o' in buffer
+    fn is_tone_for(&self, key: u16, vowels: &[u16]) -> Option<(u8, u16)> {
+        // aa, ee, oo -> circumflex (^)
+        // Find matching vowel in buffer (reverse order - last first)
+        if matches!(key, keys::A | keys::E | keys::O) {
+            for &v in vowels.iter().rev() {
+                if v == key {
+                    return Some((1, v));
+                }
+            }
+        }
+
+        // w -> breve/horn
+        // Find a, o, or u in buffer
+        if key == keys::W {
+            for &v in vowels.iter().rev() {
+                match v {
+                    keys::A => return Some((2, v)), // ă
+                    keys::O => return Some((2, v)), // ơ
+                    keys::U => return Some((2, v)), // ư
+                    _ => {}
+                }
             }
         }
 
