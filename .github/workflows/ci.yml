@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags-ignore: ['**']
   pull_request:
     branches: [main]
 
@@ -33,8 +34,8 @@ jobs:
           workspaces: core
       - run: cargo build --manifest-path core/Cargo.toml --release
 
-  draft-release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  draft:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -42,7 +43,7 @@ jobs:
     steps:
       - uses: release-drafter/release-drafter@v6
         with:
-          config-name: release.yml
+          config-name: drafter.yml
           disable-autolabeler: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
