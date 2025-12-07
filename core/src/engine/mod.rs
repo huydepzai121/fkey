@@ -11,7 +11,7 @@
 //! 3. Algorithmic tone placement based on Vietnamese rules
 //!
 //! ## References
-//! - docs/vietnamese-language-system.md
+//! - /docs/vietnamese-language-system.md (project root)
 //! - https://vi.wikipedia.org/wiki/Quy_tắc_đặt_dấu_thanh_của_chữ_Quốc_ngữ
 
 pub mod buffer;
