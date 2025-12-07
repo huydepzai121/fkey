@@ -3,88 +3,114 @@
 [![CI](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg)](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-**Bộ gõ tiếng Việt thế hệ mới** — nhanh, nhẹ, native.
+**Bộ gõ tiếng Việt thế hệ mới** — được thiết kế từ đầu cho kỷ nguyên Unicode.
 
-## Tại sao cần GoNhanh?
+---
 
-Các bộ gõ tiếng Việt hiện tại đã phục vụ cộng đồng rất tốt:
+## Tầm nhìn
 
-- [**UniKey**](https://www.unikey.org/) — Bộ gõ huyền thoại, tiêu chuẩn de facto từ 2000
-- [**EVKey**](https://evkeyvn.com/) — Kế thừa UniKey với nhiều cải tiến
-- [**OpenKey**](https://github.com/tuyenvm/OpenKey) — Open source, hỗ trợ macOS/Windows/Linux
+> *"Đã đến lúc tiếng Việt có một bộ gõ được xây dựng đúng cách."*
 
-Tuy nhiên, chúng có những hạn chế chung:
+Năm 2000, UniKey ra đời và trở thành chuẩn mực. Nhưng đó là thời của Windows XP, bảng mã TCVN3, và Internet dial-up.
 
-| Vấn đề | Mô tả |
-|--------|-------|
-| **Kiến trúc cũ** | C/C++ từ thập niên 2000, khó bảo trì |
-| **Không native** | Dùng chung UI framework (Qt) cho mọi platform |
-| **Feature creep** | Tích hợp nhiều tính năng ít dùng (chuyển mã, macro, spelling...) |
-| **Lookup-based** | Dựa trên bảng tra cứu, không theo quy tắc ngữ âm |
+**Hôm nay là 2024.** Unicode đã thắng. macOS và Windows đều hỗ trợ tiếng Việt native. Nhưng chúng ta vẫn đang dùng những bộ gõ được thiết kế cho một thời đại đã qua.
 
-GoNhanh không thay thế các bộ gõ trên, mà là một **lựa chọn khác** cho những ai cần sự đơn giản và hiệu năng.
+GoNhanh không phải là "một UniKey khác". Đây là **tái định nghĩa** cách gõ tiếng Việt:
 
-## Triết lý GoNhanh
+- **Chỉ Unicode** — Không TCVN3, không VNI Windows, không CP 1258
+- **Phonology-first** — Engine dựa trên ngữ âm học, không phải bảng tra cứu
+- **Native-first** — SwiftUI cho macOS, WPF cho Windows
+- **Rust core** — Memory-safe, blazing fast, maintainable
 
-### 1. Phonology-first
+## Ba Không
 
-Engine được xây dựng dựa trên **ngữ âm học tiếng Việt**, không phải bảng tra cứu cứng:
+| | Cam kết |
+|:---:|---|
+| 🚫 | **Không bảng mã cũ** — Chỉ Unicode. Không hỗ trợ TCVN3, VNI Windows, hay bất kỳ legacy encoding nào. |
+| 🚫 | **Không feature creep** — Không chuyển mã, không clipboard hook, không macro, không spelling check. Chỉ gõ tiếng Việt. |
+| 🚫 | **Không telemetry** — Không thu thập dữ liệu, không gửi thông tin, không cần internet. Hoàn toàn offline. |
 
-- Phân loại nguyên âm theo vai trò: âm chính, âm đệm, bán nguyên âm
-- Thuật toán đặt dấu thanh theo quy tắc ngữ âm (không hardcode)
-- Hỗ trợ cả hai trường phái: kiểu cũ (`oà`) và kiểu mới (`òa`)
+## Triết lý
 
-> Xem chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system.md)
+### Phonology-first Engine
 
-### 2. Native-first
+GoNhanh không dùng bảng tra cứu 89 ký tự như các bộ gõ truyền thống.
 
-- **macOS**: SwiftUI, tích hợp menu bar như app native
-- **Windows**: WPF/WinUI (planned)
-- Mỗi platform có UI riêng, trải nghiệm tự nhiên
+Thay vào đó, engine được xây dựng trên **ngữ âm học tiếng Việt**:
 
-### 3. Rust Core
+```
+Âm tiết = [Phụ âm đầu] + [Âm đệm] + Nguyên âm chính + [Âm cuối] + Thanh điệu
+```
 
-- Memory-safe, không buffer overflow
-- Cross-platform: cùng engine cho mọi OS
-- FFI đơn giản, dễ tích hợp
+- Phân loại nguyên âm: âm chính, âm đệm, bán nguyên âm
+- Thuật toán đặt dấu theo quy tắc ngữ âm (không hardcode từng trường hợp)
+- Hỗ trợ cả kiểu cũ (`hoà`) và kiểu mới (`hòa`)
 
-### 4. Minimal
+> 📖 Xem chi tiết: [Hệ thống ngữ âm tiếng Việt](docs/vietnamese-language-system.md)
 
-- Chỉ làm một việc: gõ tiếng Việt
-- Không chuyển mã, không clipboard hook, không macro
-- Binary nhỏ (~3MB), RAM thấp (~25MB)
+### Native Experience
+
+Mỗi platform có UI riêng, không phải Qt hay Electron:
+
+| Platform | UI Framework | Status |
+|----------|--------------|--------|
+| macOS | SwiftUI | ✅ Available |
+| Windows | WPF/WinUI | 🚧 Planned |
+
+### Rust Core
+
+```
+┌─────────────────────────────────┐
+│     Platform UI (Swift/WPF)    │
+└───────────────┬─────────────────┘
+                │ FFI (C ABI)
+┌───────────────▼─────────────────┐
+│         Rust Core Engine        │
+│  • Memory-safe, no crashes      │
+│  • <1ms latency per keystroke   │
+│  • ~3MB binary, ~25MB RAM       │
+└─────────────────────────────────┘
+```
 
 ## So sánh
 
-| | GoNhanh | OpenKey | UniKey | EVKey |
+|  | GoNhanh | OpenKey | UniKey | EVKey |
 |---|:---:|:---:|:---:|:---:|
+| **Năm phát triển** | 2024 | 2019 | 2000 | 2018 |
 | **Engine** | Rust | C++ | C++ | C++ |
-| **macOS UI** | SwiftUI | Obj-C | Qt | Qt |
-| **Platforms** | macOS, Windows* | macOS, Windows, Linux | Windows | Windows, macOS |
-| **Memory** | ~25 MB | ~30 MB | ~50 MB | ~40 MB |
-| **Open source** | ✅ Full | ✅ Full | ⚠️ Partial | ✅ Full |
 | **Kiến trúc** | Phonology | Lookup | Lookup | Lookup |
-| **Chuyển mã** | ❌ | ✅ | ✅ | ✅ |
-| **Macro** | ❌ | ✅ | ✅ | ✅ |
+| **Chỉ Unicode** | ✅ | ❌ | ❌ | ❌ |
+| **macOS native** | SwiftUI | Obj-C | Qt | Qt |
+| **Memory** | ~25 MB | ~30 MB | ~50 MB | ~40 MB |
+| **Open source** | ✅ | ✅ | ⚠️ | ✅ |
 
-*\* Windows: planned*
+> GoNhanh không thay thế các bộ gõ trên. Đây là lựa chọn cho những ai muốn **đơn giản, hiện đại, và đúng chuẩn**.
 
-## Features
+## Cam kết phát triển
 
-| | |
-|---|---|
-| ⌨️ **Input methods** | Telex, VNI |
-| 🎯 **Tone placement** | Algorithmic (kiểu cũ/mới) |
-| 🔤 **Full Unicode** | 89 ký tự có dấu |
-| ⚡ **Performance** | <1ms latency |
-| 🔒 **Privacy** | Offline, no telemetry |
+### Từ tác giả
+
+> *"Tôi xây dựng GoNhanh vì tôi cần nó. Và tôi sẽ duy trì nó vì tôi dùng nó mỗi ngày."*
+
+- **Long-term support** — Dự án sẽ được duy trì ít nhất 5 năm (2024-2029)
+- **Semantic versioning** — Breaking changes chỉ ở major versions
+- **Backward compatible** — Config và settings được bảo toàn qua các phiên bản
+- **Community-driven** — Issues và PRs được review trong 48 giờ
+
+### Roadmap
+
+| Version | Target | Features |
+|---------|--------|----------|
+| 0.1 | Q1 2025 | macOS beta, Telex + VNI |
+| 0.2 | Q2 2025 | Stable release, auto-update |
+| 0.3 | Q3 2025 | Windows support |
+| 1.0 | Q4 2025 | Production ready |
 
 ## Installation
 
-### macOS
+### macOS (Build from source)
 
 ```bash
-# Build from source
 git clone https://github.com/khaphanspace/gonhanh.org
 cd gonhanh.org
 make build
@@ -93,7 +119,7 @@ make build
 cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
 ```
 
-### Homebrew (coming soon)
+### Homebrew (Coming soon)
 
 ```bash
 brew install gonhanh
@@ -102,55 +128,27 @@ brew install gonhanh
 ## Usage
 
 1. Mở GoNhanh từ Applications
-2. Click icon trên menu bar để bật/tắt
-3. Right-click để mở Settings:
-   - Chọn kiểu gõ (Telex/VNI)
-   - Chọn kiểu đặt dấu (cũ/mới)
-
-**Lần đầu chạy**: Cấp quyền Accessibility trong System Settings → Privacy & Security → Accessibility
+2. Cấp quyền Accessibility (System Settings → Privacy & Security)
+3. Click icon menu bar để bật/tắt
+4. Right-click để mở Settings
 
 ## Development
 
 ```bash
-make test    # Run tests
+make test    # Run 99 tests
 make build   # Build everything
 make clean   # Clean artifacts
 ```
 
-Xem thêm: [docs/development.md](docs/development.md)
-
-## Architecture
-
-```
-┌─────────────────────────────────┐
-│     Platform UI (Swift/WPF)    │
-└───────────────┬─────────────────┘
-                │ FFI
-┌───────────────▼─────────────────┐
-│         Rust Core Engine        │
-│  • Buffer management            │
-│  • Phonology-based rules        │
-│  • Unicode output               │
-└─────────────────────────────────┘
-```
-
-Xem thêm: [docs/architecture.md](docs/architecture.md)
-
-## Documentation
-
-| Document | Nội dung |
-|----------|----------|
-| [vietnamese-language-system.md](docs/vietnamese-language-system.md) | Hệ thống ngữ âm tiếng Việt, quy tắc đặt dấu |
-| [architecture.md](docs/architecture.md) | Kiến trúc hệ thống, FFI interface |
-| [development.md](docs/development.md) | Hướng dẫn phát triển |
+> 📖 [Development Guide](docs/development.md) · [Architecture](docs/architecture.md)
 
 ## Acknowledgments
 
-GoNhanh được xây dựng dựa trên nền tảng kiến thức từ cộng đồng:
+Dự án được xây dựng trên vai những người khổng lồ:
 
-- [UniKey](https://www.unikey.org/) — Nguồn cảm hứng ban đầu
-- [OpenKey](https://github.com/tuyenvm/OpenKey) — Tham khảo kiến trúc open source
-- [Vietnamese Typography](https://vi.wikipedia.org/wiki/Quy_tắc_đặt_dấu_thanh_của_chữ_Quốc_ngữ) — Quy tắc đặt dấu
+- [UniKey](https://www.unikey.org/) — Bộ gõ huyền thoại, nguồn cảm hứng ban đầu
+- [OpenKey](https://github.com/tuyenvm/OpenKey) — Tiên phong open source Vietnamese IME
+- [EVKey](https://evkeyvn.com/) — Những cải tiến đáng giá cho cộng đồng
 
 ## Contributing
 
@@ -158,4 +156,12 @@ Contributions welcome! Xem [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-[GPL-3.0-or-later](LICENSE) — Tự do sử dụng, sửa đổi, phân phối với cùng license.
+[GPL-3.0-or-later](LICENSE)
+
+Tự do sử dụng, sửa đổi, phân phối — với điều kiện giữ nguyên license.
+
+---
+
+<p align="center">
+  <i>Được xây dựng với ❤️ cho cộng đồng người Việt</i>
+</p>
