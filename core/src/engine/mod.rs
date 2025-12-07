@@ -170,7 +170,7 @@ impl Engine {
 
         // Collect buffer keys for delayed operations (excluding already-converted đ)
         let buffer_keys: Vec<u16> = self.buf.iter()
-            .filter(|c| !c.is_d) // Skip already converted 'd' -> 'đ'
+            .filter(|c| !c.stroke) // Skip already converted 'd' -> 'đ'
             .map(|c| c.key)
             .collect();
 
@@ -237,13 +237,13 @@ impl Engine {
         // Find position of unconverted 'd' in buffer
         let d_pos = self.buf.iter()
             .enumerate()
-            .find(|(_, c)| c.key == keys::D && !c.is_d)
+            .find(|(_, c)| c.key == keys::D && !c.stroke)
             .map(|(i, _)| i);
 
         if let Some(pos) = d_pos {
             // Mark 'd' as converted to 'đ'
             if let Some(c) = self.buf.get_mut(pos) {
-                c.is_d = true;
+                c.stroke = true;
             }
 
             // Rebuild from 'd' position
@@ -384,7 +384,7 @@ impl Engine {
                 backspace += 1;
 
                 // Handle 'd' -> 'đ' conversion
-                if c.key == keys::D && c.is_d {
+                if c.key == keys::D && c.stroke {
                     output.push(chars::get_d(c.caps));
                 }
                 // Try vowel conversion
