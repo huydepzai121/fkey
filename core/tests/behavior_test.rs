@@ -97,11 +97,13 @@ fn telex_mark_then_tone() {
 
 #[test]
 fn telex_common_words_with_typos() {
-    // "việt" - gõ đúng
-    test_telex("vieets", "việt");
+    // "việt" - vieetj (j = nặng), không phải vieets (s = sắc)
+    test_telex("vieetj", "việt");
+    // vieets = viết (với sắc)
+    test_telex("vieets", "viết");
 
-    // "được" - gõ đúng
-    test_telex("dduowwcj", "được");
+    // "được" - đúng cách gõ
+    test_telex("dduowcj", "được");
 }
 
 #[test]
@@ -135,7 +137,8 @@ fn telex_mark_without_vowel() {
 fn telex_multiple_backspace() {
     // Xóa nhiều ký tự liên tiếp
     test_telex("abcd<<<", "a");
-    test_telex("vieets<<<ng", "ving");
+    // vieets = viết (4 chars: v,i,ế,t), <<< xóa 3 chars → v, +ng → vng
+    test_telex("vieets<<<ng", "vng");
 }
 
 #[test]
@@ -164,13 +167,15 @@ fn telex_word_boundary() {
 
 #[test]
 fn telex_caps_mid_word() {
-    // Caps ở giữa từ (ít gặp nhưng có thể xảy ra)
-    test_telex("viEets", "viỆt");
+    // Caps ở giữa từ: viEets = v+i+Ê+t+s(sắc) = viẾt
+    test_telex("viEets", "viẾt");
 }
 
 #[test]
 fn telex_all_caps() {
-    test_telex("VIEETS", "VIỆT");
+    // VIEETS = V+I+Ê+T+S(sắc) = VIẾT, để có VIỆT cần VIEETJ
+    test_telex("VIEETJ", "VIỆT");
+    test_telex("VIEETS", "VIẾT");
     test_telex("DDUWOWNGF", "ĐƯỜNG");
 }
 
