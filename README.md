@@ -37,15 +37,15 @@ Xuất phát từ nhu cầu cá nhân về sự ổn định tuyệt đối trê
 
 ## So sánh
 
-|                |        GoNhanh         |        EVKey        |      OpenKey      |   UniKey   |
-| :------------- | :--------------------: | :-----------------: | :---------------: | :--------: |
-| **Trạng thái** | 🟢 **Đang phát triển** | 🔴 Ngừng phát triển |    🟡 Bảo trì     | 🟢 Ổn định |
-| **Nền tảng**   |    macOS, Windows\*    |   macOS, Windows    | macOS, Win, Linux |  Windows   |
-| Năm ra mắt     |          2025          |        2018         |       2019        |    2000    |
-| Miễn phí       |           ✅           |         ✅          |        ✅         |     ✅     |
-| Open source    |           ✅           |         ✅          |        ✅         |     ⚠️     |
-| Công nghệ      |   **Rust + Native**    |      C++ + Qt       |     C++ + Qt      |    C++     |
-| Bảng mã        |      **Unicode**       |     Đa bảng mã      |    Đa bảng mã     | Đa bảng mã |
+|                |      GoNhanh       |        EVKey        |      OpenKey      |    GoTiengViet    |     UniKey     |  IBus-Bamboo   |
+| :------------- | :----------------: | :-----------------: | :---------------: | :---------------: | :------------: | :------------: |
+| **Trạng thái** | 🟢 **Phát triển**  | 🔴 Ngừng phát triển |    🟡 Bảo trì     | 🟡 Ngừng cập nhật |   🟢 Ổn định   |   🟢 Ổn định   |
+| **Nền tảng**   |  macOS, Windows\*  |   macOS, Windows    | macOS, Win, Linux |  macOS, Windows   | Windows, Linux |     Linux      |
+| **Mã nguồn**   | ✅ **Open Source** |   ✅ Open Source    |  ✅ Open Source   |     🚫 Closed     | ✅ Core Engine | ✅ Open Source |
+| Công nghệ      | **Rust + Native**  |      C++ + Qt       |     C++ + Qt      |    Obj-C / C++    |      C++       |       Go       |
+| Bảng mã        |    **Unicode**     |     Đa bảng mã      |    Đa bảng mã     |    Đa bảng mã     |   Đa bảng mã   |   Đa bảng mã   |
+| Chi phí        |    ✅ Miễn phí     |     ✅ Miễn phí     |    ✅ Miễn phí    |   Miễn phí/Pro    |  ✅ Miễn phí   |  ✅ Miễn phí   |
+| Năm ra mắt     |        2025        |        2018         |       2019        |       2008        |      1999      |      2019      |
 
 _\* Windows: đang trong lộ trình phát triển (Roadmap)._
 
