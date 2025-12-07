@@ -1,0 +1,28 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '✨ Tính năng mới'
+    labels: ['enhancement', 'feature']
+  - title: '🐛 Sửa lỗi'
+    labels: ['bug', 'fix']
+  - title: '📝 Tài liệu'
+    labels: ['documentation', 'docs']
+  - title: '🔧 Bảo trì'
+    labels: ['chore', 'maintenance']
+
+version-resolver:
+  major:
+    labels: ['major', 'breaking']
+  minor:
+    labels: ['minor', 'enhancement', 'feature']
+  patch:
+    labels: ['patch', 'bug', 'fix']
+  default: patch
+
+template: |
+  ## Có gì mới?
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
