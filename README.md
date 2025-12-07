@@ -13,7 +13,7 @@
 
 Năm 2000, UniKey ra đời và trở thành chuẩn mực. Nhưng đó là thời của Windows XP, bảng mã TCVN3, và Internet dial-up.
 
-**Hôm nay là 2024.** Unicode đã thắng. macOS và Windows đều hỗ trợ tiếng Việt native. Nhưng chúng ta vẫn đang dùng những bộ gõ được thiết kế cho một thời đại đã qua.
+**Hôm nay là 2025.** Unicode đã thắng. macOS và Windows đều hỗ trợ tiếng Việt native. Nhưng chúng ta vẫn đang dùng những bộ gõ được thiết kế cho một thời đại đã qua.
 
 GoNhanh không phải là "một UniKey khác". Đây là **tái định nghĩa** cách gõ tiếng Việt:
 
@@ -26,9 +26,9 @@ GoNhanh không phải là "một UniKey khác". Đây là **tái định nghĩa*
 
 | | Cam kết |
 |:---:|---|
-| 🚫 | **Không bảng mã cũ** — Chỉ Unicode. Không hỗ trợ TCVN3, VNI Windows, hay bất kỳ legacy encoding nào. |
-| 🚫 | **Không feature creep** — Không chuyển mã, không clipboard hook, không macro, không spelling check. Chỉ gõ tiếng Việt. |
-| 🚫 | **Không telemetry** — Không thu thập dữ liệu, không gửi thông tin, không cần internet. Hoàn toàn offline. |
+| 🚫 | **Không thu phí** — Miễn phí mãi mãi. Không freemium, không premium, không donation nag. |
+| 🚫 | **Không quảng cáo** — Không banner, không popup, không "upgrade to pro". Trải nghiệm thuần khiết. |
+| 🚫 | **Không theo dõi** — Không thu thập dữ liệu, không gửi thông tin, không cần internet. 100% offline. |
 
 ## Triết lý
 
@@ -76,13 +76,13 @@ Mỗi platform có UI riêng, không phải Qt hay Electron:
 
 |  | GoNhanh | OpenKey | UniKey | EVKey |
 |---|:---:|:---:|:---:|:---:|
-| **Năm phát triển** | 2024 | 2019 | 2000 | 2018 |
-| **Engine** | Rust | C++ | C++ | C++ |
-| **Kiến trúc** | Phonology | Lookup | Lookup | Lookup |
+| **Năm ra đời** | 2025 | 2019 | 2000 | 2018 |
+| **Miễn phí** | ✅ | ✅ | ✅ | ✅ |
+| **Không quảng cáo** | ✅ | ✅ | ✅ | ✅ |
+| **Open source** | ✅ | ✅ | ⚠️ | ✅ |
 | **Chỉ Unicode** | ✅ | ❌ | ❌ | ❌ |
 | **macOS native** | SwiftUI | Obj-C | Qt | Qt |
-| **Memory** | ~25 MB | ~30 MB | ~50 MB | ~40 MB |
-| **Open source** | ✅ | ✅ | ⚠️ | ✅ |
+| **Engine** | Rust | C++ | C++ | C++ |
 
 > GoNhanh không thay thế các bộ gõ trên. Đây là lựa chọn cho những ai muốn **đơn giản, hiện đại, và đúng chuẩn**.
 
@@ -92,7 +92,7 @@ Mỗi platform có UI riêng, không phải Qt hay Electron:
 
 > *"Tôi xây dựng GoNhanh vì tôi cần nó. Và tôi sẽ duy trì nó vì tôi dùng nó mỗi ngày."*
 
-- **Long-term support** — Dự án sẽ được duy trì ít nhất 5 năm (2024-2029)
+- **Long-term support** — Dự án sẽ được duy trì ít nhất 5 năm (2025-2030)
 - **Semantic versioning** — Breaking changes chỉ ở major versions
 - **Backward compatible** — Config và settings được bảo toàn qua các phiên bản
 - **Community-driven** — Issues và PRs được review trong 48 giờ
