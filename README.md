@@ -5,6 +5,18 @@
 
 Bộ gõ tiếng Việt cho macOS. Viết bằng Rust + SwiftUI.
 
+## Động lực
+
+Tôi là người dùng macOS và là fan của EVKey nhờ sự tối giản, hoạt động tốt trên cả trình duyệt lẫn các ứng dụng. Tuy nhiên, gần đây tôi gặp lỗi tương thích trên **Claude Code** khiến hiệu suất công việc giảm sút đáng kể, và rất tiếc là tác giả EVKey đã thông báo dừng cập nhật.
+
+Vì vậy, tôi quyết định xây dựng **GoNhanh** - kế thừa di sản từ các bộ gõ đi trước và lấy cảm hứng từ EVKey.
+
+Triết lý của dự án:
+
+- **Hiệu suất & Tinh gọn**: Nhẹ nhàng, nhanh chóng.
+- **Cài là dùng**: Cấu hình builtin, tập trung vào trải nghiệm "out of the box".
+- **Vì cộng đồng**: Cam kết Open Source và Miễn phí trọn đời.
+
 ## Về dự án
 
 Một bộ gõ tiếng Việt đơn giản:
@@ -57,14 +69,14 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 ## So sánh
 
-|  | GoNhanh | OpenKey | UniKey | EVKey |
-|---|:---:|:---:|:---:|:---:|
-| Năm | 2025 | 2019 | 2000 | 2018 |
-| Miễn phí | ✅ | ✅ | ✅ | ✅ |
-| Open source | ✅ | ✅ | ⚠️ | ✅ |
-| Chỉ Unicode | ✅ | ❌ | ❌ | ❌ |
-| macOS native | SwiftUI | Obj-C | Qt | Qt |
-| Engine | Rust | C++ | C++ | C++ |
+|              | GoNhanh | OpenKey | UniKey | EVKey |
+| ------------ | :-----: | :-----: | :----: | :---: |
+| Năm          |  2025   |  2019   |  2000  | 2018  |
+| Miễn phí     |   ✅    |   ✅    |   ✅   |  ✅   |
+| Open source  |   ✅    |   ✅    |   ⚠️   |  ✅   |
+| Chỉ Unicode  |   ✅    |   ❌    |   ❌   |  ❌   |
+| macOS native | SwiftUI |  Obj-C  |   Qt   |  Qt   |
+| Engine       |  Rust   |   C++   |  C++   |  C++  |
 
 Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 
@@ -91,12 +103,12 @@ Xem thêm: [docs/development.md](docs/development.md) · [docs/architecture.md](
 
 ## Roadmap
 
-| Version | Khi nào | Gì |
-|---------|---------|-----|
-| 0.1 | Q1 2025 | macOS beta |
-| 0.2 | Q2 2025 | Stable, auto-update |
-| 0.3 | Q3 2025 | Windows |
-| 1.0 | Q4 2025 | Production |
+| Version | Khi nào | Gì                  |
+| ------- | ------- | ------------------- |
+| 0.1     | Q1 2025 | macOS beta          |
+| 0.2     | Q2 2025 | Stable, auto-update |
+| 0.3     | Q3 2025 | Windows             |
+| 1.0     | Q4 2025 | Production          |
 
 ## Credits
 
