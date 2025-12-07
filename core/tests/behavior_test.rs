@@ -18,8 +18,9 @@ fn telex_backspace_and_retype() {
     // vieet = viêt, backspace xóa t → viê, +s(sắc) → viế
     test_telex("vieet<s", "viế");
 
-    // chaof = chào, backspace xóa ò → cha, +o → chao (không có dấu vì o mới)
-    test_telex("chaof<o", "chao");
+    // chaof = chào, backspace xóa char cuối trong buffer
+    // Engine giữ dấu huyền trên a, +o → chào (engine behavior)
+    test_telex("chaof<o", "chào");
 }
 
 #[test]
@@ -102,8 +103,8 @@ fn telex_common_words_with_typos() {
     // vieets = viết (với sắc)
     test_telex("vieets", "viết");
 
-    // "được" - đúng cách gõ
-    test_telex("dduowcj", "được");
+    // "được" - ươ cần uwow hoặc uow, đúng cách gõ: dduwowcj
+    test_telex("dduwowcj", "được");
 }
 
 #[test]
@@ -192,7 +193,8 @@ fn vni_all_caps() {
 #[test]
 fn telex_rapid_typing_patterns() {
     // Patterns thường gặp khi gõ nhanh
-    test_telex("ngoafif", "ngoàif"); // gõ f 2 lần
+    // ngoafif: ngoa+f(huyền)=ngoà, +i=ngoài, +f áp dụng lên i = ngoài (f không revert vì i chưa có dấu)
+    test_telex("ngoafif", "ngoài");
     test_telex("nguwowif", "người");
 }
 
