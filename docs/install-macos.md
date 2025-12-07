@@ -9,7 +9,9 @@
 
 ### 1. Tải ứng dụng
 
-Truy cập trang [Releases](https://github.com/khaphanspace/gonhanh.org/releases) và tải xuống file `.dmg` phiên bản mới nhất (ví dụ: `GoNhanh.dmg`).
+Tải xuống file `.dmg` phiên bản mới nhất tại: **[GoNhanh Latest Release](https://github.com/khaphanspace/gonhanh.org/releases/latest)**
+
+_(Nếu bạn muốn chọn phiên bản cũ hơn, hãy truy cập [Danh sách Releases](https://github.com/khaphanspace/gonhanh.org/releases))_
 
 ### 2. Cài đặt
 
@@ -18,15 +20,13 @@ Truy cập trang [Releases](https://github.com/khaphanspace/gonhanh.org/releases
 
 ### 2.1. Mở ứng dụng lần đầu (Quan trọng)
 
-Do GoNhanh chưa được ký số bởi Apple (Apple Notarization), bạn có thể gặp thông báo: _"GoNhanh cannot be opened because the developer cannot be verified"_ hoặc _"App is damaged"_.
+Do GoNhanh chưa được ký số bởi Apple, bạn cần chạy lệnh sau trong **Terminal** để cho phép ứng dụng khởi chạy (chỉ cần làm 1 lần):
 
-Để mở ứng dụng:
+```bash
+xattr -cr /Applications/GoNhanh.app
+```
 
-1. Vào thư mục **Applications**, tìm **GoNhanh**.
-2. **Click chuột phải** (hoặc Ctrl + Click) vào icon và chọn **Open**.
-3. Một hộp thoại hiện ra, nhấn nút **Open** để xác nhận.
-
-> _Lưu ý: Bạn chỉ cần làm bước này một lần duy nhất._
+Sau đó bạn có thể mở GoNhanh từ Applications như bình thường.
 
 ### 3. Cấp quyền truy cập
 
