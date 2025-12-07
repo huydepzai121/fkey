@@ -16,6 +16,18 @@ Truy cập trang [Releases](https://github.com/khaphanspace/gonhanh.org/releases
 1. Mở file `.dmg` vừa tải.
 2. Kéo biểu tượng **GoNhanh** vào thư mục **Applications**.
 
+### 2.1. Mở ứng dụng lần đầu (Quan trọng)
+
+Do GoNhanh chưa được ký số bởi Apple (Apple Notarization), bạn có thể gặp thông báo: _"GoNhanh cannot be opened because the developer cannot be verified"_ hoặc _"App is damaged"_.
+
+Để mở ứng dụng:
+
+1. Vào thư mục **Applications**, tìm **GoNhanh**.
+2. **Click chuột phải** (hoặc Ctrl + Click) vào icon và chọn **Open**.
+3. Một hộp thoại hiện ra, nhấn nút **Open** để xác nhận.
+
+> _Lưu ý: Bạn chỉ cần làm bước này một lần duy nhất._
+
 ### 3. Cấp quyền truy cập
 
 Để bộ gõ hoạt động, bạn cần cấp quyền **Accessibility** (Trợ năng) để ứng dụng có thể lắng nghe phím bấm:
