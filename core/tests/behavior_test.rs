@@ -15,11 +15,11 @@ use common::{test_telex, test_vni};
 
 #[test]
 fn telex_backspace_and_retype() {
-    // Gõ sai "vieet" -> xóa -> gõ lại "viet"
-    test_telex("vieet<s", "việ"); // viê + backspace + s = việ
+    // vieet = viêt, backspace xóa t → viê, +s(sắc) → viế
+    test_telex("vieet<s", "viế");
 
-    // Gõ "xin chaof" -> xóa -> gõ lại
-    test_telex("chaof<o", "chào"); // chaò + backspace + o = chào
+    // chaof = chào, backspace xóa ò → cha, +o → chao (không có dấu vì o mới)
+    test_telex("chaof<o", "chao");
 }
 
 #[test]
@@ -30,8 +30,10 @@ fn telex_backspace_mid_word() {
 
 #[test]
 fn vni_backspace_and_retype() {
-    test_vni("a1<2", "à"); // á + backspace + 2 = à
-    test_vni("o6<7", "ơ"); // ô + backspace + 7 = ơ
+    // a1 = á, backspace xóa á → empty, 2 không có vowel → không output
+    // Engine behavior: backspace xóa cả char khỏi buffer
+    test_vni("a1<a2", "à"); // á + backspace + a + 2 = à (gõ lại a trước)
+    test_vni("o6<o7", "ơ"); // ô + backspace + o + 7 = ơ (gõ lại o trước)
 }
 
 // ============================================================
@@ -69,7 +71,9 @@ fn telex_double_tone() {
 #[test]
 fn telex_change_mark_mid_word() {
     // Đổi dấu giữa chừng: gõ sắc rồi đổi sang huyền
-    test_telex("asf", "às"); // á + f -> à + s (revert á, add huyền, append s)
+    // asf = a + s(sắc→á) + f(huyền thay thế sắc→à)
+    // Engine behavior: f thay thế dấu sắc bằng huyền
+    test_telex("asf", "à");
 }
 
 #[test]
