@@ -323,25 +323,118 @@ impl Engine {
     }
 
     /// Handle tone modifier (^, ơ, ư, ă)
+    /// Applies tone to ALL eligible vowels in buffer, not just one
     fn handle_tone(&mut self, key: u16, tone: u8, target_key: u16) -> Result {
-        if let Some(pos) = self.buf.find_vowel_by_key(target_key) {
-            if let Some(c) = self.buf.get_mut(pos) {
+        // Find all vowels eligible for this tone modifier
+        let eligible_vowels = self.find_eligible_vowels_for_tone(key, tone);
+
+        if eligible_vowels.is_empty() {
+            return Result::none();
+        }
+
+        // Apply tone to all eligible vowels
+        let mut earliest_pos = usize::MAX;
+        for pos in &eligible_vowels {
+            if let Some(c) = self.buf.get_mut(*pos) {
                 c.tone = tone;
-                self.last_transform = Some(Transform::Tone(key, tone, target_key));
-
-                // After adding diacritic, reposition mark if needed
-                // e.g., "ua2" → "uà", then "7" → "ưà" should become "ừa"
-                let mark_moved_from = self.reposition_mark_if_needed();
-
-                // Rebuild from earliest changed position
-                let rebuild_pos = match mark_moved_from {
-                    Some(old_mark_pos) => pos.min(old_mark_pos),
-                    None => pos,
-                };
-                return self.rebuild_from(rebuild_pos);
+                earliest_pos = earliest_pos.min(*pos);
             }
         }
-        Result::none()
+
+        self.last_transform = Some(Transform::Tone(key, tone, target_key));
+
+        // After adding diacritic, reposition mark if needed
+        let mark_moved_from = self.reposition_mark_if_needed();
+
+        // Rebuild from earliest changed position
+        let mut rebuild_pos = earliest_pos;
+        if let Some(old_mark_pos) = mark_moved_from {
+            rebuild_pos = rebuild_pos.min(old_mark_pos);
+        }
+        self.rebuild_from(rebuild_pos)
+    }
+
+    /// Find all vowels that should receive the tone modifier
+    /// For horn (7): applies to all u, o without existing tone
+    /// For circumflex (6): applies to last a/e/o without tone
+    /// For breve (8): applies to last a without tone
+    fn find_eligible_vowels_for_tone(&self, key: u16, tone: u8) -> Vec<usize> {
+        let mut positions = Vec::new();
+
+        // Collect vowels without tone
+        let vowels_without_tone: Vec<(usize, u16)> = self
+            .buf
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| keys::is_vowel(c.key) && c.tone == 0)
+            .map(|(i, c)| (i, c.key))
+            .collect();
+
+        match (key, tone) {
+            // VNI 7 or Telex 'w' for o/u → horn: apply to ALL u,o in uo compound
+            (keys::N7, 2) | (keys::W, 2) => {
+                // Check if we have uo compound (adjacent u and o)
+                let has_uo_compound = self.has_uo_compound();
+                if has_uo_compound {
+                    // Apply horn to all u and o
+                    for (pos, vkey) in &vowels_without_tone {
+                        if *vkey == keys::U || *vkey == keys::O {
+                            positions.push(*pos);
+                        }
+                    }
+                } else {
+                    // No compound, apply to last matching vowel only
+                    for (pos, vkey) in vowels_without_tone.iter().rev() {
+                        if *vkey == keys::U || *vkey == keys::O {
+                            positions.push(*pos);
+                            break;
+                        }
+                    }
+                }
+            }
+            // Other tones: apply to last matching vowel only (existing behavior)
+            _ => {
+                for (pos, vkey) in vowels_without_tone.iter().rev() {
+                    let matches = match (key, tone) {
+                        // Circumflex for a, e, o
+                        (keys::N6, 1) => matches!(*vkey, keys::A | keys::E | keys::O),
+                        (keys::A, 1) if tone == 1 => *vkey == keys::A,
+                        (keys::E, 1) if tone == 1 => *vkey == keys::E,
+                        (keys::O, 1) if tone == 1 => *vkey == keys::O,
+                        // Breve for a
+                        (keys::N8, 2) | (keys::W, 2) => *vkey == keys::A,
+                        // Horn for single vowel (non-compound case)
+                        (_, 2) => matches!(*vkey, keys::U | keys::O),
+                        _ => false,
+                    };
+                    if matches {
+                        positions.push(*pos);
+                        break;
+                    }
+                }
+            }
+        }
+
+        positions
+    }
+
+    /// Check if buffer contains adjacent u and o (uo compound pattern)
+    fn has_uo_compound(&self) -> bool {
+        let mut prev_key: Option<u16> = None;
+        for c in self.buf.iter() {
+            if keys::is_vowel(c.key) {
+                if let Some(pk) = prev_key {
+                    // Check for uo or ou adjacency
+                    if (pk == keys::U && c.key == keys::O) || (pk == keys::O && c.key == keys::U) {
+                        return true;
+                    }
+                }
+                prev_key = Some(c.key);
+            } else {
+                prev_key = None; // Reset on consonant
+            }
+        }
+        false
     }
 
     /// Reposition mark to correct vowel based on current phonology
