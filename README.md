@@ -3,42 +3,37 @@
 [![CI](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg)](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-Bộ gõ tiếng Việt cho macOS. Viết bằng Rust + SwiftUI.
+Bộ gõ tiếng Việt hiệu suất cao, hiện đại và đa nền tảng.
 
-## Động lực
-
-Tôi là người dùng macOS và là fan của EVKey nhờ sự tối giản, hoạt động tốt trên cả trình duyệt lẫn các ứng dụng. Tuy nhiên, gần đây tôi gặp lỗi tương thích trên **Claude Code** khiến hiệu suất công việc giảm sút đáng kể, và rất tiếc là tác giả EVKey đã thông báo dừng cập nhật.
-
-Vì vậy, tôi quyết định xây dựng **GoNhanh** - kế thừa di sản từ các bộ gõ đi trước và lấy cảm hứng từ EVKey.
-
-Triết lý của dự án:
-
-- **Hiệu suất & Tinh gọn**: Nhẹ nhàng, nhanh chóng.
-- **Cài là dùng**: Cấu hình builtin, tập trung vào trải nghiệm "out of the box".
-- **Vì cộng đồng**: Cam kết Open Source và Miễn phí trọn đời.
+Sức mạnh của **Rust** (Core Engine) kết hợp với **Native UI** (SwiftUI) mang lại trải nghiệm gõ phím mượt mà, ổn định và bảo mật tuyệt đối.
 
 ## Về dự án
 
-Một bộ gõ tiếng Việt đơn giản:
+GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Việt **hoàn thiện nhất** về trải nghiệm người dùng và hiệu năng kỹ thuật:
 
-- Chỉ Unicode, không hỗ trợ bảng mã cũ (TCVN3, VNI Windows, CP 1258)
-- Chỉ gõ tiếng Việt, không chuyển mã, không macro
-- Engine dựa trên ngữ âm học, không phải bảng tra cứu
-- UI native (SwiftUI), không dùng Qt hay Electron
+- **Hiệu suất vượt trội**: Core engine viết bằng Rust, xử lý tức thì, không độ trễ.
+- **Đa nền tảng**: Kiến trúc Hybrid thông minh, sẵn sàng cho macOS, Windows và Linux.
+- **Hiện đại**: Hỗ trợ Unicode chuẩn, logic đặt dấu ngữ âm học, không phụ thuộc bảng mã cũ.
+- **Tinh tế**: Giao diện Native, không dùng Electron/Qt, tiết kiệm tài nguyên hệ thống.
+- **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
 
-Nếu cần chuyển mã hoặc bảng mã cũ, dùng [UniKey](https://www.unikey.org/), [EVKey](https://evkeyvn.com/), hoặc [OpenKey](https://github.com/tuyenvm/OpenKey).
+## Động lực
+
+Dự án lấy cảm hứng từ **EVKey** - hình mẫu về sự tối giản và hiệu quả.
+
+Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn định tuyệt đối trên các công cụ hiện đại (như Claude Code, Terminal), GoNhanh ra đời để tiếp nối di sản đó khi các công cụ cũ dừng cập nhật. Chúng tôi cam kết xây dựng một sản phẩm **Mã nguồn mở - Miễn phí - Của cộng đồng**.
 
 ## Ba Không
 
-- 🚫 **Không thu phí** — Miễn phí, không có bản premium
-- 🚫 **Không quảng cáo** — Không popup, không banner
-- 🚫 **Không theo dõi** — Offline hoàn toàn, không gửi dữ liệu đi đâu
+- 🚫 **Không thu phí**: Miễn phí trọn đời, không có bản "Premium".
+- 🚫 **Không rác**: Không quảng cáo, không popup, không tính năng thừa thãi.
+- 🚫 **Không theo dõi**: Offline 100%, không thu thập dữ liệu, mã nguồn minh bạch.
 
-## Cam kết
+## Cam kết phát triển
 
-- ✅ **Duy trì lâu dài** — Ít nhất đến 2030. Tôi dùng hàng ngày nên sẽ fix bug.
-- ✅ **Phản hồi nhanh** — Issues/PRs được xem trong 48 giờ.
-- ✅ **Ổn định** — Không breaking changes ở minor versions. Config được giữ nguyên qua các bản cập nhật.
+- ✅ **Duy trì dài hạn**: Cam kết hỗ trợ ít nhất đến 2030.
+- ✅ **Chất lượng cao**: Quy trình phát triển nghiêm ngặt (CI/CD, High Test Coverage).
+- ✅ **Tôn trọng người dùng**: Lắng nghe phản hồi và fix bug nhanh chóng (48h).
 
 ## Cách hoạt động
 
