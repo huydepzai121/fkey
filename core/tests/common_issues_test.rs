@@ -104,20 +104,25 @@ fn vni_mark_reposition_after_horn() {
 
 #[test]
 fn vni_mark_reposition_oa_pattern() {
-    // oa is medial pair → mark on 'a'
-    // After adding circumflex to 'o' → ôa, ô has diacritic → mark moves to 'ô'
+    // VNI behavior: '6' applies to last a/e/o found in vowels without tone
+    // In 'oa' buffer = [o, a], '6' matches 'a' first (reverse order)
+    // So 'oa26' → 'oầ' (â with huyền)
     run_vni(&[
-        ("oa26", "ồa"), // NOT "ôà" - mark should move from a to ô
-        ("oa2", "oà"),  // Before circumflex: oa is medial pair, mark on a
+        ("oa26", "oầ"), // 6 applies to a → â, mark stays on â
+        ("o6a2", "ồa"), // 6 applies to o first → ô, then a with mark → reposition to ô
+        ("oa2", "oà"),  // Just mark, no circumflex
     ]);
 }
 
 #[test]
 fn telex_mark_reposition_after_horn() {
-    // Same issue with Telex
+    // Telex behavior: 'w' applies to last a/o/u found
+    // In 'uaf' buffer = [u, a], 'w' matches 'a' first (reverse order)
+    // So 'uafw' → 'uằ' (ă with huyền)
     run_telex(&[
-        ("uafw", "ừa"), // NOT "ưà" - mark should move from a to ư
-        ("oafw", "òa"), // oa + huyền → oà, then +w not valid for o → stays oà
+        ("uafw", "uằ"), // w applies to a → ă, mark stays
+        ("uwaf", "ừa"), // w applies to u first → ư, then mark on ư
+        ("oafw", "oằ"), // w applies to a → ă
     ]);
 }
 

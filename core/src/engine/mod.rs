@@ -331,9 +331,14 @@ impl Engine {
 
                 // After adding diacritic, reposition mark if needed
                 // e.g., "ua2" → "uà", then "7" → "ưà" should become "ừa"
-                self.reposition_mark_if_needed();
+                let mark_moved_from = self.reposition_mark_if_needed();
 
-                return self.rebuild_from(0); // Rebuild from start since mark may have moved
+                // Rebuild from earliest changed position
+                let rebuild_pos = match mark_moved_from {
+                    Some(old_mark_pos) => pos.min(old_mark_pos),
+                    None => pos,
+                };
+                return self.rebuild_from(rebuild_pos);
             }
         }
         Result::none()
@@ -341,7 +346,8 @@ impl Engine {
 
     /// Reposition mark to correct vowel based on current phonology
     /// Called after adding/changing diacritic (tone modifier)
-    fn reposition_mark_if_needed(&mut self) {
+    /// Returns: Some(old_pos) if mark was moved, None otherwise
+    fn reposition_mark_if_needed(&mut self) -> Option<usize> {
         // Find current mark position and value
         let mark_info: Option<(usize, u8)> = self
             .buf
@@ -354,7 +360,7 @@ impl Engine {
             // Recalculate correct position based on updated vowels
             let vowels = self.collect_vowels();
             if vowels.is_empty() {
-                return;
+                return None;
             }
 
             let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
@@ -371,8 +377,10 @@ impl Engine {
                 if let Some(c) = self.buf.get_mut(new_pos) {
                     c.mark = mark_value;
                 }
+                return Some(old_pos);
             }
         }
+        None
     }
 
     /// Revert tone transformation
