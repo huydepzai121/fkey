@@ -12,9 +12,21 @@ pub trait Method {
     /// Returns mark: 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
     fn is_mark(&self, key: u16) -> Option<u8>;
 
-    /// Check if key is tone key
+    /// Check if key is tone key (immediate mode - checks prev key only)
     /// Returns: 1=hat(^) for a/e/o, 2=breve(˘) for a/o/u
     fn is_tone(&self, key: u16, prev: Option<u16>) -> Option<u8>;
+
+    /// Check if key is tone key for any vowel in list (delayed mode - VNI)
+    /// Returns: (tone, vowel_key) if found
+    fn is_tone_for(&self, key: u16, vowels: &[u16]) -> Option<(u8, u16)> {
+        // Default: use immediate mode, check last vowel
+        if let Some(&last) = vowels.last() {
+            if let Some(tone) = self.is_tone(key, Some(last)) {
+                return Some((tone, last));
+            }
+        }
+        None
+    }
 
     /// Check if key triggers đ
     fn is_d(&self, key: u16, prev: Option<u16>) -> bool;

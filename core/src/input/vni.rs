@@ -38,6 +38,44 @@ impl Method for Vni {
         }
     }
 
+    /// VNI: Find any valid vowel in buffer for tone
+    /// Example: "toi6" -> find 'o' (not 'i') for hat tone
+    fn is_tone_for(&self, key: u16, vowels: &[u16]) -> Option<(u8, u16)> {
+        match key {
+            // 6 -> hat (^) for a, e, o - find first matching
+            keys::N6 => {
+                for &v in vowels.iter().rev() {
+                    if matches!(v, keys::A | keys::E | keys::O) {
+                        return Some((1, v));
+                    }
+                }
+                None
+            }
+
+            // 7 -> breve for a only (ă)
+            keys::N7 => {
+                for &v in vowels.iter().rev() {
+                    if v == keys::A {
+                        return Some((2, v));
+                    }
+                }
+                None
+            }
+
+            // 8 -> breve for o, u (ơ, ư)
+            keys::N8 => {
+                for &v in vowels.iter().rev() {
+                    if matches!(v, keys::O | keys::U) {
+                        return Some((2, v));
+                    }
+                }
+                None
+            }
+
+            _ => None,
+        }
+    }
+
     fn is_d(&self, key: u16, prev: Option<u16>) -> bool {
         // d9 -> đ
         key == keys::N9 && prev == Some(keys::D)

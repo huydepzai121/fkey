@@ -27,6 +27,10 @@ if [ -d "GoNhanh.xcodeproj" ]; then
     mkdir -p build/Release
     cp -R "build/DerivedData/Build/Products/Release/GoNhanh.app" build/Release/
 
+    # Re-sign app with entitlements for local development
+    echo "Signing app with entitlements..."
+    codesign --force --deep --sign - --entitlements GoNhanh.entitlements build/Release/GoNhanh.app
+
     echo "✅ macOS app built successfully!"
     echo "📦 App: platforms/macos/build/Release/GoNhanh.app"
 else

@@ -126,8 +126,14 @@ impl Engine {
         }
 
         // Check tone (aa, aw, a6, a7, etc.)
-        if let Some(tone) = m.is_tone(key, prev_key) {
-            return self.handle_tone(tone, caps);
+        // For VNI, use is_tone_for to search entire buffer
+        let vowel_keys: Vec<u16> = self.buf.iter()
+            .filter(|c| keys::is_vowel(c.key))
+            .map(|c| c.key)
+            .collect();
+
+        if let Some((tone, target_key)) = m.is_tone_for(key, &vowel_keys) {
+            return self.handle_tone_at(tone, target_key, caps);
         }
 
         // Check mark (s/f/r/x/j or 1-5)
@@ -159,7 +165,7 @@ impl Engine {
         Result::send(1, &[ch])
     }
 
-    /// Handle tone (^, ˘)
+    /// Handle tone (^, ˘) - for immediate mode (Telex)
     fn handle_tone(&mut self, tone: u8, caps: bool) -> Result {
         if let Some(last) = self.buf.last_mut() {
             // Can only add tone to vowel
@@ -171,6 +177,31 @@ impl Engine {
                 }
             }
         }
+        Result::none()
+    }
+
+    /// Handle tone at specific vowel in buffer (VNI delayed mode)
+    /// Example: "toi6" -> add ^ to 'o' (not 'i')
+    fn handle_tone_at(&mut self, tone: u8, target_key: u16, caps: bool) -> Result {
+        // Find the vowel position in buffer (from end)
+        let mut target_pos = None;
+        for i in (0..self.buf.len()).rev() {
+            if let Some(c) = self.buf.get(i) {
+                if c.key == target_key && keys::is_vowel(c.key) {
+                    target_pos = Some(i);
+                    break;
+                }
+            }
+        }
+
+        if let Some(pos) = target_pos {
+            if let Some(c) = self.buf.get_mut(pos) {
+                c.tone = tone;
+                // Rebuild from this position
+                return self.rebuild_from(pos);
+            }
+        }
+
         Result::none()
     }
 
@@ -293,5 +324,29 @@ mod tests {
         let r = e.on_key(keys::N1, false, false);
         assert_eq!(r.action, Action::Send as u8);
         assert_eq!(r.chars[0], 'á' as u32);
+    }
+
+    #[test]
+    fn test_vni_delayed_tone() {
+        let mut e = Engine::new();
+        e.set_method(1); // VNI
+
+        // "toi61" -> "tối"
+        e.on_key(keys::T, false, false);
+        e.on_key(keys::O, false, false);
+        e.on_key(keys::I, false, false);
+
+        // Type '6' -> ô (tone for 'o', not 'i')
+        let r = e.on_key(keys::N6, false, false);
+        assert_eq!(r.action, Action::Send as u8);
+        assert_eq!(r.backspace, 2); // delete "oi"
+        assert_eq!(r.count, 2);     // send "ôi"
+        assert_eq!(r.chars[0], 'ô' as u32);
+        assert_eq!(r.chars[1], 'i' as u32);
+
+        // Type '1' -> ố (mark sắc)
+        let r = e.on_key(keys::N1, false, false);
+        assert_eq!(r.action, Action::Send as u8);
+        assert_eq!(r.chars[0], 'ố' as u32);
     }
 }
