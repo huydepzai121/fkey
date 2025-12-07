@@ -67,22 +67,27 @@ _\* Windows: đang trong lộ trình phát triển (Roadmap)._
 
 Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 
-### Các lỗi thường gặp đã được GoNhanh khắc phục
+### Tại sao chọn GoNhanh?
 
-| Lỗi | Mô tả | Bộ gõ khác | GoNhanh |
-| :-- | :---- | :--------: | :-----: |
-| **Dính chữ trên Chrome/Edge** | Gõ `aa` → `aâ`, `dd` → `dđ` do autocomplete | ⚠️ Cần tắt autocomplete | ✅ Tự động fix |
-| **Lặp chữ trên Google Docs** | Gõ `được` → `đđược` | ⚠️ Cần bật "Sửa lỗi" | ✅ Tự động fix |
-| **Mất dấu trên Excel** | Gõ `trường` → `trương` | ⚠️ Không ổn định | ✅ Atomic replacement |
-| **Nhảy chữ trên Terminal/CLI** | Shift+Left không hoạt động đúng | ❌ Không hỗ trợ tốt | ✅ Smart detection |
-| **Xung đột bộ gõ macOS** | Gạch chân, nhảy ký tự khi gõ | ⚠️ Cần config thủ công | ✅ Hook cấp thấp |
+| Vấn đề | Bộ gõ khác | GoNhanh |
+| :----- | :--------: | :-----: |
+| **Dính chữ Chrome/Edge** (`aa` → `aâ`) | ⚠️ Tắt autocomplete thủ công | ✅ Tự động fix |
+| **Lặp chữ Google Docs** (`được` → `đđược`) | ⚠️ Bật "Sửa lỗi" thủ công | ✅ Tự động fix |
+| **Mất dấu Excel** (`trường` → `trương`) | ⚠️ Không ổn định | ✅ Tự động fix |
+| **Nhảy chữ Terminal/CLI** | ❌ Không hỗ trợ tốt | ✅ Smart detection |
+| **Xung đột bộ gõ macOS** | ⚠️ Config thủ công | ✅ Hook cấp thấp |
+| **Chọn bảng mã** | ⚠️ Nhiều lựa chọn gây rối | ✅ Mặc định Unicode |
+| **Chọn kiểu gõ** | ⚠️ Telex/VNI/VIQR/... | ✅ Telex hoặc VNI |
+| **Cấu hình phức tạp** | ⚠️ 10+ tùy chọn | ✅ Cài là dùng |
+| **Chạy quyền Admin (Windows)** | ⚠️ Cần bật thủ công | ✅ Tự động (planned) |
+| **Quyền Accessibility (macOS)** | ⚠️ Hướng dẫn phức tạp | ✅ Prompt tự động |
+| **Gõ trong Password field** | ❌ Bị chặn (Secure Input) | ✅ Hoạt động bình thường |
+| **Khởi động cùng hệ thống** | ⚠️ Cấu hình thủ công | ✅ Mặc định bật |
+| **Cập nhật phiên bản** | ⚠️ Tải về thủ công | ✅ Auto-update (planned) |
 
-**Cách GoNhanh giải quyết:**
-- **Smart App Detection**: Tự động nhận diện app (Chrome, Excel, Terminal...) và chọn phương thức phù hợp.
-- **Atomic Text Replacement**: Dùng Shift+Left select thay vì backspace trên các app có autocomplete.
-- **Low-level Hook**: CGEventTap đảm bảo độ ổn định cao trên mọi ứng dụng.
+**Triết lý GoNhanh: Cài là dùng, không cần cấu hình.**
 
-Chi tiết: [docs/common-issues.md](docs/common-issues.md)
+Chi tiết các lỗi và cách khắc phục: [docs/common-issues.md](docs/common-issues.md)
 
 ## Cách hoạt động
 
