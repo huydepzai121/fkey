@@ -2,160 +2,171 @@
 
 ## Prerequisites
 
-### Required
-- **Rust** 1.70+ ([Install](https://rustup.rs))
-- **macOS** 13+ (for macOS development)
-- **Xcode** 15+ (for macOS development)
+| Tool | Version | Install |
+|------|---------|---------|
+| Rust | 1.70+ | [rustup.rs](https://rustup.rs) |
+| Xcode | 15+ | App Store |
+| macOS | 13+ | - |
 
-### Optional
-- **Visual Studio** 2022+ (for Windows development)
-
-## Setup
+## Quick Start
 
 ```bash
-# Clone repository
+# Clone
 git clone https://github.com/khaphanspace/gonhanh.org
 cd gonhanh.org
 
-# Run setup script
-./scripts/setup.sh
+# Setup (install Rust targets)
+make setup
 
-# Install Rust targets
-rustup target add aarch64-apple-darwin
-rustup target add x86_64-apple-darwin
+# Test
+make test
+
+# Build everything
+make build
 ```
 
-## Building
+## Makefile Commands
 
-### Build Rust Core
-
-```bash
-./scripts/build-core.sh
-```
-
-This creates a universal binary at `platforms/macos/libgonhanh_core.a`
-
-### Build macOS App
-
-**Option 1: Using Xcode**
-
-1. Open Xcode
-2. Create new macOS App project:
-   - Product Name: `GoNhanh`
-   - Organization ID: `org.gonhanh`
-   - Interface: `SwiftUI`
-   - Language: `Swift`
-   - Location: `platforms/macos/`
-
-3. Add Swift files:
-   - Drag all `.swift` files from `platforms/macos/GoNhanh/` to project
-
-4. Link Rust library:
-   - Select project in navigator
-   - Go to "Build Phases" → "Link Binary With Libraries"
-   - Click "+" → Add `libgonhanh_core.a`
-
-5. Update Info.plist:
-   - Copy from `platforms/macos/GoNhanh/Info.plist`
-
-6. Build: `Cmd + B`
-
-**Option 2: Using xcodebuild**
-
-```bash
-./scripts/build-macos.sh
-```
-
-## Testing
-
-### Test Rust Core
-
-```bash
-cd core
-cargo test
-```
-
-### Test Vietnamese Engine
-
-```bash
-cd core
-cargo test engine
-```
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all commands |
+| `make setup` | Setup dev environment |
+| `make test` | Run all tests |
+| `make core` | Build Rust core only |
+| `make macos` | Build macOS app |
+| `make build` | Build everything (test → core → macos) |
+| `make clean` | Clean all build artifacts |
+| `make install` | Install to /Applications |
 
 ## Project Structure
 
 ```
 gonhanh.org/
-├── core/              # Rust core library
+├── Makefile              # Main build commands
+├── core/                 # Rust core library
+│   ├── Cargo.toml
 │   ├── src/
-│   │   ├── lib.rs    # FFI exports
-│   │   ├── engine.rs # Vietnamese conversion
-│   │   ├── keyboard.rs
-│   │   └── config.rs
-│   └── tests/
-│
+│   │   ├── lib.rs        # FFI exports
+│   │   ├── data/         # Keys, chars, phonology
+│   │   ├── engine/       # Main engine
+│   │   └── input/        # Telex, VNI methods
+│   └── tests/            # Integration tests
 ├── platforms/
-│   └── macos/        # macOS native app
-│       └── GoNhanh/
-│           ├── App.swift
-│           ├── MenuBar.swift
-│           ├── SettingsView.swift
-│           └── RustBridge.swift
-│
-└── scripts/          # Build scripts
+│   └── macos/            # SwiftUI app
+│       ├── App.swift
+│       ├── MenuBar.swift
+│       ├── SettingsView.swift
+│       └── RustBridge.swift
+├── scripts/              # Build scripts
+│   ├── setup.sh
+│   ├── build-core.sh
+│   └── build-macos.sh
+└── docs/
+    ├── architecture.md
+    ├── development.md
+    └── vietnamese-language-system.md
+```
+
+## Testing
+
+```bash
+# Run all tests
+make test
+
+# Run specific test
+cd core && cargo test telex
+
+# Run with output
+cd core && cargo test -- --nocapture
+
+# Run single test
+cd core && cargo test vni_delayed_d_input
+```
+
+### Test Files
+
+| File | Coverage |
+|------|----------|
+| `tests/basic_test.rs` | Single char transformations |
+| `tests/word_test.rs` | Full word typing |
+| `tests/sentence_test.rs` | Sentence-level tests |
+
+## Building
+
+### Rust Core Only
+
+```bash
+make core
+# Output: platforms/macos/libgonhanh_core.a
+```
+
+### macOS App
+
+```bash
+make macos
+# Output: platforms/macos/build/Release/GoNhanh.app
+```
+
+### Full Build
+
+```bash
+make build
+# Runs: test → core → macos
 ```
 
 ## Debugging
 
-### macOS
-
-1. Open Xcode project
-2. Set breakpoints in Swift code
-3. Run: `Cmd + R`
-
-### Rust Core
+### Rust
 
 ```bash
 cd core
 RUST_LOG=debug cargo test -- --nocapture
 ```
 
+### macOS
+
+1. Build with Xcode for debugging:
+   ```bash
+   ./scripts/build-macos.sh
+   ```
+
+2. Open Console.app, filter by `GoNhanh`
+
+3. Check Accessibility permission:
+   - System Settings → Privacy & Security → Accessibility
+   - Add GoNhanh.app
+
 ## Common Issues
 
 ### "Library not found"
 
-Make sure you built the Rust core:
 ```bash
-./scripts/build-core.sh
+make core  # Build Rust core first
 ```
 
-### "Undefined symbols"
+### "Keyboard hook not working"
 
-Check that `libgonhanh_core.a` is linked in Xcode:
-- Build Phases → Link Binary With Libraries
+Grant Accessibility permission in System Settings.
 
-### Keyboard hook not working
+### Test failures
 
-Grant Accessibility permissions:
-- System Settings → Privacy & Security → Accessibility
-- Add GoNhanh
+```bash
+make clean
+make test
+```
 
 ## Release Build
 
 ```bash
-# Build optimized binary
-cd core
-cargo build --release --target aarch64-apple-darwin
-cargo build --release --target x86_64-apple-darwin
+# Build optimized
+make build
 
-# Create universal binary
-./scripts/build-core.sh
-
-# Build macOS app in release mode
-cd platforms/macos
-xcodebuild -scheme GoNhanh -configuration Release
+# App location
+open platforms/macos/build/Release/
 ```
 
-## Contributing
+## Code Style
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md)
+- **Rust**: `cargo fmt`, `cargo clippy`
+- **Swift**: Xcode default formatting
+- **Commits**: Conventional commits (`feat:`, `fix:`, `docs:`)
