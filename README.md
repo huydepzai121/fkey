@@ -1,9 +1,15 @@
-# GoNhanh (Gõ Nhanh)
+<p align="center">
+  <img src="assets/logo.png" alt="GoNhanh Logo" width="128" height="128">
+</p>
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![CI](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg)](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml)
+<h1 align="center">GoNhanh (Gõ Nhanh)</h1>
 
-**GoNhanh** (đọc là **Gõ Nhanh**) - Bộ gõ tiếng Việt hiệu suất cao, hiện đại và đa nền tảng.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License: GPL-3.0"></a>
+  <a href="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml"><img src="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
+<p align="center"><strong>GoNhanh</strong> (đọc là <strong>Gõ Nhanh</strong>) - Bộ gõ tiếng Việt hiệu suất cao, hiện đại và đa nền tảng.</p>
 
 Sức mạnh của **Rust** (Core Engine) kết hợp với **Native UI** (SwiftUI) mang lại trải nghiệm gõ phím mượt mà, ổn định và bảo mật tuyệt đối.
 
