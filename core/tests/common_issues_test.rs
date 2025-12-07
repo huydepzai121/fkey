@@ -86,6 +86,58 @@ fn vni_preserve_tone_mark() {
 }
 
 // ============================================================
+// ISSUE: Mark repositioning after diacritic
+// When adding diacritic changes phonology, mark must move
+// e.g., "ua2" → "uà", then "7" → should be "ừa" not "ưà"
+// ============================================================
+
+#[test]
+fn vni_mark_reposition_after_horn() {
+    // ua is medial pair → mark on 'a'
+    // After adding horn to 'u' → ưa has diacritic on first → mark moves to 'ư'
+    run_vni(&[
+        ("ua27", "ừa"), // NOT "ưà" - mark should move from a to ư
+        ("ua2", "uà"),  // Before horn: ua is medial pair, mark on a
+        ("ua7", "ưa"),  // Just horn, no mark
+    ]);
+}
+
+#[test]
+fn vni_mark_reposition_oa_pattern() {
+    // oa is medial pair → mark on 'a'
+    // After adding circumflex to 'o' → ôa, ô has diacritic → mark moves to 'ô'
+    run_vni(&[
+        ("oa26", "ồa"), // NOT "ôà" - mark should move from a to ô
+        ("oa2", "oà"),  // Before circumflex: oa is medial pair, mark on a
+    ]);
+}
+
+#[test]
+fn telex_mark_reposition_after_horn() {
+    // Same issue with Telex
+    run_telex(&[
+        ("uafw", "ừa"), // NOT "ưà" - mark should move from a to ư
+        ("oafw", "òa"), // oa + huyền → oà, then +w not valid for o → stays oà
+    ]);
+}
+
+#[test]
+fn vni_ua_vs_uwa_patterns() {
+    // Compare patterns
+    run_vni(&[
+        // Without diacritic: ua is medial pair
+        ("ua1", "uá"),  // mark on a (medial pair)
+        ("ua2", "uà"),  // mark on a (medial pair)
+        // With horn on u: ưa has diacritic on first vowel
+        ("u7a1", "ứa"), // ư first, then a, mark on ư
+        ("u7a2", "ừa"), // ư first, then a, mark on ư
+        // Delayed horn after mark should reposition
+        ("ua17", "ứa"), // uá → ứa (mark moves from a to ư)
+        ("ua27", "ừa"), // uà → ừa (mark moves from a to ư)
+    ]);
+}
+
+// ============================================================
 // Edge case: Rapid typing patterns
 // User types faster than normal, keys arrive in quick succession
 // ============================================================
