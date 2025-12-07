@@ -153,7 +153,7 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=khaphanspace/gonhanh.org&type=Date)](https://star-history.com/#khaphanspace/gonhanh.org&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=khaphanspace/gonhanh.org&type=date&legend=top-left)](https://www.star-history.com/#khaphanspace/gonhanh.org&type=date&legend=top-left)
 
 ## License
 
