@@ -163,6 +163,24 @@ fn telex_d_stroke() {
 }
 
 // ============================================================
+// TELEX: DELAYED TONE INPUT
+// ============================================================
+
+#[test]
+fn telex_delayed_tone_input() {
+    // Telex delayed mode: tone key can be typed after consonants
+    // But only applies to matching vowel (aa→â, not ea→ê)
+    run_telex(&[
+        // w after consonant applies to previous matching vowel
+        ("tuow", "tưo"),       // tuo + w → tư + o (w applies to u)
+        ("truongw", "trương"), // truong + w → trương (w applies to u)
+        ("duongw", "dương"),   // duong + w → dương
+        // Multiple vowels: w finds last matching (u or o)
+        ("nguoiw", "nguơi"),   // nguoi + w → nguơi (w applies to o, not i)
+    ]);
+}
+
+// ============================================================
 // TELEX: DOUBLE-KEY REVERT
 // ============================================================
 

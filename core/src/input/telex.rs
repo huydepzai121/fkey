@@ -46,8 +46,11 @@ impl Method for Telex {
     }
 
     /// Telex delayed mode: find matching vowel anywhere in buffer
-    /// Example: "vietna" -> 'a' finds 'a' in buffer, applies circumflex
-    /// Example: "truongw" -> 'w' finds 'u' or 'o' in buffer
+    /// Example: "truongw" -> 'w' finds 'u' and 'o' for ươ compound
+    ///
+    /// Priority for 'w':
+    /// 1. If 'u' + 'o' adjacent → apply to 'u' first (for ươ compound)
+    /// 2. Otherwise find last matching vowel (a, o, u)
     fn is_tone_for(&self, key: u16, vowels: &[u16]) -> Option<(u8, u16)> {
         // aa, ee, oo -> circumflex (^)
         // Find matching vowel in buffer (reverse order - last first)
@@ -60,8 +63,23 @@ impl Method for Telex {
         }
 
         // w -> breve/horn
-        // Find a, o, or u in buffer
+        // Special case: uo pattern → apply to u first (for ươ compound)
         if key == keys::W {
+            // Check for uo/ou patterns (for compound vowel ươ)
+            let len = vowels.len();
+            if len >= 2 {
+                let last_two = &vowels[len - 2..];
+                // uo → apply to u (makes ươ when both get horn)
+                if last_two == [keys::U, keys::O] {
+                    return Some((2, keys::U));
+                }
+                // ou → apply to o first
+                if last_two == [keys::O, keys::U] {
+                    return Some((2, keys::O));
+                }
+            }
+
+            // Find any a, o, or u (reverse order)
             for &v in vowels.iter().rev() {
                 match v {
                     keys::A => return Some((2, v)), // ă
