@@ -45,7 +45,9 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 
 ## Động lực
 
-Tiếp nối di sản của **VietKey**, **UniKey**, **OpenKey** và **EVKey**, tôi (**Kha Phan**) phát triển GoNhanh để giải quyết nhu cầu về sự ổn định tuyệt đối trên các công cụ lập trình hiện đại.
+Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
+
+Từ nhu cầu giải quyết vấn đề cá nhân, GoNhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối di sản của các tượng đài **VietKey**, **UniKey**, **OpenKey** và **EVKey**.
 
 ## So sánh
 
