@@ -14,9 +14,13 @@ Kết hợp sức mạnh của <strong>Rust</strong> (Core Engine) và <strong>S
 
 ## 📥 Cài đặt
 
-1. Tải phiên bản mới nhất tại [**Releases**](https://github.com/khaphanspace/gonhanh.org/releases).
-2. Mở ứng dụng và cấp quyền Accessibility theo hướng dẫn.
-3. Tận hưởng trải nghiệm gõ phím mượt mà!
+| Nền tảng    | Trạng thái  | Hướng dẫn cài đặt                       |
+| :---------- | :---------: | :-------------------------------------- |
+| **macOS**   | ✅ Sẵn sàng | [Xem hướng dẫn](docs/install-macos.md)  |
+| **Windows** | 🗓️ Planned  | [Xem lộ trình](docs/install-windows.md) |
+| **Linux**   | 🗓️ Planned  | [Xem lộ trình](docs/install-linux.md)   |
+
+Tải phiên bản mới nhất tại [**Releases**](https://github.com/khaphanspace/gonhanh.org/releases).
 
 ## 🚀 Tính năng nổi bật
 
