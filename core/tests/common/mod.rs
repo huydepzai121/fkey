@@ -1,5 +1,7 @@
 //! Common test utilities
 
+#![allow(dead_code)]
+
 use gonhanh_core::data::keys;
 use gonhanh_core::engine::{Action, Engine};
 
