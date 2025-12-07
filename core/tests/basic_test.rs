@@ -414,6 +414,20 @@ fn vni_d_stroke() {
     ]);
 }
 
+#[test]
+fn vni_delayed_d_input() {
+    run_vni(&[
+        // VNI delayed đ: 9 can come after other characters
+        ("d9ung1", "đúng"),  // immediate: d9 first
+        ("du9ng1", "đúng"),  // delayed: 9 after vowel
+        ("dung91", "đúng"),  // delayed: 9 after consonant, then mark
+        ("dung19", "đúng"),  // mark first, then đ
+        ("D9ung1", "Đúng"),  // uppercase immediate
+        ("Du9ng1", "Đúng"),  // uppercase delayed
+        ("Dung91", "Đúng"),  // uppercase delayed after consonant
+    ]);
+}
+
 // ============================================================
 // VNI: DELAYED TONE INPUT (tone after consonant)
 // ============================================================
