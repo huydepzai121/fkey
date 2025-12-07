@@ -28,20 +28,6 @@ xattr -cr /Applications/GoNhanh.app
 
 Sau đó bạn có thể mở GoNhanh từ Applications như bình thường.
 
-### 3. Cấp quyền truy cập
-
-Để bộ gõ hoạt động, bạn cần cấp quyền **Accessibility** (Trợ năng) để ứng dụng có thể lắng nghe phím bấm:
-
-1. Mở **GoNhanh** từ Applications.
-2. Hệ thống sẽ yêu cầu quyền truy cập. Nhấn **Open System Settings**.
-3. Tìm **GoNhanh** trong danh sách và bật công tắc.
-4. Nếu ứng dụng không tự khởi động lại, hãy mở lại thủ công.
-
-### 4. Thiết lập lần đầu
-
-- Biểu tượng GoNhanh sẽ xuất hiện trên thanh Menu Bar (góc trên bên phải).
-- Mặc định bộ gõ sẽ ở chế độ **Telex** và tự động khởi động cùng máy.
-
 ## Gỡ cài đặt
 
 Để xóa hoàn toàn GoNhanh:
