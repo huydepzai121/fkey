@@ -324,6 +324,7 @@ fn vni_y_all_marks() {
 
 // ============================================================
 // VNI: ALL MODIFIED VOWELS (â, ê, ô, ă, ơ, ư) WITH MARKS
+// VNI: 6=circumflex(^), 7=horn(móc), 8=breve(˘), 9=đ
 // Complete matrix: 6 modified vowels × 6 states = 36 combinations
 // ============================================================
 
@@ -367,41 +368,41 @@ fn vni_o_circumflex_all_marks() {
 }
 
 #[test]
-fn vni_a_breve_all_marks() {
-    // ă = a + 7
-    run_vni(&[
-        ("a7", "ă"),     // base
-        ("a71", "ắ"),    // sắc
-        ("a72", "ằ"),    // huyền
-        ("a73", "ẳ"),    // hỏi
-        ("a74", "ẵ"),    // ngã
-        ("a75", "ặ"),    // nặng
-    ]);
-}
-
-#[test]
 fn vni_o_horn_all_marks() {
-    // ơ = o + 8
+    // ơ = o + 7 (horn)
     run_vni(&[
-        ("o8", "ơ"),     // base
-        ("o81", "ớ"),    // sắc
-        ("o82", "ờ"),    // huyền
-        ("o83", "ở"),    // hỏi
-        ("o84", "ỡ"),    // ngã
-        ("o85", "ợ"),    // nặng
+        ("o7", "ơ"),     // base
+        ("o71", "ớ"),    // sắc
+        ("o72", "ờ"),    // huyền
+        ("o73", "ở"),    // hỏi
+        ("o74", "ỡ"),    // ngã
+        ("o75", "ợ"),    // nặng
     ]);
 }
 
 #[test]
 fn vni_u_horn_all_marks() {
-    // ư = u + 8
+    // ư = u + 7 (horn)
     run_vni(&[
-        ("u8", "ư"),     // base
-        ("u81", "ứ"),    // sắc
-        ("u82", "ừ"),    // huyền
-        ("u83", "ử"),    // hỏi
-        ("u84", "ữ"),    // ngã
-        ("u85", "ự"),    // nặng
+        ("u7", "ư"),     // base
+        ("u71", "ứ"),    // sắc
+        ("u72", "ừ"),    // huyền
+        ("u73", "ử"),    // hỏi
+        ("u74", "ữ"),    // ngã
+        ("u75", "ự"),    // nặng
+    ]);
+}
+
+#[test]
+fn vni_a_breve_all_marks() {
+    // ă = a + 8 (breve)
+    run_vni(&[
+        ("a8", "ă"),     // base
+        ("a81", "ắ"),    // sắc
+        ("a82", "ằ"),    // huyền
+        ("a83", "ẳ"),    // hỏi
+        ("a84", "ẵ"),    // ngã
+        ("a85", "ặ"),    // nặng
     ]);
 }
 
@@ -420,14 +421,14 @@ fn vni_d_stroke() {
 #[test]
 fn vni_delayed_tone_input() {
     run_vni(&[
-        // VNI: 6=^(â,ê,ô), 7=˘(ă), 8=hook(ơ,ư), 9=đ
+        // VNI: 6=^(â,ê,ô), 7=horn(ơ,ư), 8=breve(ă), 9=đ
         // tone key finds the vowel in buffer
-        ("tu82", "từ"),     // t + u + 8(ư) + 2(huyền) = từ
+        ("tu72", "từ"),     // t + u + 7(ư) + 2(huyền) = từ
         ("to61", "tố"),     // t + o + 6(ô) + 1(sắc) = tố
-        ("ta71", "tắ"),     // t + a + 7(ă) + 1(sắc) = tắ
-        ("nu82", "nừ"),     // n + u + 8(ư) + 2(huyền) = nừ
-        ("to82", "tờ"),     // t + o + 8(ơ) + 2(huyền) = tờ
-        ("na72", "nằ"),     // n + a + 7(ă) + 2(huyền) = nằ
+        ("ta81", "tắ"),     // t + a + 8(ă) + 1(sắc) = tắ
+        ("nu72", "nừ"),     // n + u + 7(ư) + 2(huyền) = nừ
+        ("to72", "tờ"),     // t + o + 7(ơ) + 2(huyền) = tờ
+        ("na82", "nằ"),     // n + a + 8(ă) + 2(huyền) = nằ
     ]);
 }
 
@@ -447,7 +448,8 @@ fn vni_revert_mark() {
 fn vni_revert_tone() {
     run_vni(&[
         ("a66", "a6"), ("e66", "e6"), ("o66", "o6"),
-        ("a77", "a7"), ("o88", "o8"), ("u88", "u8"),
+        ("o77", "o7"), ("u77", "u7"),  // 7=horn for o,u
+        ("a88", "a8"),                  // 8=breve for a
     ]);
 }
 
@@ -461,13 +463,15 @@ fn telex_uppercase() {
         ("As", "Á"), ("AS", "Á"),
         ("Aa", "Â"), ("AA", "Â"),
         ("Aw", "Ă"), ("AW", "Ă"),
+        ("Ow", "Ơ"), ("Uw", "Ư"),
     ]);
 }
 
 #[test]
 fn vni_uppercase() {
     run_vni(&[
-        ("A1", "Á"), ("A6", "Â"), ("A7", "Ă"),
-        ("O8", "Ơ"), ("U8", "Ư"),
+        ("A1", "Á"), ("A6", "Â"),
+        ("O7", "Ơ"), ("U7", "Ư"),  // 7=horn
+        ("A8", "Ă"),               // 8=breve
     ]);
 }

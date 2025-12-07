@@ -357,13 +357,14 @@ fn vni_pronouns() {
 
 #[test]
 fn vni_verbs() {
+    // VNI: 6=^, 7=horn(ơ,ư), 8=breve(ă), 9=đ
     run_vni(&[
         ("la2", "là"),              // is
         ("co1", "có"),              // have
         ("d9i", "đi"),              // go
         ("d9e61n", "đến"),          // arrive
         ("ve62", "về"),             // return
-        ("a7n", "ăn"),              // eat
+        ("a8n", "ăn"),              // eat (8=breve)
         ("uo61ng", "uống"),         // drink
         ("ngu3", "ngủ"),            // sleep
         ("la2m", "làm"),            // do
@@ -377,13 +378,14 @@ fn vni_verbs() {
 
 #[test]
 fn vni_compound_vowels() {
+    // VNI: 6=^, 7=horn(ơ,ư), 8=breve(ă), 9=đ
     run_vni(&[
-        // ươ pattern
-        ("ngu8o8i2", "người"),      // person
-        ("mu8o8i2", "mười"),        // ten
-        ("tru8o8ng2", "trường"),    // school
-        ("lu8o8i4", "lưỡi"),        // tongue
-        ("d9u8o8ng2", "đường"),     // road
+        // ươ pattern (7=horn)
+        ("ngu7o7i2", "người"),      // person
+        ("mu7o7i2", "mười"),        // ten
+        ("tru7o7ng2", "trường"),    // school
+        ("lu7o7i4", "lưỡi"),        // tongue
+        ("d9u7o7ng2", "đường"),     // road
 
         // iê pattern
         ("vie65t", "việt"),         // Vietnam
@@ -402,12 +404,13 @@ fn vni_compound_vowels() {
 
 #[test]
 fn vni_three_vowels() {
+    // VNI: 6=^, 7=horn(ơ,ư), 8=breve(ă), 9=đ
     run_vni(&[
-        ("ngu8o8i1", "ngưới"),      // (variant)
+        ("ngu7o7i1", "ngưới"),      // (variant)
         ("khuye63n", "khuyển"),     // dog (literary)
         ("nguye64n", "nguyễn"),     // Nguyen
         ("ngoa1i", "ngoái"),        // turn back
-        ("ru8o8u5", "rượu"),        // alcohol
+        ("ru7o7u5", "rượu"),        // alcohol
     ]);
 }
 
@@ -430,10 +433,11 @@ fn telex_uppercase_words() {
 
 #[test]
 fn vni_uppercase_words() {
+    // VNI: 6=^, 7=horn(ơ,ư), 8=breve(ă), 9=đ
     run_vni(&[
         ("Cha2o", "Chào"),          // Hello
         ("CHA2O", "CHÀO"),          // HELLO
-        ("Ngu8o8i2", "Người"),      // Person
+        ("Ngu7o7i2", "Người"),      // Person (7=horn)
         ("Vie65t", "Việt"),         // Vietnam
         ("D9a61t", "Đất"),          // Earth
     ]);
