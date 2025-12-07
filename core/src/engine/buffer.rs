@@ -109,14 +109,6 @@ impl Buffer {
         }
     }
 
-    pub fn last_mut(&mut self) -> Option<&mut Char> {
-        if self.len > 0 {
-            Some(&mut self.data[self.len - 1])
-        } else {
-            None
-        }
-    }
-
     /// Find indices of vowels in buffer
     pub fn find_vowels(&self) -> Vec<usize> {
         use crate::data::keys;

@@ -15,6 +15,23 @@
 
 use super::keys;
 
+/// Tone modifiers (dấu phụ) - changes base vowel form
+pub mod tone {
+    pub const NONE: u8 = 0;
+    pub const CIRCUMFLEX: u8 = 1; // ^ (mũ): a→â, e→ê, o→ô
+    pub const HORN: u8 = 2; // ơ, ư or breve ă
+}
+
+/// Marks (dấu thanh) - Vietnamese tone marks
+pub mod mark {
+    pub const NONE: u8 = 0;
+    pub const SAC: u8 = 1; // sắc (á)
+    pub const HUYEN: u8 = 2; // huyền (à)
+    pub const HOI: u8 = 3; // hỏi (ả)
+    pub const NGA: u8 = 4; // ngã (ã)
+    pub const NANG: u8 = 5; // nặng (ạ)
+}
+
 /// Vietnamese vowel lookup table
 /// Each entry: (base_char, [sắc, huyền, hỏi, ngã, nặng])
 const VOWEL_TABLE: [(char, [char; 5]); 12] = [
@@ -40,25 +57,25 @@ const VOWEL_TABLE: [(char, [char; 5]); 12] = [
 ///
 /// # Returns
 /// Base vowel character: a, ă, â, e, ê, i, o, ô, ơ, u, ư, y
-fn get_base_char(key: u16, tone: u8) -> Option<char> {
+fn get_base_char(key: u16, t: u8) -> Option<char> {
     match key {
-        keys::A => Some(match tone {
-            1 => 'â', // circumflex
-            2 => 'ă', // breve
+        keys::A => Some(match t {
+            tone::CIRCUMFLEX => 'â',
+            tone::HORN => 'ă', // breve for 'a'
             _ => 'a',
         }),
-        keys::E => Some(match tone {
-            1 => 'ê', // circumflex
+        keys::E => Some(match t {
+            tone::CIRCUMFLEX => 'ê',
             _ => 'e',
         }),
         keys::I => Some('i'),
-        keys::O => Some(match tone {
-            1 => 'ô', // circumflex
-            2 => 'ơ', // horn
+        keys::O => Some(match t {
+            tone::CIRCUMFLEX => 'ô',
+            tone::HORN => 'ơ',
             _ => 'o',
         }),
-        keys::U => Some(match tone {
-            2 => 'ư', // horn
+        keys::U => Some(match t {
+            tone::HORN => 'ư',
             _ => 'u',
         }),
         keys::Y => Some('y'),
@@ -73,15 +90,15 @@ fn get_base_char(key: u16, tone: u8) -> Option<char> {
 /// # Arguments
 /// * `base` - Base vowel character (a, ă, â, e, ê, i, o, ô, ơ, u, ư, y)
 /// * `mark` - Mark: 0=none, 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
-fn apply_mark(base: char, mark: u8) -> char {
-    if mark == 0 || mark > 5 {
+fn apply_mark(base: char, m: u8) -> char {
+    if m == mark::NONE || m > mark::NANG {
         return base;
     }
 
     VOWEL_TABLE
         .iter()
         .find(|(b, _)| *b == base)
-        .map(|(_, marks)| marks[(mark - 1) as usize])
+        .map(|(_, marks)| marks[(m - 1) as usize])
         .unwrap_or(base)
 }
 
@@ -118,23 +135,6 @@ pub fn get_d(caps: bool) -> char {
     } else {
         'đ'
     }
-}
-
-/// Check if a character is a Vietnamese vowel
-pub fn is_vowel_char(ch: char) -> bool {
-    let lower = ch.to_lowercase().next().unwrap_or(ch);
-    VOWEL_TABLE
-        .iter()
-        .any(|(base, marks)| *base == lower || marks.contains(&lower))
-}
-
-/// Get the base (unmarked) form of a Vietnamese vowel
-pub fn get_base_vowel(ch: char) -> Option<char> {
-    let lower = ch.to_lowercase().next().unwrap_or(ch);
-    VOWEL_TABLE
-        .iter()
-        .find(|(base, marks)| *base == lower || marks.contains(&lower))
-        .map(|(base, _)| *base)
 }
 
 #[cfg(test)]
@@ -198,23 +198,5 @@ mod tests {
     fn test_d() {
         assert_eq!(get_d(false), 'đ');
         assert_eq!(get_d(true), 'Đ');
-    }
-
-    #[test]
-    fn test_is_vowel_char() {
-        assert!(is_vowel_char('a'));
-        assert!(is_vowel_char('á'));
-        assert!(is_vowel_char('ầ'));
-        assert!(is_vowel_char('Ự'));
-        assert!(!is_vowel_char('b'));
-        assert!(!is_vowel_char('đ'));
-    }
-
-    #[test]
-    fn test_get_base_vowel() {
-        assert_eq!(get_base_vowel('á'), Some('a'));
-        assert_eq!(get_base_vowel('ầ'), Some('â'));
-        assert_eq!(get_base_vowel('ự'), Some('ư'));
-        assert_eq!(get_base_vowel('b'), None);
     }
 }

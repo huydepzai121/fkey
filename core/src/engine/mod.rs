@@ -17,7 +17,8 @@
 pub mod buffer;
 
 use crate::data::{
-    chars, keys,
+    chars::{self, mark, tone},
+    keys,
     vowel::{Modifier, Phonology, Vowel},
 };
 use crate::input;
@@ -182,46 +183,72 @@ impl Engine {
 
     fn process(&mut self, key: u16, caps: bool) -> Result {
         let m = input::get(self.method);
-        let prev_key = self.buf.last().map(|c| c.key);
 
-        // Handle đ (dd/d9) - immediate mode
-        if m.is_d(key, prev_key) {
-            self.last_transform = None;
-            return self.handle_d();
+        // Try each handler in order
+        if let Some(r) = self.try_handle_d(key, &m) {
+            return r;
         }
 
-        // Collect buffer keys for delayed operations (excluding already-converted đ)
+        if let Some(r) = self.try_handle_tone(key, caps, &m) {
+            return r;
+        }
+
+        if let Some(r) = self.try_handle_mark(key, caps, &m) {
+            return r;
+        }
+
+        if m.is_remove(key) {
+            self.last_transform = None;
+            return self.handle_remove();
+        }
+
+        self.handle_normal_letter(key, caps)
+    }
+
+    /// Try to handle đ transformation (dd/d9)
+    fn try_handle_d(&mut self, key: u16, m: &Box<dyn input::Method>) -> Option<Result> {
+        let prev_key = self.buf.last().map(|c| c.key);
+
+        // Immediate mode: dd or d9
+        if m.is_d(key, prev_key) {
+            self.last_transform = None;
+            return Some(self.handle_d());
+        }
+
+        // Delayed mode: VNI dung9 -> đung
         let buffer_keys: Vec<u16> = self
             .buf
             .iter()
-            .filter(|c| !c.stroke) // Skip already converted 'd' -> 'đ'
+            .filter(|c| !c.stroke)
             .map(|c| c.key)
             .collect();
 
-        // Handle delayed đ (VNI: dung9 -> đung)
         if m.is_d_for(key, &buffer_keys) {
             self.last_transform = None;
-            return self.handle_delayed_d();
+            return Some(self.handle_delayed_d());
         }
 
-        // Handle tone modifiers (aa, aw, a6, a7, etc.)
-        // Only include vowels that don't have a tone yet (for new tone application)
+        None
+    }
+
+    /// Try to handle tone modifiers (aa, aw, a6, a7, etc.)
+    fn try_handle_tone(&mut self, key: u16, caps: bool, m: &Box<dyn input::Method>) -> Option<Result> {
+        // Collect vowels without tone for new application
         let vowel_keys: Vec<u16> = self
             .buf
             .iter()
-            .filter(|c| keys::is_vowel(c.key) && c.tone == 0)
+            .filter(|c| keys::is_vowel(c.key) && c.tone == tone::NONE)
             .map(|c| c.key)
             .collect();
 
-        // First try to apply tone to a new vowel
-        if let Some((tone, target_key)) = m.is_tone_for(key, &vowel_keys) {
-            return self.handle_tone(key, tone, target_key);
+        // Try to apply tone to new vowel
+        if let Some((t, target_key)) = m.is_tone_for(key, &vowel_keys) {
+            return Some(self.handle_tone(key, t, target_key));
         }
 
-        // No new vowel to apply → check for revert (double-key press on same target)
+        // Check for double-key revert
         if let Some(Transform::Tone(last_key, _, last_target)) = self.last_transform {
             if last_key == key {
-                // Check if this key would have targeted the same vowel
                 let all_vowel_keys: Vec<u16> = self
                     .buf
                     .iter()
@@ -230,37 +257,37 @@ impl Engine {
                     .collect();
                 if let Some((_, target_key)) = m.is_tone_for(key, &all_vowel_keys) {
                     if target_key == last_target {
-                        return self.revert_tone(key, caps);
+                        return Some(self.revert_tone(key, caps));
                     }
                 }
             }
         }
 
-        // Handle marks (s/f/r/x/j or 1-5)
-        if let Some(mark) = m.is_mark(key) {
+        None
+    }
+
+    /// Try to handle mark modifiers (s/f/r/x/j or 1-5)
+    fn try_handle_mark(&mut self, key: u16, caps: bool, m: &Box<dyn input::Method>) -> Option<Result> {
+        if let Some(mark_value) = m.is_mark(key) {
             // Check for double-key revert
             if let Some(Transform::Mark(last_key, _)) = self.last_transform {
                 if last_key == key {
-                    return self.revert_mark(key, caps);
+                    return Some(self.revert_mark(key, caps));
                 }
             }
-            return self.handle_mark(key, mark);
+            return Some(self.handle_mark(key, mark_value));
         }
+        None
+    }
 
-        // Handle remove mark (z or 0)
-        if m.is_remove(key) {
-            self.last_transform = None;
-            return self.handle_remove();
-        }
-
-        // Normal letter - add to buffer
+    /// Handle normal letter input
+    fn handle_normal_letter(&mut self, key: u16, caps: bool) -> Result {
         self.last_transform = None;
         if keys::is_letter(key) {
             self.buf.push(Char::new(key, caps));
         } else {
             self.buf.clear();
         }
-
         Result::none()
     }
 
@@ -314,8 +341,8 @@ impl Engine {
         // Find and remove tone from any vowel
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
-                if c.tone > 0 {
-                    c.tone = 0;
+                if c.tone > tone::NONE {
+                    c.tone = tone::NONE;
                     let mut result = self.rebuild_from(pos);
                     // Append the revert key character
                     if let Some(ch) = key_to_char(key, caps) {
@@ -359,8 +386,8 @@ impl Engine {
         // Find and remove mark from any vowel
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
-                if c.mark > 0 {
-                    c.mark = 0;
+                if c.mark > mark::NONE {
+                    c.mark = mark::NONE;
                     let mut result = self.rebuild_from(pos);
                     // Append the revert key character
                     if let Some(ch) = key_to_char(key, caps) {
@@ -381,12 +408,12 @@ impl Engine {
         // Remove mark first, then tone
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
-                if c.mark > 0 {
-                    c.mark = 0;
+                if c.mark > mark::NONE {
+                    c.mark = mark::NONE;
                     return self.rebuild_from(pos);
                 }
-                if c.tone > 0 {
-                    c.tone = 0;
+                if c.tone > tone::NONE {
+                    c.tone = tone::NONE;
                     return self.rebuild_from(pos);
                 }
             }
