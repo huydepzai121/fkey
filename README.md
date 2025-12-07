@@ -14,11 +14,11 @@ Kết hợp sức mạnh của <strong>Rust</strong> (Core Engine) và <strong>S
 
 ## 📥 Cài đặt
 
-| Nền tảng    | Trạng thái  |                                               Tải xuống                                                | Hướng dẫn                               |
-| :---------- | :---------: | :----------------------------------------------------------------------------------------------------: | :-------------------------------------- |
-| **macOS**   | ✅ Sẵn sàng | [📥 **GoNhanh.dmg**](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md)  |
-| **Windows** | 🗓️ Planned  |                                                   —                                                    | [Xem lộ trình](docs/install-windows.md) |
-| **Linux**   | 🗓️ Planned  |                                                   —                                                    | [Xem lộ trình](docs/install-linux.md)   |
+| Nền tảng    | Trạng thái  |                                                   Tải xuống                                                   | Hướng dẫn                               |
+| :---------- | :---------: | :-----------------------------------------------------------------------------------------------------------: | :-------------------------------------- |
+| **macOS**   | ✅ Sẵn sàng | [📥 **Tải về GoNhanh.dmg**](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md)  |
+| **Windows** | 🗓️ Planned  |                                                       —                                                       | [Xem lộ trình](docs/install-windows.md) |
+| **Linux**   | 🗓️ Planned  |                                                       —                                                       | [Xem lộ trình](docs/install-linux.md)   |
 
 ## 🚀 Tính năng nổi bật
 
