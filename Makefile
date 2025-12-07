@@ -1,4 +1,4 @@
-.PHONY: help build clean test core macos setup install lint release
+.PHONY: help build clean test core macos setup install lint release-patch release-minor release-major
 
 .DEFAULT_GOAL := help
 
@@ -20,8 +20,10 @@ help:
 	@echo "  make macos       - Build macOS app"
 	@echo "  make install     - Install to /Applications"
 	@echo ""
-	@echo "Release:"
-	@echo "  make release v=1.0.0  - Tag and push release"
+	@echo "Release (current: $(CURRENT_TAG)):"
+	@echo "  make release-patch    - Bump patch (x.x.X)"
+	@echo "  make release-minor    - Bump minor (x.X.0)"
+	@echo "  make release-major    - Bump major (X.0.0)"
 
 build: test core macos
 
