@@ -144,6 +144,14 @@ Xem thêm: [docs/architecture.md](docs/architecture.md)
 | [architecture.md](docs/architecture.md) | Kiến trúc hệ thống, FFI interface |
 | [development.md](docs/development.md) | Hướng dẫn phát triển |
 
+## Acknowledgments
+
+GoNhanh được xây dựng dựa trên nền tảng kiến thức từ cộng đồng:
+
+- [UniKey](https://www.unikey.org/) — Nguồn cảm hứng ban đầu
+- [OpenKey](https://github.com/tuyenvm/OpenKey) — Tham khảo kiến trúc open source
+- [Vietnamese Typography](https://vi.wikipedia.org/wiki/Quy_tắc_đặt_dấu_thanh_của_chữ_Quốc_ngữ) — Quy tắc đặt dấu
+
 ## Contributing
 
 Contributions welcome! Xem [CONTRIBUTING.md](CONTRIBUTING.md)
