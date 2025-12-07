@@ -496,6 +496,42 @@ Nếu có nguyên âm đã có dấu phụ, dấu thanh **ưu tiên** đặt tr�
 └─────────────────────────────────────────────────────────┘
 ```
 
+### 7.4 Hai trường phái đặt dấu: Kiểu cũ và Kiểu mới
+
+Hiện nay tồn tại 2 quan điểm về cách đặt dấu thanh, thường được gọi là "kiểu cũ" và "kiểu mới".
+
+#### 7.4.1 Kiểu cũ
+
+- **Cơ sở**: Dựa trên nhãn quan, giữ vị trí dấu ở giữa hoặc gần giữa từ cho cân bằng
+- **Đặc điểm**: Coi "gi" và "qu" là một chữ cái riêng
+  - "già" = "gi" + "à" (không phải nguyên âm đôi "ia")
+  - "quạ" = "qu" + "ạ" (không phải nguyên âm đôi "ua")
+- **Nguồn gốc**: Dựa trên các từ điển trước năm 1950
+
+#### 7.4.2 Kiểu mới
+
+- **Cơ sở**: Dựa trên ngữ âm học, đối chiếu chữ viết và âm thanh
+- **Đặc điểm**: Đặt dấu thanh vào vị trí của âm chính theo ký hiệu ngữ âm quốc tế (IPA)
+  - /wa/, /wɛ/, /wi/ → đặt dấu vào a, e, i
+- **Quy định**: Theo Quyết định 1989/QĐ-BGDĐT ngày 25/5/2018 của Bộ GD&ĐT
+
+#### 7.4.3 Bảng so sánh các trường hợp khác biệt
+
+| Pattern | Kiểu cũ                   | Kiểu mới                  |
+| ------- | ------------------------- | ------------------------- |
+| oa      | hòa, hóa, hỏa, hõa, họa   | hoà, hoá, hoả, hoã, hoạ   |
+| oe      | hòe, hóe, hỏe, hõe, họe   | hoè, hoé, hoẻ, hoẽ, hoẹ   |
+| uy      | thùy, thúy, thủy, thũy, thụy | thuỳ, thuý, thuỷ, thuỹ, thuỵ |
+
+#### 7.4.4 Tranh luận
+
+| Quan điểm | Lập luận |
+| --------- | -------- |
+| Ủng hộ kiểu mới | Vì oa, oe, uy được ký âm IPA là /wa/, /wɛ/, /wi/ nên phải bỏ dấu vào a, e, i |
+| Ủng hộ kiểu cũ | Ký hiệu IPA biểu thị cách phát âm, không phải cách viết |
+
+> **Lưu ý**: Hiện tại cả hai kiểu đều được sử dụng song song trong tiếng Việt. Các bộ gõ như UniKey, EVKey đều cho phép người dùng chọn kiểu đặt dấu phù hợp.
+
 ---
 
 ## 8. Phương pháp gõ VNI
@@ -686,17 +722,17 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 
 ## 11. Tài liệu tham khảo
 
-### 11.1 Wikipedia
+### 11.1 Wikipedia tiếng Việt
 
-- [Vietnamese alphabet](https://en.wikipedia.org/wiki/Vietnamese_alphabet) - Bảng chữ cái tiếng Việt
-- [Vietnamese phonology](https://en.wikipedia.org/wiki/Vietnamese_phonology) - Ngữ âm học tiếng Việt
-- [Vietnamese language](https://en.wikipedia.org/wiki/Vietnamese_language) - Ngôn ngữ tiếng Việt
-- [Vietnamese tones](https://en.wikipedia.org/wiki/Vietnamese_language#Tones) - Thanh điệu tiếng Việt
-- [Chữ Quốc ngữ](https://vi.wikipedia.org/wiki/Ch%E1%BB%AF_Qu%E1%BB%91c_ng%E1%BB%AF) - Chữ Quốc ngữ (tiếng Việt)
-- [VNI](https://en.wikipedia.org/wiki/VNI) - Phương pháp gõ VNI
-- [Telex (input method)](<https://en.wikipedia.org/wiki/Telex_(input_method)>) - Phương pháp gõ Telex
-- [Vietnamese language and computers](https://en.wikipedia.org/wiki/Vietnamese_language_and_computers) - Tiếng Việt và máy tính
-- [Quy tắc đặt dấu thanh](https://vi.wikipedia.org/wiki/Quy_tắc_đặt_dấu_thanh_của_chữ_Quốc_ngữ) - Quy tắc đặt dấu
+- [Chữ Quốc ngữ](https://vi.wikipedia.org/wiki/Chữ_Quốc_ngữ) - Hệ thống chữ viết tiếng Việt
+- [Tiếng Việt](https://vi.wikipedia.org/wiki/Tiếng_Việt) - Ngôn ngữ tiếng Việt
+- [Âm vị học tiếng Việt](https://vi.wikipedia.org/wiki/Âm_vị_học_tiếng_Việt) - Ngữ âm học tiếng Việt
+- [Thanh điệu](https://vi.wikipedia.org/wiki/Thanh_điệu) - Thanh điệu trong ngôn ngữ
+- [Chữ viết tiếng Việt](https://vi.wikipedia.org/wiki/Chữ_viết_tiếng_Việt) - Lịch sử chữ viết tiếng Việt
+- [Quy tắc đặt dấu thanh của chữ Quốc ngữ](https://vi.wikipedia.org/wiki/Quy_tắc_đặt_dấu_thanh_của_chữ_Quốc_ngữ) - Quy tắc đặt dấu (kiểu cũ vs kiểu mới)
+- [Bộ gõ tiếng Việt](https://vi.wikipedia.org/wiki/Bộ_gõ_tiếng_Việt) - Các bộ gõ tiếng Việt
+- [Telex (kiểu gõ)](https://vi.wikipedia.org/wiki/Telex_(kiểu_gõ)) - Phương pháp gõ Telex
+- [Tiếng Việt và máy tính](https://vi.wikipedia.org/wiki/Tiếng_Việt_và_máy_tính) - Tiếng Việt trên máy tính
 
 ### 11.2 Công cụ và phần mềm
 
