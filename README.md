@@ -59,7 +59,7 @@ GoNhanh hướng tới sự **Chuẩn hóa - Hiệu suất - Tiện dụng**:
 
 Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
 
-Từ nhu cầu giải quyết vấn đề cá nhân, GoNhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối di sản của các tượng đài **VietKey**, **UniKey**, **OpenKey** và **EVKey**.
+Từ nhu cầu giải quyết vấn đề cá nhân, GoNhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối và kế thừa từ **UniKey**, **OpenKey** và **EVKey**.
 
 ## So sánh
 
