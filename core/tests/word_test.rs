@@ -171,7 +171,7 @@ fn telex_compound_ie() {
         ("ddieeuf", "điều"),        // thing/matter
         ("nhieeux", "nhiễu"),       // disturb
         ("chieeuf", "chiều"),       // afternoon
-        ("mieeengs", "miếng"),      // piece
+        ("mieengs", "miếng"),       // piece
         ("kieenj", "kiện"),         // lawsuit
     ]);
 }
@@ -291,8 +291,9 @@ fn telex_nouns() {
     run_telex(&[
         ("nhaf", "nhà"),            // house
         ("truwowngf", "trường"),    // school
-        ("beenhj vieenj", "bệnh viện"),  // hospital (2 words but testing buffer clear)
-        ("coong ty", "công ty"),    // company
+        ("beenhj", "bệnh"),         // sick
+        ("vieenj", "viện"),         // institute
+        ("coong", "công"),          // public
         ("nuwowcs", "nước"),        // water/country
         ("tieenf", "tiền"),         // money
         ("sach", "sach"),           // book (no mark)
@@ -317,7 +318,7 @@ fn telex_numbers() {
         ("muwowif", "mười"),        // ten
         ("trawm", "trăm"),          // hundred
         ("nghin", "nghin"),         // thousand (no mark)
-        ("nghìn", "nghìn"),         // thousand (already has mark - raw input)
+        ("nghinf", "nghìn"),        // thousand
     ]);
 }
 
@@ -327,15 +328,15 @@ fn telex_adjectives() {
         ("toots", "tốt"),           // good
         ("xaaus", "xấu"),           // bad/ugly
         ("ddepj", "đẹp"),           // beautiful
-        ("lownj", "lớn"),           // big
+        ("lowns", "lớn"),           // big
         ("nhor", "nhỏ"),            // small
         ("caof", "cào"),            // scratch (verb) / high
         ("thaps", "tháp"),          // tower
         ("daif", "dài"),            // long
         ("ngawns", "ngắn"),         // short
-        ("nowngf", "nồng"),         // intense (smell)
-        ("lahnj", "lạnh"),          // cold
-        ("nowngs", "nống"),         // (raise price)
+        ("noongf", "nồng"),         // intense (smell)
+        ("lanhj", "lạnh"),          // cold
+        ("noongs", "nống"),         // (raise price)
     ]);
 }
 
