@@ -131,8 +131,8 @@ fn vni_ua_vs_qua_patterns() {
     // Compare patterns: ua (mua) vs qua
     run_vni(&[
         // Without q: ua → u is main vowel, mark on u
-        ("ua1", "úa"),  // mark on u (main vowel)
-        ("ua2", "ùa"),  // mark on u (main vowel)
+        ("ua1", "úa"), // mark on u (main vowel)
+        ("ua2", "ùa"), // mark on u (main vowel)
         // With q: qua → u is medial, mark on a
         ("qua1", "quá"), // mark on a (medial pair)
         ("qua2", "quà"), // mark on a (medial pair)

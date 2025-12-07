@@ -27,8 +27,8 @@ all: test build ## Run test + build
 test: ## Run tests
 	@cd core && cargo test
 
-lint: ## Check format & lint
-	@cd core && cargo fmt -- --check && cargo clippy -- -D warnings
+lint: ## Format & lint
+	@cd core && cargo fmt && cargo clippy -- -D warnings
 
 build: ## Build core + macos app
 	@./scripts/build-core.sh
