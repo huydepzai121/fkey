@@ -1,13 +1,22 @@
 #!/bin/bash
 set -e
 
-# Build script for Windows (run on Windows with Git Bash or WSL)
-# Usage: ./scripts/build-windows.sh [OPTIONS]
+# GoNhanh Windows Build Script
+# Run on Windows with Git Bash or via CI/CD
 
 # Source rustup environment
 if [ -f "$HOME/.cargo/env" ]; then
     source "$HOME/.cargo/env"
 fi
+
+# Navigate to project root
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Check if running on Windows
+is_windows() {
+    [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ -n "$WINDIR" ]]
+}
 
 # Parse arguments
 CLEAN_INSTALL=false
@@ -21,114 +30,98 @@ for arg in "$@"; do
             echo "Usage: build-windows.sh [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --clean    Remove existing GoNhanh build artifacts before building"
+            echo "  --clean    Remove existing build artifacts before building"
             echo "  --help     Show this help message"
             exit 0
             ;;
     esac
 done
 
-# Clean install: remove existing build artifacts
+# Clean build artifacts
 if [ "$CLEAN_INSTALL" = true ]; then
-    echo "Cleaning existing build artifacts..."
+    echo "Cleaning build artifacts..."
 
-    # Kill running GoNhanh processes
-    if tasklist 2>/dev/null | grep -i "GoNhanh.exe" > /dev/null 2>&1; then
-        echo "Stopping running GoNhanh processes..."
-        taskkill //F //IM "GoNhanh.exe" 2>/dev/null || true
-        sleep 1
-        echo "GoNhanh processes stopped."
-    else
-        echo "No running GoNhanh process found."
+    if is_windows; then
+        # Kill running GoNhanh processes
+        if tasklist 2>/dev/null | grep -qi "GoNhanh.exe"; then
+            echo "  Stopping GoNhanh.exe..."
+            taskkill //F //IM "GoNhanh.exe" 2>/dev/null || true
+            sleep 1
+        fi
     fi
 
-    # Remove build directories
-    rm -rf "$(dirname "$0")/../platforms/windows/GoNhanh/bin" 2>/dev/null || true
-    rm -rf "$(dirname "$0")/../platforms/windows/GoNhanh/obj" 2>/dev/null || true
-    rm -rf "$(dirname "$0")/../platforms/windows/publish" 2>/dev/null || true
-    rm -rf "$(dirname "$0")/../core/target" 2>/dev/null || true
-
-    echo "Clean complete!"
+    rm -rf "$PROJECT_ROOT/platforms/windows/GoNhanh/bin" 2>/dev/null || true
+    rm -rf "$PROJECT_ROOT/platforms/windows/GoNhanh/obj" 2>/dev/null || true
+    rm -rf "$PROJECT_ROOT/platforms/windows/publish" 2>/dev/null || true
+    rm -rf "$PROJECT_ROOT/core/target" 2>/dev/null || true
+    echo "  Done"
     echo ""
 fi
-
-echo "Building Windows app..."
 
 # Get version from git tag
 GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-VERSION=${GIT_TAG#v}  # Remove 'v' prefix
-echo "Version from git tag: $VERSION"
+VERSION=${GIT_TAG#v}
 
-# Navigate to project root
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+echo "Building GoNhanh for Windows"
+echo "Version: $VERSION"
+echo ""
+
+# Check platform
+if ! is_windows; then
+    echo "Skipped: Not running on Windows"
+    echo ""
+    echo "This script requires Windows (Git Bash)."
+    echo "Use GitHub Actions for CI/CD builds."
+    exit 0
+fi
 
 # Build Rust core
-echo ""
-echo "Building Rust core library..."
+echo "[1/3] Building Rust core..."
 cd "$PROJECT_ROOT/core"
+cargo build --release --target x86_64-pc-windows-msvc
 
-# Check if running on Windows
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ -n "$WINDIR" ]]; then
-    cargo build --release --target x86_64-pc-windows-msvc
+mkdir -p "$PROJECT_ROOT/platforms/windows/GoNhanh/Native"
+cp "target/x86_64-pc-windows-msvc/release/gonhanh_core.dll" \
+   "$PROJECT_ROOT/platforms/windows/GoNhanh/Native/gonhanh_core.dll"
+echo "  Output: gonhanh_core.dll"
 
-    # Copy DLL to Windows project
-    echo "Copying gonhanh_core.dll..."
-    mkdir -p "$PROJECT_ROOT/platforms/windows/GoNhanh/Native"
-    cp "target/x86_64-pc-windows-msvc/release/gonhanh_core.dll" \
-       "$PROJECT_ROOT/platforms/windows/GoNhanh/Native/gonhanh_core.dll"
-else
-    echo "Note: Not running on Windows. Skipping Rust core build."
-    echo "The DLL will be built by CI/CD on Windows."
-    echo ""
+# Build WPF app
+echo "[2/3] Building WPF app..."
+cd "$PROJECT_ROOT/platforms/windows/GoNhanh"
+
+if ! command -v dotnet &> /dev/null; then
+    echo "Error: .NET SDK not found"
+    echo "Install from: https://dotnet.microsoft.com/download"
+    exit 1
 fi
 
-# Build WPF app (Windows only)
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ -n "$WINDIR" ]]; then
-    echo ""
-    echo "Building WPF application..."
-    cd "$PROJECT_ROOT/platforms/windows/GoNhanh"
+dotnet publish -c Release -r win-x64 --self-contained false \
+    -p:Version="$VERSION" \
+    -p:FileVersion="$VERSION" \
+    -p:AssemblyVersion="${VERSION%%.*}.0.0.0" \
+    -o ../publish \
+    -v quiet
 
-    # Check if .NET SDK is available
-    if ! command -v dotnet &> /dev/null; then
-        echo "Error: .NET SDK not found!"
-        echo "Please install .NET 8.0 SDK from: https://dotnet.microsoft.com/download"
-        exit 1
-    fi
+echo "  Output: platforms/windows/publish/"
 
-    # Build and publish
-    dotnet publish -c Release -r win-x64 --self-contained false \
-        -p:Version="$VERSION" \
-        -p:FileVersion="$VERSION" \
-        -p:AssemblyVersion="${VERSION%%.*}.0.0.0" \
-        -o ../publish
+# Create ZIP package
+echo "[3/3] Creating package..."
+cd "$PROJECT_ROOT/platforms/windows"
+ZIP_NAME="GoNhanh-${VERSION}-win-x64.zip"
+rm -f "$ZIP_NAME" 2>/dev/null || true
 
-    echo ""
-    echo "Windows app built successfully!"
-    echo "Output: platforms/windows/publish/"
-
-    # Create ZIP package
-    echo ""
-    echo "Creating ZIP package..."
-    cd "$PROJECT_ROOT/platforms/windows"
-    ZIP_NAME="GoNhanh-${VERSION}-win-x64.zip"
-
-    if command -v zip &> /dev/null; then
-        zip -r "$ZIP_NAME" publish/*
-    elif command -v 7z &> /dev/null; then
-        7z a "$ZIP_NAME" publish/*
-    else
-        echo "Warning: Neither zip nor 7z found. Skipping ZIP creation."
-        echo "You can manually create the ZIP from: platforms/windows/publish/"
-    fi
-
-    echo ""
-    echo "Package created: platforms/windows/$ZIP_NAME"
+if command -v zip &> /dev/null; then
+    zip -rq "$ZIP_NAME" publish/*
+elif command -v 7z &> /dev/null; then
+    7z a -bso0 "$ZIP_NAME" publish/*
 else
-    echo ""
-    echo "Note: WPF build requires Windows."
-    echo "This script is intended to run on Windows with Git Bash."
-    echo "For CI/CD, use the GitHub Actions workflow instead."
-    echo ""
-    echo "On macOS/Linux, you can only validate the source code."
+    echo "  Warning: zip/7z not found, skipping package"
+    ZIP_NAME=""
 fi
+
+if [ -n "$ZIP_NAME" ]; then
+    echo "  Output: $ZIP_NAME"
+fi
+
+echo ""
+echo "Build complete!"
