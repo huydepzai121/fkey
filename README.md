@@ -5,8 +5,18 @@
 <h1 align="center">GoNhanh (Gõ Nhanh)</h1>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License: GPL-3.0"></a>
-  <a href="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml"><img src="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/github/downloads/khaphanspace/gonhanh.org/total?label=Downloads" />
+  <img src="https://img.shields.io/github/v/release/khaphanspace/gonhanh.org?label=Latest%20Release" />
+  <img src="https://img.shields.io/github/last-commit/khaphanspace/gonhanh.org" />
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Core-Rust-000000?logo=rust&logoColor=white" />
+  <img src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white" />
+  <img src="https://img.shields.io/badge/Platform-macOS-000000?logo=apple&logoColor=white" />
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License: GPL-3.0">
+  <img src="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg" alt="CI">
 </p>
 
 <p align="center"><strong>GoNhanh</strong> - Bộ gõ tiếng Việt hiện đại, hiệu suất cao dành cho macOS. <br>
