@@ -10,7 +10,7 @@ namespace GoNhanh;
 /// Main application entry point
 /// Matches macOS App.swift flow
 /// </summary>
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private TrayIcon? _trayIcon;
     private KeyboardHook? _keyboardHook;
