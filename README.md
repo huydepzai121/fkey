@@ -13,8 +13,6 @@
   <img src="https://img.shields.io/badge/Core-Rust-000000?logo=rust&logoColor=white" />
   <img src="https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white" />
   <img src="https://img.shields.io/badge/Platform-macOS-000000?logo=apple&logoColor=white" />
-</p>
-<p align="center">
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License: GPL-3.0">
   <img src="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg" alt="CI">
 </p>
