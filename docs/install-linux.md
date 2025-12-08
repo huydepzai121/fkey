@@ -8,7 +8,7 @@ GoNhanh cho Linux dự kiến sẽ hỗ trợ **IBus** engine để tương thí
 
 ## Lộ trình phát triển
 
-Chúng tôi đang tập trung hoàn thiện Core Engine và phiên bản macOS trước khi port sang Linux.
+Tôi đang tập trung hoàn thiện Core Engine và phiên bản macOS trước khi port sang Linux.
 
 ## Dành cho Developers
 
