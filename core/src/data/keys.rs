@@ -133,3 +133,8 @@ pub fn is_letter(key: u16) -> bool {
 pub fn is_consonant(key: u16) -> bool {
     is_letter(key) && !is_vowel(key)
 }
+
+/// Check if key is a number (0-9)
+pub fn is_number(key: u16) -> bool {
+    matches!(key, N0 | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9)
+}

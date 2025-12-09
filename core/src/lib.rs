@@ -53,7 +53,7 @@ pub extern "C" fn ime_init() {
 ///
 /// # Arguments
 /// * `key` - macOS virtual keycode (0-127 for standard keys)
-/// * `caps` - true if Shift or CapsLock is pressed
+/// * `caps` - true if CapsLock is pressed (for uppercase letters)
 /// * `ctrl` - true if Cmd/Ctrl/Alt is pressed (bypasses IME)
 ///
 /// # Returns
@@ -65,11 +65,44 @@ pub extern "C" fn ime_init() {
 /// * `backspace`: number of characters to delete
 /// * `chars`: UTF-32 codepoints to insert
 /// * `count`: number of valid chars
+///
+/// # Note
+/// For VNI mode with Shift+number keys (to type @, #, $ etc.),
+/// use `ime_key_ext` with the shift parameter.
 #[no_mangle]
 pub extern "C" fn ime_key(key: u16, caps: bool, ctrl: bool) -> *mut Result {
     let mut guard = ENGINE.lock().unwrap();
     if let Some(ref mut e) = *guard {
         let r = e.on_key(key, caps, ctrl);
+        Box::into_raw(Box::new(r))
+    } else {
+        std::ptr::null_mut()
+    }
+}
+
+/// Process a key event with extended parameters.
+///
+/// # Arguments
+/// * `key` - macOS virtual keycode (0-127 for standard keys)
+/// * `caps` - true if CapsLock is pressed (for uppercase letters)
+/// * `ctrl` - true if Cmd/Ctrl/Alt is pressed (bypasses IME)
+/// * `shift` - true if Shift key is pressed (for symbols like @, #, $)
+///
+/// # Returns
+/// * Pointer to `Result` struct (caller must free with `ime_free`)
+/// * `null` if engine not initialized
+///
+/// # VNI Shift+number behavior
+/// In VNI mode, when `shift=true` and key is a number (0-9), the engine
+/// will NOT apply VNI marks/tones. This allows typing symbols:
+/// - Shift+2 → @ (not huyền mark)
+/// - Shift+3 → # (not hỏi mark)
+/// - etc.
+#[no_mangle]
+pub extern "C" fn ime_key_ext(key: u16, caps: bool, ctrl: bool, shift: bool) -> *mut Result {
+    let mut guard = ENGINE.lock().unwrap();
+    if let Some(ref mut e) = *guard {
+        let r = e.on_key_ext(key, caps, ctrl, shift);
         Box::into_raw(Box::new(r))
     } else {
         std::ptr::null_mut()

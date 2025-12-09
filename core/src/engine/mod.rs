@@ -176,35 +176,43 @@ impl Engine {
     }
 
     /// Main processing pipeline - pattern-based
-    fn process(&mut self, key: u16, caps: bool) -> Result {
+    fn process(&mut self, key: u16, caps: bool, shift: bool) -> Result {
         let m = input::get(self.method);
+
+        // In VNI mode, if Shift is pressed with a number key, skip all modifiers
+        // User wants the symbol (@ for Shift+2, # for Shift+3, etc.), not VNI marks
+        let skip_vni_modifiers = self.method == 1 && shift && keys::is_number(key);
 
         // Check modifiers by scanning buffer for patterns
 
         // 1. Stroke modifier (d → đ)
-        if m.stroke(key) {
+        if !skip_vni_modifiers && m.stroke(key) {
             if let Some(result) = self.try_stroke(key) {
                 return result;
             }
         }
 
         // 2. Tone modifier (circumflex, horn, breve)
-        if let Some(tone_type) = m.tone(key) {
-            let targets = m.tone_targets(key);
-            if let Some(result) = self.try_tone(key, caps, tone_type, targets) {
-                return result;
+        if !skip_vni_modifiers {
+            if let Some(tone_type) = m.tone(key) {
+                let targets = m.tone_targets(key);
+                if let Some(result) = self.try_tone(key, caps, tone_type, targets) {
+                    return result;
+                }
             }
         }
 
         // 3. Mark modifier
-        if let Some(mark_val) = m.mark(key) {
-            if let Some(result) = self.try_mark(key, caps, mark_val) {
-                return result;
+        if !skip_vni_modifiers {
+            if let Some(mark_val) = m.mark(key) {
+                if let Some(result) = self.try_mark(key, caps, mark_val) {
+                    return result;
+                }
             }
         }
 
         // 4. Remove modifier
-        if m.remove(key) {
+        if !skip_vni_modifiers && m.remove(key) {
             self.last_transform = None;
             return self.handle_remove();
         }
