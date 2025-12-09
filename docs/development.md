@@ -4,12 +4,12 @@ Complete guide for building, testing, and contributing to GoNhanh.
 
 ## Prerequisites
 
-| Tool | Version | Install |
-|------|---------|---------|
-| Rust | 1.70+ | [rustup.rs](https://rustup.rs) |
-| Xcode | 15+ | App Store |
-| macOS | 13+ | System requirement |
-| Git | 2.30+ | Pre-installed |
+| Tool  | Version | Install                        |
+| ----- | ------- | ------------------------------ |
+| Rust  | 1.70+   | [rustup.rs](https://rustup.rs) |
+| Xcode | 15+     | App Store                      |
+| macOS | 13+     | System requirement             |
+| Git   | 2.30+   | Pre-installed                  |
 
 ## Quick Start
 
@@ -218,14 +218,14 @@ git commit -m "feat: add new feature"
 
 ### Test Categories
 
-| Category | File | Count | Focus |
-|----------|------|-------|-------|
-| **Basic** | `basic_test.rs` | 40+ | Single keystrokes, character conversions |
-| **Words** | `word_test.rs` | 50+ | Full Vietnamese words (all input methods) |
-| **Sentences** | `sentence_test.rs` | 20+ | Multi-word typing sequences |
-| **Behavior** | `behavior_test.rs` | 20+ | User interactions (backspace, corrections) |
-| **Real Issues** | `common_issues_test.rs` | 15+ | Chrome autocomplete, Excel tone loss |
-| **Edge Cases** | `edge_cases_test.rs` | 15+ | Boundary conditions, buffer limits |
+| Category        | File                    | Count | Focus                                      |
+| --------------- | ----------------------- | ----- | ------------------------------------------ |
+| **Basic**       | `basic_test.rs`         | 40+   | Single keystrokes, character conversions   |
+| **Words**       | `word_test.rs`          | 50+   | Full Vietnamese words (all input methods)  |
+| **Sentences**   | `sentence_test.rs`      | 20+   | Multi-word typing sequences                |
+| **Behavior**    | `behavior_test.rs`      | 20+   | User interactions (backspace, corrections) |
+| **Real Issues** | `common_issues_test.rs` | 15+   | Chrome autocomplete, Excel tone loss       |
+| **Edge Cases**  | `edge_cases_test.rs`    | 15+   | Boundary conditions, buffer limits         |
 
 ### Running Tests
 
@@ -372,6 +372,7 @@ log stream --predicate 'eventMessage contains "GoNhanh"'
 ### Common Debugging Tasks
 
 **"Keyboard hook not working"**
+
 ```bash
 # Check if app has Accessibility permission
 # System Settings → Privacy & Security → Accessibility
@@ -383,6 +384,7 @@ tccutil reset Accessibility
 ```
 
 **"Library not found" during macOS build**
+
 ```bash
 # Rebuild core library
 make core
@@ -393,6 +395,7 @@ file platforms/macos/libgonhanh_core.a
 ```
 
 **"Test failures after Rust update"**
+
 ```bash
 make clean
 make setup
@@ -458,30 +461,30 @@ chore: update dependencies
 
 ### Build Issues
 
-| Problem | Solution |
-|---------|----------|
-| "No such file or directory: libgonhanh_core.a" | Run `make core` first |
-| "Failed to find Xcode" | Install Xcode from App Store, run `xcode-select --install` |
-| "Rust target not found" | Run `make setup` to install targets |
-| "Permission denied" on scripts | Run `chmod +x scripts/*.sh` |
+| Problem                                        | Solution                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| "No such file or directory: libgonhanh_core.a" | Run `make core` first                                      |
+| "Failed to find Xcode"                         | Install Xcode from App Store, run `xcode-select --install` |
+| "Rust target not found"                        | Run `make setup` to install targets                        |
+| "Permission denied" on scripts                 | Run `chmod +x scripts/*.sh`                                |
 
 ### Test Issues
 
-| Problem | Solution |
-|---------|----------|
-| "Test panic" | Run with `--nocapture` to see output |
+| Problem                                 | Solution                                                    |
+| --------------------------------------- | ----------------------------------------------------------- |
+| "Test panic"                            | Run with `--nocapture` to see output                        |
 | "All tests pass locally but fail on CI" | Check Rust version with `rustc --version`, may need upgrade |
-| "Timeout during test" | Run with `--test-threads=1` to reduce parallelism |
-| "Memory leak reports" | Normal for IME, using Valgrind: `valgrind --leak-check=no` |
+| "Timeout during test"                   | Run with `--test-threads=1` to reduce parallelism           |
+| "Memory leak reports"                   | Normal for IME, using Valgrind: `valgrind --leak-check=no`  |
 
 ### Runtime Issues
 
-| Problem | Solution |
-|---------|----------|
-| IME not typing anything | Check Accessibility permission in System Settings |
-| IME enabled but slow to respond | Check CPU usage, may need Accessibility reauth |
-| Keyboard hook crashes app | Update Xcode: `xcode-select --install` |
-| Settings not saving | Check ~/Library/Preferences/ for plist file |
+| Problem                         | Solution                                          |
+| ------------------------------- | ------------------------------------------------- |
+| IME not typing anything         | Check Accessibility permission in System Settings |
+| IME enabled but slow to respond | Check CPU usage, may need Accessibility reauth    |
+| Keyboard hook crashes app       | Update Xcode: `xcode-select --install`            |
+| Settings not saving             | Check ~/Library/Preferences/ for plist file       |
 
 ## Performance Profiling
 
@@ -567,6 +570,6 @@ cargo clippy
 
 ## Related Documentation
 
-- Architecture details: [`docs/architecture.md`](architecture.md)
+- System Architecture: [`docs/system-architecture.md`](architecture.md)
 - Vietnamese language system: [`docs/vietnamese-language-system.md`](vietnamese-language-system.md)
 - Common issues & fixes: [`docs/common-issues.md`](common-issues.md)

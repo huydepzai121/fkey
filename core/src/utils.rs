@@ -143,9 +143,22 @@ mod test_utils {
             '7' => keys::N7,
             '8' => keys::N8,
             '9' => keys::N9,
+            '.' => keys::DOT,
+            ',' => keys::COMMA,
+            ';' => keys::SEMICOLON,
+            ':' => keys::SEMICOLON, // Approximate
+            '\'' => keys::QUOTE,
+            '"' => keys::QUOTE,
+            '-' => keys::MINUS,
+            '=' => keys::EQUAL,
+            '[' => keys::LBRACKET,
+            ']' => keys::RBRACKET,
+            '\\' => keys::BACKSLASH,
+            '/' => keys::SLASH,
+            '`' => keys::BACKQUOTE,
             '<' => keys::DELETE,
             ' ' => keys::SPACE,
-            _ => 255,
+            _ => 255, // Unknown/Other
         }
     }
 
@@ -187,12 +200,9 @@ mod test_utils {
                         screen.push(ch);
                     }
                 }
-            } else if keys::is_letter(key) {
-                screen.push(if is_caps {
-                    c.to_ascii_uppercase()
-                } else {
-                    c.to_ascii_lowercase()
-                });
+            } else {
+                // Pass through if not handled (mimic editor receiving char)
+                screen.push(c);
             }
         }
         screen

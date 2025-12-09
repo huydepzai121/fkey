@@ -87,7 +87,7 @@ Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 
 ### Tại sao chọn Gõ Nhanh?
 
-| Vấn đề                                     |    Bộ gõ khác / Mặc định     |        Gõ Nhanh          |
+| Vấn đề                                     |    Bộ gõ khác / Mặc định     |         Gõ Nhanh         |
 | :----------------------------------------- | :--------------------------: | :----------------------: |
 | **Dính chữ Chrome/Edge** (`aa` → `aâ`)     | ⚠️ Tắt autocomplete thủ công |      ✅ Tự động fix      |
 | **Lặp chữ Google Docs** (`được` → `đđược`) |  ⚠️ Bật "Sửa lỗi" thủ công   |      ✅ Tự động fix      |
@@ -149,7 +149,7 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 | Tài liệu                                                                 | Mô tả                                                          |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------- |
 | [Hệ thống chữ viết & Phương pháp gõ](docs/vietnamese-language-system.md) | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.                     |
-| [Architecture](docs/architecture.md)                                     | Kiến trúc hệ thống, FFI, và luồng dữ liệu.                     |
+| [System Architecture](docs/system-architecture.md)                       | Kiến trúc hệ thống, FFI, và luồng dữ liệu.                     |
 | [Development Guide](docs/development.md)                                 | Hướng dẫn build, test, và đóng góp mã nguồn.                   |
 | [Các lỗi thường gặp](docs/common-issues.md)                              | Tổng hợp lỗi bộ gõ (Chrome, Word, Terminal) và cách khắc phục. |
 
