@@ -25,4 +25,4 @@ Rules:
 - Skip empty sections
 - Each item: one line, start with emoji (✨ feat, 🐛 fix, ⚡ perf, 📝 docs, 🔧 chore)
 - Be concise, no fluff
-- Output markdown only, no explanation" 2>/dev/null | jq -r 'select(.type == "text") | .content' | tr -d '\n' | sed 's/$/\n/'
+- Output markdown only, no explanation" 2>/dev/null | jq -r 'select(.type == "text") | .part.text'
