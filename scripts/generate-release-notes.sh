@@ -15,14 +15,13 @@ if [ -z "$COMMITS" ]; then
     exit 1
 fi
 
-opencode run --format json "Generate concise release notes for version $VERSION of 'Gõ Nhanh' (Vietnamese IME for macOS).
+opencode run --format json "Tạo release notes cho version $VERSION của 'Gõ Nhanh' (Vietnamese IME for macOS).
 
 Commits:
 $COMMITS
 
-Rules:
-- Group by: Features, Fixes, Improvements, Other
-- Skip empty sections
-- Each item: one line, start with emoji (✨ feat, 🐛 fix, ⚡ perf, 📝 docs, 🔧 chore)
-- Be concise, no fluff
-- Output markdown only, no explanation" 2>/dev/null | jq -r 'select(.type == "text") | .part.text'
+Quy tắc:
+- Nhóm theo: ✨ Tính năng mới, 🐛 Sửa lỗi, ⚡ Cải thiện, 🔧 Khác
+- Bỏ qua section rỗng
+- Mỗi item: 1 dòng, súc tích, viết tiếng Việt (có thể dùng keywords tiếng Anh như build, config, API...)
+- Chỉ output markdown, không giải thích" 2>/dev/null | jq -r 'select(.type == "text") | .part.text'
