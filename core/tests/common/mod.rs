@@ -4,9 +4,10 @@
 //! This module adds additional helpers for integration tests.
 
 #![allow(dead_code)]
+#![allow(unused_imports)]
 
 // Re-export core test utilities
-pub use gonhanh_core::utils::{telex, vni};
+pub use gonhanh_core::utils::{telex, type_word, vni};
 
 use gonhanh_core::engine::{Action, Engine};
 
