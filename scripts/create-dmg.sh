@@ -17,12 +17,12 @@ DMG_FINAL="$MACOS_DIR/build/${APP_NAME}.dmg"
 
 # Window dimensions and positions (matching background.png)
 WINDOW_WIDTH=540
-WINDOW_HEIGHT=380
+WINDOW_HEIGHT=360
 ICON_SIZE=100
 APP_X=135
-APP_Y=190
+APP_Y=150
 APPS_X=405
-APPS_Y=190
+APPS_Y=150
 
 # Check arguments
 APP_PATH="${1:-$MACOS_DIR/build/Release/${APP_NAME}.app}"

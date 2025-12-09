@@ -10,20 +10,20 @@ mkdir -p "$OUTPUT_DIR"
 
 # DMG window dimensions
 WIDTH=540
-HEIGHT=380
+HEIGHT=360
 
-# Icon positions (center of each icon)
+# Icon positions (center of each icon) - adjusted up
 APP_X=135
-APP_Y=190
+APP_Y=150
 APPS_X=405
-APPS_Y=190
+APPS_Y=150
 
 # Dashed rectangle around Applications folder position
-RECT_SIZE=140
+RECT_SIZE=145
 RECT_X=$((APPS_X - RECT_SIZE/2))
-RECT_Y=$((APPS_Y - RECT_SIZE/2))
+RECT_Y=$((APPS_Y - RECT_SIZE/2 - 5))
 RECT_X2=$((RECT_X + RECT_SIZE))
-RECT_Y2=$((RECT_Y + RECT_SIZE))
+RECT_Y2=$((RECT_Y + RECT_SIZE + 20))
 CORNER_RADIUS=12
 
 # Check if ImageMagick is available
