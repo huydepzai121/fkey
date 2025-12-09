@@ -282,6 +282,10 @@ const TELEX_WORDS: &[(&str, &str)] = &[
     ("cos", "có"),
     ("laf", "là"),
     ("ddi", "đi"),
+    // w as ư shortcut
+    ("thwr", "thử"),
+    ("nhw", "như"),
+    ("tuwj", "tự"),
     // Two vowels - closed syllable
     ("toans", "toán"),
     ("hoanf", "hoàn"),
