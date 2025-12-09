@@ -36,6 +36,7 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         queries: security-and-quality
+        build-mode: manual
 
     - name: Setup .NET (for C#)
       if: matrix.language == 'csharp'
@@ -64,7 +65,7 @@ jobs:
           target/x86_64-apple-darwin/release/libgonhanh_core.a \
           -output ../platforms/macos/libgonhanh_core.a
         cd ../platforms/macos
-        xcodebuild build -project GoNhanh.xcodeproj -target GoNhanh CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+        xcodebuild build -scheme GoNhanh -configuration Release CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
     - name: Build C#
       if: matrix.language == 'csharp'
