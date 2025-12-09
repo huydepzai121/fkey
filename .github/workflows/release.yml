@@ -60,14 +60,14 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
 
-          hdiutil create -volname GoNhanh -srcfolder "$APP" -ov -format UDZO \
-            "GoNhanh.dmg"
+          # Create beautiful DMG with custom layout
+          ../../scripts/create-dmg.sh "$APP"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
-          path: platforms/macos/*.dmg
+          path: platforms/macos/build/*.dmg
 
   build-windows:
     if: false

@@ -1,4 +1,4 @@
-.PHONY: help all test format build clean setup install release release-minor release-major
+.PHONY: help all test format build clean setup install dmg release release-minor release-major
 
 # Auto-versioning
 TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
@@ -46,6 +46,10 @@ setup: ## Setup dev environment
 
 install: build ## Install app to /Applications
 	@cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
+
+dmg: build ## Create DMG installer
+	@./scripts/create-dmg-background.sh
+	@./scripts/create-dmg.sh
 
 release: ## Patch release (1.0.9 → 1.0.10)
 	@echo "$(TAG) → v$(NEXT_PATCH)"
