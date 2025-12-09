@@ -130,9 +130,8 @@ fn tone_without_vowel_passes_through() {
 }
 
 #[test]
-fn standalone_w_becomes_u_horn_in_telex() {
-    // In Telex mode, standalone "w" is shortcut for "ư"
-    // This is a shortcut, not passthrough
+fn telex_w_as_vowel_standalone() {
+    // In Telex mode, standalone "w" → "ư" (valid Vietnamese)
     let mut e = Engine::new();
     let result = e.on_key(keys::W, false, false);
     assert_eq!(result.action, 1); // Action::Send
@@ -141,11 +140,71 @@ fn standalone_w_becomes_u_horn_in_telex() {
 }
 
 #[test]
-fn standalone_w_passes_through_in_vni() {
-    // In VNI mode, "w" should pass through (no shortcut)
+fn telex_w_as_vowel_after_valid_consonant() {
+    // "nhw" → "như" (valid: nh + ư)
+    let mut e = Engine::new();
+    e.on_key(keys::N, false, false);
+    e.on_key(keys::H, false, false);
+    let result = e.on_key(keys::W, false, false);
+    assert_eq!(result.action, 1);
+    assert_eq!(result.chars[0], 'ư' as u32);
+}
+
+#[test]
+fn telex_w_passthrough_after_invalid_consonant() {
+    // "kw" → "kw" (invalid: k cannot precede ư)
+    let mut e = Engine::new();
+    e.on_key(keys::K, false, false);
+    let result = e.on_key(keys::W, false, false);
+    assert_eq!(result.action, 0); // passthrough
+}
+
+#[test]
+fn telex_ww_reverts() {
+    // "ww" → revert to "ww"
+    let mut e = Engine::new();
+
+    // First w → ư
+    let result = e.on_key(keys::W, false, false);
+    assert_eq!(result.action, 1);
+    assert_eq!(result.chars[0], 'ư' as u32);
+
+    // Second w → revert to "ww"
+    let result = e.on_key(keys::W, false, false);
+    assert_eq!(result.action, 1);
+    assert_eq!(result.backspace, 1); // delete "ư"
+    assert_eq!(result.count, 2); // output "ww"
+    assert_eq!(result.chars[0], 'w' as u32);
+    assert_eq!(result.chars[1], 'w' as u32);
+}
+
+#[test]
+fn vni_w_passes_through() {
+    // In VNI mode, "w" should pass through
     let mut e = Engine::new();
     e.set_method(1); // VNI
     assert_passthrough(&mut e, keys::W);
+}
+
+#[test]
+fn word_boundary_shortcut_vn() {
+    // "vn" + space → "Việt Nam "
+    let mut e = Engine::new();
+
+    // Type "vn"
+    e.on_key(keys::V, false, false);
+    e.on_key(keys::N, false, false);
+
+    // Space triggers word boundary shortcut
+    let result = e.on_key(keys::SPACE, false, false);
+    assert_eq!(result.action, 1); // Action::Send
+    assert_eq!(result.backspace, 2); // delete "vn"
+
+    // Output should be "Việt Nam " (with trailing space)
+    let output: String = (0..result.count as usize)
+        .map(|i| char::from_u32(result.chars[i]).unwrap())
+        .collect();
+    assert_eq!(output, "Việt Nam ");
 }
 
 #[test]

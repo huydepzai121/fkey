@@ -155,41 +155,37 @@ impl ShortcutTable {
         }
     }
 
-    /// Create with default Vietnamese shortcuts (common abbreviations for all methods)
+    /// Create with default Vietnamese shortcuts (common abbreviations)
+    ///
+    /// Note: "w" → "ư" is NOT a shortcut, it's handled by the engine
+    /// as a vowel key with Vietnamese validation.
     pub fn with_defaults() -> Self {
         let mut table = Self::new();
 
         // Common abbreviations (apply to all input methods)
+        // These trigger on word boundary (space, punctuation)
         table.add(Shortcut::new("vn", "Việt Nam"));
         table.add(Shortcut::new("hcm", "Hồ Chí Minh"));
         table.add(Shortcut::new("hn", "Hà Nội"));
         table.add(Shortcut::new("dc", "được"));
         table.add(Shortcut::new("ko", "không"));
 
-        // Telex-specific shortcuts
-        // "w" → "ư" when not used as tone modifier (standalone w)
-        table.add(Shortcut::telex("w", "ư"));
-
         table
     }
 
     /// Create with Telex defaults only
     pub fn with_telex_defaults() -> Self {
-        let mut table = Self::new();
-
-        // Telex-specific: "w" → "ư" (when standalone, not as modifier)
-        table.add(Shortcut::telex("w", "ư"));
-
-        table
+        // No Telex-specific shortcuts
+        // "w" → "ư" is handled by the engine, not shortcuts
+        Self::new()
     }
 
     /// Create with VNI defaults only
     pub fn with_vni_defaults() -> Self {
-        // Currently no VNI-specific shortcuts
         Self::new()
     }
 
-    /// Create with all defaults (common + method-specific)
+    /// Create with all defaults (common abbreviations)
     pub fn with_all_defaults() -> Self {
         let mut table = Self::new();
 
@@ -199,9 +195,6 @@ impl ShortcutTable {
         table.add(Shortcut::new("hn", "Hà Nội"));
         table.add(Shortcut::new("dc", "được"));
         table.add(Shortcut::new("ko", "không"));
-
-        // Telex-specific shortcuts
-        table.add(Shortcut::telex("w", "ư"));
 
         table
     }
@@ -506,18 +499,15 @@ mod tests {
     }
 
     #[test]
-    fn test_with_defaults_contains_telex_w() {
+    fn test_with_defaults_has_common_shortcuts() {
         let table = ShortcutTable::with_defaults();
 
-        // "w" → "ư" should exist for Telex
-        let result = table.lookup_for_method("w", InputMethod::Telex);
+        // "vn" → "Việt Nam" should exist
+        let result = table.lookup_for_method("vn", InputMethod::All);
         assert!(result.is_some());
-        let (_, shortcut) = result.unwrap();
-        assert_eq!(shortcut.replacement, "ư");
-        assert_eq!(shortcut.input_method, InputMethod::Telex);
 
-        // "w" should NOT match for VNI
-        let result = table.lookup_for_method("w", InputMethod::Vni);
+        // "w" is NOT a shortcut anymore (handled by engine)
+        let result = table.lookup_for_method("w", InputMethod::Telex);
         assert!(result.is_none());
     }
 
@@ -537,7 +527,7 @@ mod tests {
         assert!(all_shortcut.applies_to(InputMethod::Telex));
         assert!(all_shortcut.applies_to(InputMethod::Vni));
 
-        let telex_shortcut = Shortcut::telex("w", "ư");
+        let telex_shortcut = Shortcut::telex("test", "Test");
         assert!(telex_shortcut.applies_to(InputMethod::All));
         assert!(telex_shortcut.applies_to(InputMethod::Telex));
         assert!(!telex_shortcut.applies_to(InputMethod::Vni));

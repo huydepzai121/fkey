@@ -121,6 +121,8 @@ enum Transform {
     Mark(u16, u8),
     Tone(u16, u8),
     Stroke(u16),
+    /// W as vowel ư (for revert: ww → ww)
+    WAsVowel,
 }
 
 /// Main Vietnamese IME engine
@@ -177,16 +179,21 @@ impl Engine {
     pub fn on_key(&mut self, key: u16, caps: bool, ctrl: bool) -> Result {
         if !self.enabled || ctrl {
             self.buf.clear();
+            self.last_transform = None;
             return Result::none();
         }
 
+        // Check for word boundary shortcuts BEFORE clearing buffer
         if keys::is_break(key) {
+            let result = self.try_word_boundary_shortcut();
             self.buf.clear();
-            return Result::none();
+            self.last_transform = None;
+            return result;
         }
 
         if key == keys::DELETE {
             self.buf.pop();
+            self.last_transform = None;
             return Result::none();
         }
 
@@ -196,7 +203,6 @@ impl Engine {
     /// Main processing pipeline - pattern-based
     fn process(&mut self, key: u16, caps: bool) -> Result {
         let m = input::get(self.method);
-        let input_method = self.current_input_method();
 
         // Check modifiers by scanning buffer for patterns
 
@@ -228,39 +234,73 @@ impl Engine {
             return self.handle_remove();
         }
 
-        // 5. Try shortcut match (after Vietnamese modifiers fail)
-        // This handles cases like standalone "w" → "ư" in Telex
-        // when "w" is not used as a tone modifier (no vowel to modify)
-        if let Some(result) = self.try_shortcut(key, caps, input_method) {
-            return result;
+        // 5. In Telex: "w" as vowel "ư" when valid Vietnamese context
+        // Examples: "w" → "ư", "nhw" → "như", but "kw" → "kw" (invalid)
+        if self.method == 0 && key == keys::W {
+            if let Some(result) = self.try_w_as_vowel(caps) {
+                return result;
+            }
         }
 
         // Not a modifier - normal letter
         self.handle_normal_letter(key, caps)
     }
 
-    /// Try to match shortcut from buffer
-    fn try_shortcut(&mut self, key: u16, caps: bool, input_method: InputMethod) -> Option<Result> {
-        // Add the current key to buffer temporarily for matching
-        self.buf.push(Char::new(key, caps));
-        let buffer_str = self.buf.to_string_preserve_case();
-
-        // Check for immediate shortcut match
-        let key_char = key_to_char(key, caps);
-        let shortcut_match =
-            self.shortcuts
-                .try_match_for_method(&buffer_str, key_char, false, input_method);
-
-        if let Some(m) = shortcut_match {
-            // Shortcut matched! Clear buffer and return result
-            self.buf.clear();
-            self.last_transform = None;
-
-            let output: Vec<char> = m.output.chars().collect();
-            return Some(Result::send(m.backspace_count as u8, &output));
+    /// Try word boundary shortcuts (triggered by space, punctuation, etc.)
+    fn try_word_boundary_shortcut(&mut self) -> Result {
+        if self.buf.is_empty() {
+            return Result::none();
         }
 
-        // No match - remove the key we added (it will be added by handle_normal_letter)
+        let buffer_str = self.buf.to_string_preserve_case();
+        let input_method = self.current_input_method();
+
+        // Check for word boundary shortcut match
+        if let Some(m) =
+            self.shortcuts
+                .try_match_for_method(&buffer_str, Some(' '), true, input_method)
+        {
+            let output: Vec<char> = m.output.chars().collect();
+            return Result::send(m.backspace_count as u8, &output);
+        }
+
+        Result::none()
+    }
+
+    /// Try "w" as vowel "ư" in Telex mode
+    ///
+    /// Rules:
+    /// - "w" alone → "ư"
+    /// - "nhw" → "như" (valid consonant + ư)
+    /// - "kw" → "kw" (invalid, k cannot precede ư)
+    /// - "ww" → revert to "ww"
+    fn try_w_as_vowel(&mut self, caps: bool) -> Option<Result> {
+        // Check revert: ww → ww
+        if let Some(Transform::WAsVowel) = self.last_transform {
+            self.last_transform = None;
+            // Revert: backspace "ư", output "ww"
+            let w = if caps { 'W' } else { 'w' };
+            return Some(Result::send(1, &[w, w]));
+        }
+
+        // Try adding U (ư base) to buffer and validate
+        self.buf.push(Char::new(keys::U, caps));
+
+        // Set horn tone to make it ư
+        if let Some(c) = self.buf.get_mut(self.buf.len() - 1) {
+            c.tone = tone::HORN;
+        }
+
+        // Validate: is this valid Vietnamese?
+        let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+        if is_valid(&buffer_keys) {
+            // Valid! Output from the position of ư
+            let pos = self.buf.len() - 1;
+            self.last_transform = Some(Transform::WAsVowel);
+            return Some(self.rebuild_from(pos));
+        }
+
+        // Invalid - remove the U we added
         self.buf.pop();
         None
     }
