@@ -367,40 +367,86 @@ impl ShortcutTable {
 mod tests {
     use super::*;
 
+    // Helper: Create table with one word-boundary shortcut
+    fn table_with_shortcut(trigger: &str, replacement: &str) -> ShortcutTable {
+        let mut table = ShortcutTable::new();
+        table.add(Shortcut::new(trigger, replacement));
+        table
+    }
+
+    // Helper: Create table with one immediate shortcut
+    fn table_with_immediate(trigger: &str, replacement: &str) -> ShortcutTable {
+        let mut table = ShortcutTable::new();
+        table.add(Shortcut::immediate(trigger, replacement));
+        table
+    }
+
+    // Helper: Create table with Telex-specific shortcut
+    fn table_with_telex_shortcut(trigger: &str, replacement: &str) -> ShortcutTable {
+        let mut table = ShortcutTable::new();
+        table.add(Shortcut::telex(trigger, replacement));
+        table
+    }
+
+    // Helper: Create table with VNI-specific shortcut
+    fn table_with_vni_shortcut(trigger: &str, replacement: &str) -> ShortcutTable {
+        let mut table = ShortcutTable::new();
+        table.add(Shortcut::vni(trigger, replacement));
+        table
+    }
+
+    // Helper: Assert shortcut matches and check output/backspace
+    fn assert_shortcut_match(
+        table: &ShortcutTable,
+        buffer: &str,
+        key_char: Option<char>,
+        is_boundary: bool,
+        expected_output: &str,
+        expected_backspace: usize,
+        method: InputMethod,
+    ) {
+        let result = table.try_match_for_method(buffer, key_char, is_boundary, method);
+        assert!(result.is_some(), "Shortcut should match for buffer: {}", buffer);
+        let m = result.unwrap();
+        assert_eq!(m.output, expected_output);
+        assert_eq!(m.backspace_count, expected_backspace);
+    }
+
+    // Helper: Assert no shortcut match
+    fn assert_no_match(
+        table: &ShortcutTable,
+        buffer: &str,
+        key_char: Option<char>,
+        is_boundary: bool,
+        method: InputMethod,
+    ) {
+        let result = table.try_match_for_method(buffer, key_char, is_boundary, method);
+        assert!(result.is_none(), "Shortcut should NOT match for buffer: {}", buffer);
+    }
+
     #[test]
     fn test_basic_shortcut() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::new("vn", "Việt Nam"));
-
-        let result = table.try_match("vn", Some(' '), true);
-        assert!(result.is_some());
-        let m = result.unwrap();
-        assert_eq!(m.backspace_count, 2);
-        assert_eq!(m.output, "Việt Nam ");
+        let table = table_with_shortcut("vn", "Việt Nam");
+        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
     }
 
     #[test]
     fn test_case_matching() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::new("vn", "Việt Nam"));
+        let table = table_with_shortcut("vn", "Việt Nam");
 
         // Lowercase
-        let m = table.try_match("vn", Some(' '), true).unwrap();
-        assert_eq!(m.output, "Việt Nam ");
+        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
 
         // Uppercase
-        let m = table.try_match("VN", Some(' '), true).unwrap();
-        assert_eq!(m.output, "VIỆT NAM ");
+        assert_shortcut_match(&table, "VN", Some(' '), true, "VIỆT NAM ", 2, InputMethod::All);
 
         // Title case
-        let m = table.try_match("Vn", Some(' '), true).unwrap();
-        assert_eq!(m.output, "Việt Nam ");
+        assert_shortcut_match(&table, "Vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
     }
 
     #[test]
     fn test_immediate_shortcut() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::immediate("w", "ư"));
+        let table = table_with_immediate("w", "ư");
 
         // Immediate triggers without word boundary
         let result = table.try_match("w", None, false);
@@ -412,16 +458,13 @@ mod tests {
 
     #[test]
     fn test_word_boundary_required() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::new("vn", "Việt Nam"));
+        let table = table_with_shortcut("vn", "Việt Nam");
 
         // Without word boundary - should not match
-        let result = table.try_match("vn", Some('a'), false);
-        assert!(result.is_none());
+        assert_no_match(&table, "vn", Some('a'), false, InputMethod::All);
 
         // With word boundary - should match
-        let result = table.try_match("vn", Some(' '), true);
-        assert!(result.is_some());
+        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
     }
 
     #[test]
@@ -448,54 +491,41 @@ mod tests {
 
     #[test]
     fn test_telex_specific_shortcut() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::telex("w", "ư"));
+        let table = table_with_telex_shortcut("w", "ư");
 
         // Should match for Telex
-        let result = table.try_match_for_method("w", None, false, InputMethod::Telex);
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().output, "ư");
+        assert_shortcut_match(&table, "w", None, false, "ư", 1, InputMethod::Telex);
 
         // Should NOT match for VNI
-        let result = table.try_match_for_method("w", None, false, InputMethod::Vni);
-        assert!(result.is_none());
+        assert_no_match(&table, "w", None, false, InputMethod::Vni);
 
         // Should match for All (fallback)
-        let result = table.try_match_for_method("w", None, false, InputMethod::All);
-        assert!(result.is_some());
+        assert_shortcut_match(&table, "w", None, false, "ư", 1, InputMethod::All);
     }
 
     #[test]
     fn test_vni_specific_shortcut() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::vni("7", "ơ"));
+        let table = table_with_vni_shortcut("7", "ơ");
 
         // Should match for VNI
-        let result = table.try_match_for_method("7", None, false, InputMethod::Vni);
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().output, "ơ");
+        assert_shortcut_match(&table, "7", None, false, "ơ", 1, InputMethod::Vni);
 
         // Should NOT match for Telex
-        let result = table.try_match_for_method("7", None, false, InputMethod::Telex);
-        assert!(result.is_none());
+        assert_no_match(&table, "7", None, false, InputMethod::Telex);
     }
 
     #[test]
     fn test_all_input_method_shortcut() {
-        let mut table = ShortcutTable::new();
-        table.add(Shortcut::new("vn", "Việt Nam"));
+        let table = table_with_shortcut("vn", "Việt Nam");
 
         // Should match for Telex
-        let result = table.try_match_for_method("vn", Some(' '), true, InputMethod::Telex);
-        assert!(result.is_some());
+        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::Telex);
 
         // Should match for VNI
-        let result = table.try_match_for_method("vn", Some(' '), true, InputMethod::Vni);
-        assert!(result.is_some());
+        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::Vni);
 
         // Should match for All
-        let result = table.try_match_for_method("vn", Some(' '), true, InputMethod::All);
-        assert!(result.is_some());
+        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
     }
 
     #[test]
