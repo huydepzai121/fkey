@@ -2,10 +2,10 @@
 name = "gonhanh-core"
 version = "0.1.0"
 edition = "2021"
-authors = ["Gõ Nhanh Contributors"]
+authors = ["Kha Phan <nhatkha1407@gmail.com>"]
 license = "GPL-3.0-or-later"
-description = "Vietnamese input method engine - Core library"
-repository = "https://github.com/yourusername/gonhanh.org"
+description = "Gõ Nhanh - Vietnamese input method core engine"
+repository = "https://github.com/khaphanspace/gonhanh.org"
 
 [lib]
 name = "gonhanh_core"
