@@ -1,8 +1,7 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Gõ Nhanh Logo" width="128" height="128">
-</p>
-
-<h1 align="center">Gõ Nhanh</h1>
+<h1 align="center">
+  <img src="assets/logo.png" alt="Gõ Nhanh Logo" width="128" height="128"><br>
+  Gõ Nhanh
+</h1>
 
 <p align="center">
   <img src="https://img.shields.io/github/downloads/khaphanspace/gonhanh.org/total?label=Downloads" />
