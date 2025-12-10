@@ -33,13 +33,14 @@
 
 ## ✨ Tính năng chính
 
-### Dành cho người dùng
-
 | Tính năng | Mô tả |
 |-----------|-------|
 | **Telex & VNI** | Chọn kiểu gõ quen thuộc của bạn |
-| **Đặt dấu thông minh** | Tự động đặt dấu đúng vị trí (`hoà` hoặc `hòa`) |
+| **Đặt dấu thông minh** | Tự động đặt dấu đúng vị trí theo quy tắc ngữ âm (`hoà` hoặc `hòa`) |
+| **Tự nhận diện tiếng Anh** | Gõ `Claus`, `HTTP`, `John` không bị thêm dấu — engine nhận diện từ không hợp lệ |
 | **Gõ tắt** | Tạo phím tắt riêng (`vn` → `Việt Nam`, `ko` → `không`) |
+| **Gõ linh hoạt** | `Dod` → `Đo`, `duocwj` → `được` — thứ tự phím không quan trọng |
+| **Nhấn đúp để hủy** | `aa` → `â`, nhấn `a` thêm lần nữa → `aa` |
 | **Nhanh & Nhẹ** | Độ trễ <1ms, chỉ dùng ~5MB RAM |
 | **Hoạt động mọi nơi** | Terminal, VS Code, Chrome, Word, Excel... |
 | **Ctrl+Space** | Chuyển đổi Anh/Việt nhanh chóng |
@@ -81,22 +82,29 @@ Từ nhu cầu cá nhân, Gõ Nhanh trở thành sản phẩm hoàn thiện dàn
 ## 🔧 Dành cho Developer
 
 <details>
-<summary><strong>Kiến trúc hệ thống</strong></summary>
+<summary><strong>Cách hoạt động</strong></summary>
+
+Engine dựa trên **ngữ âm học tiếng Việt** thay vì bảng tra cứu:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  macOS App (SwiftUI)                                    │
-│  Menu Bar UI + CGEventTap (keyboard hook)               │
-└────────────────────────┬────────────────────────────────┘
-                         │ FFI (C ABI)
-┌────────────────────────▼────────────────────────────────┐
-│  Rust Core Engine                                       │
-│  • Telex/VNI input processing                           │
-│  • 5 validation rules (kiểm tra âm tiết hợp lệ)         │
-│  • 7-stage pipeline (xử lý từng keystroke)              │
-│  • <0.1ms latency, ~5MB RAM                             │
-└─────────────────────────────────────────────────────────┘
+Âm tiết = [Phụ âm đầu] + [Âm đệm] + Nguyên âm chính + [Âm cuối] + Thanh điệu
+          (b,c,d,g...)   (o,u)      (a,ă,â,e,ê...)    (c,m,n,p,t)  (sắc,huyền...)
 ```
+
+**Validation-First**: Kiểm tra âm tiết hợp lệ **trước** khi biến đổi:
+- `duoc` + `w` → Hợp lệ → `dươc`
+- `clau` + `s` → Không hợp lệ (`cl` không phải phụ âm đầu) → giữ nguyên `claus`
+
+**7-Stage Pipeline**: Mỗi phím được xử lý qua 7 bước:
+1. Stroke (`d` → `đ`)
+2. Tone (dấu mũ/móc/trăng)
+3. Mark (sắc/huyền/hỏi/ngã/nặng)
+4. Remove (xóa dấu)
+5. W-Vowel (`w` → `ư` trong Telex)
+6. Normal Letter
+7. Shortcut Expansion
+
+Chi tiết: [docs/core-engine-algorithm.md](docs/core-engine-algorithm.md) | [docs/vietnamese-language-system.md](docs/vietnamese-language-system.md)
 
 </details>
 
