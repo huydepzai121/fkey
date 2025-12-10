@@ -29,8 +29,6 @@
 | **Windows** | 🗓️ Sắp ra mắt | — | [Xem lộ trình](docs/install-windows.md) |
 | **Linux** | 🗓️ Sắp ra mắt | — | [Xem lộ trình](docs/install-linux.md) |
 
----
-
 ## ✨ Tính năng chính
 
 | Tính năng | Mô tả |
@@ -52,8 +50,6 @@
 - 🚫 **Không quảng cáo** — Không popup, không làm phiền
 - 🚫 **Không theo dõi** — Offline 100%, mã nguồn mở
 
----
-
 ## 🆚 So sánh với bộ gõ khác
 
 | Vấn đề thường gặp | Bộ gõ khác | Gõ Nhanh |
@@ -69,14 +65,11 @@
 
 Chi tiết: [Các lỗi thường gặp](docs/common-issues.md)
 
----
-
 ## ❤️‍🔥 Động lực
 
 Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
 
 Từ nhu cầu giải quyết vấn đề cá nhân, Gõ Nhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối và kế thừa từ **UniKey**, **OpenKey** và **EVKey**.
-
 
 ---
 
@@ -90,19 +83,6 @@ Engine dựa trên **ngữ âm học tiếng Việt** thay vì bảng tra cứu:
 Âm tiết = [Phụ âm đầu] + [Âm đệm] + Nguyên âm chính + [Âm cuối] + Thanh điệu
           (b,c,d,g...)   (o,u)      (a,ă,â,e,ê...)    (c,m,n,p,t)  (sắc,huyền...)
 ```
-
-**Validation-First**: Kiểm tra âm tiết hợp lệ **trước** khi biến đổi:
-- `duoc` + `w` → Hợp lệ → `dươc`
-- `clau` + `s` → Không hợp lệ (`cl` không phải phụ âm đầu) → giữ nguyên `claus`
-
-**7-Stage Pipeline**: Mỗi phím được xử lý qua 7 bước:
-1. Stroke (`d` → `đ`)
-2. Tone (dấu mũ/móc/trăng)
-3. Mark (sắc/huyền/hỏi/ngã/nặng)
-4. Remove (xóa dấu)
-5. W-Vowel (`w` → `ư` trong Telex)
-6. Normal Letter
-7. Shortcut Expansion
 
 Chi tiết: [docs/core-engine-algorithm.md](docs/core-engine-algorithm.md) | [docs/vietnamese-language-system.md](docs/vietnamese-language-system.md)
 
