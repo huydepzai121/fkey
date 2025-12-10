@@ -71,18 +71,18 @@ Chi tiết: [Các lỗi thường gặp](docs/common-issues.md)
 
 ---
 
-## 💡 Tại sao tôi tạo Gõ Nhanh?
+## 💡 Động lực
 
-Tôi (**Kha Phan**) tạo Gõ Nhanh vì các bộ gõ hiện tại thường xuyên lỗi khi làm việc với **Claude Code** và Terminal.
+Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
 
-Từ nhu cầu cá nhân, Gõ Nhanh trở thành sản phẩm hoàn thiện dành tặng cộng đồng — kế thừa tinh thần của **UniKey**, **OpenKey** và **EVKey**.
+Từ nhu cầu giải quyết vấn đề cá nhân, Gõ Nhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối và kế thừa từ **UniKey**, **OpenKey** và **EVKey**.
+
 
 ---
 
 ## 🔧 Dành cho Developer
 
-<details>
-<summary><strong>Cách hoạt động</strong></summary>
+### Cách hoạt động
 
 Engine dựa trên **ngữ âm học tiếng Việt** thay vì bảng tra cứu:
 
@@ -106,10 +106,7 @@ Engine dựa trên **ngữ âm học tiếng Việt** thay vì bảng tra cứu:
 
 Chi tiết: [docs/core-engine-algorithm.md](docs/core-engine-algorithm.md) | [docs/vietnamese-language-system.md](docs/vietnamese-language-system.md)
 
-</details>
-
-<details>
-<summary><strong>Build & Test</strong></summary>
+### Build & Test
 
 ```bash
 # Setup (chạy 1 lần)
@@ -122,10 +119,7 @@ make build     # Build full app
 make install   # Copy vào /Applications
 ```
 
-</details>
-
-<details>
-<summary><strong>Tài liệu kỹ thuật</strong></summary>
+### Tài liệu kỹ thuật
 
 | Tài liệu | Mô tả |
 |----------|-------|
@@ -133,8 +127,6 @@ make install   # Copy vào /Applications
 | [Validation](docs/validation-algorithm.md) | 5 quy tắc kiểm tra âm tiết |
 | [Ngữ âm tiếng Việt](docs/vietnamese-language-system.md) | Cơ sở lý thuyết |
 | [Hướng dẫn phát triển](docs/development.md) | Build, test, contribute |
-
-</details>
 
 ---
 
