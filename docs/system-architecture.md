@@ -213,13 +213,12 @@ let tap = CGEvent.tapCreate(
 
 #### Text Replacement Methods
 
-**Method 1: Backspace (most apps)**
+**Method 1: Backspace (default)**
 ```
 Send: BS BS ... BS (backspace count times)
-      ↓ (small delay)
+      ↓ (0.8ms delay)
 Send: Unicode input event with output chars
 ```
-Works for: Terminal, VS Code, Sublime, plain text editors
 
 **Method 2: Selection (autocomplete apps)**
 ```
@@ -227,7 +226,148 @@ Send: Shift+Left Shift+Left ... Shift+Left (select chars)
       ↓
 Send: Unicode input event (replaces selection)
 ```
-Works for: Chrome, Safari, Excel, Word (fixes "dính chữ" issue)
+
+#### Engine Result Cases
+
+| Case | Action | Backspace | Output | Example (Telex) | Example (VNI) |
+|------|--------|-----------|--------|-----------------|---------------|
+| **Pass-through** | None | 0 | - | Normal letters, ctrl+key | Normal letters, ctrl+key |
+| **Mark (dấu thanh)** | Send | 1 | vowel+mark | `as` → `á` | `a1` → `á` |
+| **Tone (dấu mũ/móc)** | Send | 1+ | vowel+tone | `aa` → `â`, `ow` → `ơ` | `a6` → `â`, `o7` → `ơ` |
+| **Stroke (đ)** | Send | 1+ | đ | `dd` → `đ` | `d9` → `đ` |
+| **Compound ươ** | Send | 2 | ươ | `uow` → `ươ` | `u7o7` → `ươ` |
+| **Mark reposition** | Send | 2+ | repositioned | `hoaf` → `hoà` | `hoa2` → `hoà` |
+| **Revert (double key)** | Send | 1+ | original+key | `ass` → `as` | `a11` → `a1` |
+| **Word shortcut** | Send | N | expanded | `vn ` → `Việt Nam ` | same |
+| **W as ư (Telex)** | Send | 0 | ư | `w` → `ư`, `nhw` → `như` | N/A |
+
+#### Text Replacement Strategy Matrix
+
+| Backspace Count | Method | Reason | UX Impact |
+|-----------------|--------|--------|-----------|
+| **0** | None | No replacement needed (W→ư adds char) | ✅ Best - instant |
+| **1** | Backspace | Single char, fast, no flicker | ✅ Good - imperceptible |
+| **2-3** | Backspace | Compound vowels, still fast | ⚡ OK - minimal delay |
+| **4+** | Backspace | Long shortcuts | ⚠️ May see brief flicker |
+
+#### App Compatibility Matrix
+
+**Legend:** ✅ OK | ⚠️ Sometimes issues | ❌ Known issues
+
+##### Browsers
+
+| App | Bundle ID | Body Text | Address Bar | Search Box |
+|-----|-----------|-----------|-------------|------------|
+| Chrome | `com.google.Chrome` | ✅ Backspace | ❌ Selection | ⚠️ Selection |
+| Safari | `com.apple.Safari` | ✅ Backspace | ❌ Selection | ⚠️ Selection |
+| Firefox | `org.mozilla.firefox` | ✅ Backspace | ❌ Selection | ⚠️ Selection |
+| Edge | `com.microsoft.edgemac` | ✅ Backspace | ❌ Selection | ⚠️ Selection |
+| Arc | `company.thebrowser.Browser` | ✅ Backspace | ❌ Selection | ⚠️ Selection |
+
+##### Office & Productivity
+
+| App | Bundle ID | Issue | Method |
+|-----|-----------|-------|--------|
+| Excel | `com.microsoft.Excel` | Cell autocomplete | Selection |
+| Word | `com.microsoft.Word` | Suggestion popup | Selection |
+| PowerPoint | `com.microsoft.Powerpoint` | Text box | Selection |
+| Pages | `com.apple.iWork.Pages` | None (native) | Backspace |
+| Numbers | `com.apple.iWork.Numbers` | None (native) | Backspace |
+| Google Docs | (web) | Canvas-based | Backspace |
+
+##### IDEs & Editors
+
+| App | Bundle ID | Issue | Method |
+|-----|-----------|-------|--------|
+| VS Code | `com.microsoft.VSCode` | None | Backspace |
+| Xcode | `com.apple.dt.Xcode` | None (native) | Backspace |
+| Android Studio | `com.google.android.studio` | Autocomplete popup | Selection |
+| IntelliJ | `com.jetbrains.intellij` | Autocomplete | Selection |
+| WebStorm | `com.jetbrains.WebStorm` | Autocomplete | Selection |
+| Sublime Text | `com.sublimetext.*` | None | Backspace |
+
+##### Electron Apps
+
+| App | Bundle ID | Issue | Method |
+|-----|-----------|-------|--------|
+| Slack | `com.tinyspeck.slackmacgap` | Sometimes lost char | Backspace |
+| Discord | `com.hnc.Discord` | Electron IME bugs | Backspace |
+| Notion | `notion.id` | Sometimes sticky | Backspace |
+| Obsidian | `md.obsidian` | None | Backspace |
+| Figma | `com.figma.Desktop` | Canvas text | Backspace |
+
+##### Terminal & Chat
+
+| App | Bundle ID | Issue | Method |
+|-----|-----------|-------|--------|
+| Terminal | `com.apple.Terminal` | None (native) | Backspace |
+| iTerm2 | `com.googlecode.iterm2` | None | Backspace |
+| Messages | `com.apple.MobileSMS` | None (native) | Backspace |
+| Telegram | `ru.keepcoder.Telegram` | None (native) | Backspace |
+| Zalo | `com.vng.zalo` | None | Backspace |
+
+#### Detection Strategy
+
+Instead of app-based detection, use **Accessibility API** to detect focused element type:
+
+| AX Role | AX Subrole | Context | Method |
+|---------|------------|---------|--------|
+| `AXComboBox` | - | Address bar, dropdown | Selection |
+| `AXTextField` | `AXSearchField` | Search with autocomplete | Selection |
+| `AXTextField` | - | Form input | Backspace |
+| `AXTextArea` | - | Multiline text | Backspace |
+| `AXWebArea` | - | Web content editable | Backspace |
+
+**Priority rules:**
+1. `AXComboBox` → Always Selection (address bars, dropdowns)
+2. `AXSearchField` subrole → Selection (search boxes)
+3. JetBrains apps (`com.jetbrains.*`) → Selection (autocomplete)
+4. Microsoft Excel → Selection (cell autocomplete)
+5. **Everything else** → Backspace (default, ~90% of cases)
+
+#### Current Implementation
+
+```swift
+// Accessibility-based detection (preferred)
+func getReplacementMethod() -> ReplacementMethod {
+    // Get focused element info
+    guard let info = getFocusedElementInfo() else {
+        return .backspace // Default
+    }
+
+    // Rule 1: ComboBox = address bar, dropdown
+    if info.role == "AXComboBox" {
+        return .selection
+    }
+
+    // Rule 2: Search field with autocomplete
+    if info.role == "AXTextField" && info.subrole == "AXSearchField" {
+        return .selection
+    }
+
+    // Rule 3: JetBrains IDEs
+    if info.bundleId.hasPrefix("com.jetbrains") {
+        return .selection
+    }
+
+    // Rule 4: Microsoft Excel
+    if info.bundleId == "com.microsoft.Excel" {
+        return .selection
+    }
+
+    // Default: Backspace (fast, no flicker)
+    return .backspace
+}
+```
+
+#### Known Issues & Trade-offs
+
+| Issue | Cause | Solution | Status |
+|-------|-------|----------|--------|
+| **Dính chữ (address bar)** | Autocomplete intercepts backspace | AX detection → Selection | ✅ Fixed |
+| **Flicker (selection)** | Multiple Shift+Left visible | Only use when needed | ✅ Minimized |
+| **JetBrains autocomplete** | Code completion popup | Bundle ID detection | ✅ Fixed |
+| **Excel cell autocomplete** | Cell suggestions | Bundle ID detection | ✅ Fixed |
 
 ### Accessibility Permission
 
