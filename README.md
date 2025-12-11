@@ -98,6 +98,17 @@ make build     # Build full app
 make install   # Copy vào /Applications
 ```
 
+### Nguyên tắc thiết kế
+
+| Nguyên tắc | Chi tiết |
+|------------|----------|
+| **Anti-over-engineering** | Không abstraction layer thừa. Inline code khi chỉ dùng 1 chỗ |
+| **Performance-first** | Target: <1ms latency, <10MB RAM. Không allocation trong hot path |
+| **Zero dependency** | Rust core chỉ dùng `std`. Không crates ngoài |
+| **Test-driven** | 160+ tests. Mọi PR phải pass CI. Coverage cho edge cases tiếng Việt |
+| **Validation-first** | Reject invalid input sớm. Validate trước khi transform |
+| **Platform-agnostic core** | Core = pure Rust, no OS-specific code. UI layer riêng cho mỗi platform |
+
 ### Tài liệu kỹ thuật
 
 | Tài liệu | Mô tả |
