@@ -92,7 +92,7 @@ Chi tiết: [docs/core-engine-algorithm.md](docs/core-engine-algorithm.md) | [do
 ./scripts/setup.sh
 
 # Development
-make test      # Chạy 160+ tests
+make test      # Chạy 185+ tests
 make format    # Format + lint
 make build     # Build full app
 make install   # Copy vào /Applications
@@ -105,7 +105,7 @@ make install   # Copy vào /Applications
 | **Anti-over-engineering** | Không abstraction layer thừa. Inline code khi chỉ dùng 1 chỗ |
 | **Performance-first** | Target: <1ms latency, <10MB RAM. Không allocation trong hot path |
 | **Zero dependency** | Rust core chỉ dùng `std`. Không crates ngoài |
-| **Test-driven** | 160+ tests. Mọi PR phải pass CI. Coverage cho edge cases tiếng Việt |
+| **Test-driven** | 185+ tests. Mọi PR phải pass CI. Coverage cho edge cases tiếng Việt |
 | **Validation-first** | Reject invalid input sớm. Validate trước khi transform |
 | **Platform-agnostic core** | Core = pure Rust, no OS-specific code. UI layer riêng cho mỗi platform |
 
