@@ -475,7 +475,7 @@ const TELEX_DELAYED_TONE: &[(&str, &str)] = &[
     // Words with circumflex (ô/ê/â) - need double vowel first
     ("khoongf", "khồng"),
     ("hoongf", "hồng"),
-    ("coongs", "công"),
+    ("coongs", "cống"),
     ("toongs", "tống"),
     // Words with horn (ư/ơ) - uw/ow
     ("tuwf", "từ"),
@@ -516,7 +516,7 @@ const VNI_DELAYED_TONE: &[(&str, &str)] = &[
     // Words with circumflex (ô/ê/â) - need mark first (6)
     ("khong62", "khồng"),
     ("hong62", "hồng"),
-    ("cong61", "công"),
+    ("cong61", "cống"),
     ("tong61", "tống"),
     // Words with horn (ư/ơ) - need mark (7)
     ("tu72", "từ"),
