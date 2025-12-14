@@ -37,32 +37,23 @@
 | **Linux** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-linux.md) |
 | **Windows** | 🗓️ Sắp ra mắt | — | [Xem lộ trình](docs/install-windows.md) |
 
-## ✨ Tính năng nổi bật
+## ✨ Tính năng
 
-### ⌨️ Gõ tiếng Việt
-
-- **Telex & VNI** — Chọn kiểu gõ quen thuộc
-- **Đặt dấu thông minh** — Tự động đúng vị trí (`hoà` hoặc `hòa`)
-- **Nhận diện tiếng Anh** — `Windows`, `Developer` không bị thêm dấu
-- **Gõ linh hoạt** — `Dod` → `Đo`, `duocwj` → `được`
-- **Gõ tắt** — `vn` → `Việt Nam`, `ko` → `không`
-
-### 🎨 Giao diện
-
-- **Dark/Light Mode** — Tự động theo hệ thống
-- **Native macOS** — Hòa hợp với hệ điều hành
-- **Cài là dùng** — Mở app là hiểu ngay
-
-### ⚡ Hiệu năng
-
-- **Siêu nhanh** — Độ trễ <1ms, gõ mượt như không có bộ gõ
-- **Siêu nhẹ** — Chỉ ~5MB RAM
-- **Hoạt động mọi nơi** — Terminal, VS Code, Chrome, Word, Excel...
+| | |
+|:--|:--|
+| ⌨️ **Telex & VNI** | Chọn kiểu gõ quen thuộc |
+| 🎯 **Đặt dấu đúng vị trí** | `hoà` hoặc `hòa` — tùy bạn chọn |
+| 🔤 **Nhận diện tiếng Anh** | `Windows`, `Chrome` không bị thêm dấu |
+| ✂️ **Gõ tắt** | `vn` → `Việt Nam`, `ko` → `không` |
+| ⚡ **Nhanh & Nhẹ** | <1ms · ~5MB RAM |
+| 🌗 **Dark/Light** | Tự động theo hệ thống |
+| 🔌 **Tương thích mọi app** | Terminal, VS Code, Chrome, Word, Excel... |
+| 💻 **Đa nền tảng** | macOS, Linux, Windows (sắp ra mắt) |
 
 ### 🛡️ Cam kết "Ba Không"
 
-- 🚫 **Không thu phí** — Miễn phí mãi mãi
-- 🚫 **Không quảng cáo** — Không popup phiền phức
+- 🚫 **Không thu phí** — Miễn phí mãi mãi, không bản Pro
+- 🚫 **Không quảng cáo** — Không popup, không làm phiền
 - 🚫 **Không theo dõi** — Offline 100%, mã nguồn mở
 
 ## 🆚 So sánh với bộ gõ khác
