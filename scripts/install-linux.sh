@@ -37,12 +37,12 @@ install_fcitx5() {
 
     log_info "Cài đặt Fcitx5..."
     if command -v apt &>/dev/null; then
-        sudo apt update -qq 2>/dev/null
-        sudo apt install -y -qq fcitx5 im-config 2>/dev/null || sudo apt install -y -qq fcitx5 2>/dev/null
+        sudo apt update -qq
+        sudo apt install -y fcitx5 im-config 2>&1 | grep -v "^$" || sudo apt install -y fcitx5
     elif command -v dnf &>/dev/null; then
-        sudo dnf install -y -q fcitx5 2>/dev/null
+        sudo dnf install -y fcitx5
     elif command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm --quiet fcitx5 2>/dev/null
+        sudo pacman -S --noconfirm fcitx5
     else
         log_error "Distro không được hỗ trợ"
         exit 1
@@ -54,8 +54,8 @@ install_fcitx5() {
 install_addon() {
     log_info "Tải Gõ Nhanh addon..."
     cd "$TMP"
-    if curl -fsSL "https://github.com/$REPO/releases/latest/download/gonhanh-linux.tar.gz" 2>/dev/null | tar xz 2>/dev/null; then
-        cd gonhanh-linux && ./install.sh >/dev/null 2>&1
+    if curl -fsSL "https://github.com/$REPO/releases/latest/download/gonhanh-linux.tar.gz" | tar xz; then
+        cd gonhanh-linux && ./install.sh
         log_ok "Addon đã cài đặt"
     else
         log_error "Không thể tải addon"
@@ -67,7 +67,10 @@ install_addon() {
 install_cli() {
     log_info "Cài đặt CLI..."
     mkdir -p ~/.local/bin
-    curl -fsSL "https://raw.githubusercontent.com/$REPO/main/platforms/linux/scripts/gonhanh-cli.sh" -o ~/.local/bin/gn 2>/dev/null
+    if ! curl -fsSL "https://raw.githubusercontent.com/$REPO/main/platforms/linux/scripts/gonhanh-cli.sh" -o ~/.local/bin/gn; then
+        log_error "Không thể tải CLI"
+        exit 1
+    fi
     chmod +x ~/.local/bin/gn
 
     # Ensure ~/.local/bin is in PATH
