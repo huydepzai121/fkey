@@ -19,6 +19,14 @@
   Cài là dùng. Không quảng cáo. Không thu thập dữ liệu.
 </p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/screenshot-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/screenshot-light.png">
+    <img src="assets/screenshot-dark.png" alt="Gõ Nhanh Screenshot" width="600">
+  </picture>
+</p>
+
 ---
 
 ## 📥 Tải về & Cài đặt
@@ -29,25 +37,32 @@
 | **Linux** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-linux.md) |
 | **Windows** | 🗓️ Sắp ra mắt | — | [Xem lộ trình](docs/install-windows.md) |
 
-## ✨ Tính năng chính
+## ✨ Tính năng nổi bật
 
-| Tính năng | Mô tả |
-|-----------|-------|
-| **Telex & VNI** | Chọn kiểu gõ quen thuộc của bạn |
-| **Đặt dấu thông minh** | Tự động đặt dấu đúng vị trí theo quy tắc ngữ âm (`hoà` hoặc `hòa`) |
-| **Tự nhận diện tiếng Anh** | Gõ `Claus`, `Windows`, `Developer` không bị thêm dấu — engine nhận diện từ không hợp lệ |
-| **Gõ tắt** | Tạo phím tắt riêng (`vn` → `Việt Nam`, `ko` → `không`) |
-| **Gõ linh hoạt** | `Dod` → `Đo`, `duocwj` → `được` — thứ tự phím không quan trọng |
-| **Nhấn đúp để hủy** | `aa` → `â`, nhấn `a` thêm lần nữa → `aa` |
-| **Nhanh & Nhẹ** | Độ trễ <1ms, chỉ dùng ~5MB RAM |
-| **Hoạt động mọi nơi** | Terminal, VS Code, Chrome, Word, Excel... |
-| **Control+Space** | Chuyển đổi Anh/Việt nhanh chóng |
-| **Tự khởi động** | Chạy cùng hệ thống, không cần bật thủ công |
+### ⌨️ Gõ tiếng Việt
 
-### Cam kết "Ba Không"
+- **Telex & VNI** — Chọn kiểu gõ quen thuộc
+- **Đặt dấu thông minh** — Tự động đúng vị trí (`hoà` hoặc `hòa`)
+- **Nhận diện tiếng Anh** — `Windows`, `Developer` không bị thêm dấu
+- **Gõ linh hoạt** — `Dod` → `Đo`, `duocwj` → `được`
+- **Gõ tắt** — `vn` → `Việt Nam`, `ko` → `không`
 
-- 🚫 **Không thu phí** — Miễn phí mãi mãi, không bản Pro
-- 🚫 **Không quảng cáo** — Không popup, không làm phiền
+### 🎨 Giao diện
+
+- **Dark/Light Mode** — Tự động theo hệ thống
+- **Native macOS** — Hòa hợp với hệ điều hành
+- **Cài là dùng** — Mở app là hiểu ngay
+
+### ⚡ Hiệu năng
+
+- **Siêu nhanh** — Độ trễ <1ms, gõ mượt như không có bộ gõ
+- **Siêu nhẹ** — Chỉ ~5MB RAM
+- **Hoạt động mọi nơi** — Terminal, VS Code, Chrome, Word, Excel...
+
+### 🛡️ Cam kết "Ba Không"
+
+- 🚫 **Không thu phí** — Miễn phí mãi mãi
+- 🚫 **Không quảng cáo** — Không popup phiền phức
 - 🚫 **Không theo dõi** — Offline 100%, mã nguồn mở
 
 ## 🆚 So sánh với bộ gõ khác
