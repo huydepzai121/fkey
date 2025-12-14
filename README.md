@@ -35,16 +35,14 @@
 
 ## ✨ Tính năng
 
-| | |
-|:--|:--|
-| ⌨️ **Telex & VNI** | Chọn kiểu gõ quen thuộc |
-| 🎯 **Đặt dấu đúng vị trí** | `hoà` hoặc `hòa` — tùy bạn chọn |
-| 🔤 **Nhận diện tiếng Anh** | `Windows`, `Chrome` không bị thêm dấu |
-| ✂️ **Gõ tắt** | `vn` → `Việt Nam`, `ko` → `không` |
-| ⚡ **Nhanh & Nhẹ** | <1ms · ~5MB RAM |
-| 🌗 **Dark/Light** | Tự động theo hệ thống |
-| 🔌 **Tương thích mọi app** | Terminal, VS Code, Chrome, Word, Excel... |
-| 💻 **Đa nền tảng** | macOS, Linux, Windows (sắp ra mắt) |
+- ⌨️ **Telex & VNI** — Chọn kiểu gõ quen thuộc
+- 🎯 **Đặt dấu đúng vị trí** — `hoà` hoặc `hòa` tùy bạn chọn
+- 🔤 **Nhận diện tiếng Anh** — `Windows`, `Chrome` không bị thêm dấu
+- ✂️ **Gõ tắt** — `vn` → `Việt Nam`, `ko` → `không`
+- ⚡ **Nhanh & Nhẹ** — <1ms · ~5MB RAM
+- 🌗 **Dark/Light** — Tự động theo hệ thống
+- 🔌 **Tương thích mọi app** — Terminal, VS Code, Chrome, Word, Excel...
+- 💻 **Đa nền tảng** — macOS, Linux, Windows (sắp ra mắt)
 
 ### 🛡️ Cam kết "Ba Không"
 
