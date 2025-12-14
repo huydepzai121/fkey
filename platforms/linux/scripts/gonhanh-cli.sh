@@ -1,8 +1,8 @@
 #!/bin/bash
-# Gõ Nhanh CLI v1.0.0
+# Gõ Nhanh CLI
 # Usage: gn [command]
 
-VERSION="1.0.0"
+VERSION=$(cat ~/.local/share/gonhanh/version 2>/dev/null || echo "1.0.0")
 CONFIG_DIR="$HOME/.config/gonhanh"
 METHOD_FILE="$CONFIG_DIR/method"
 
