@@ -17,7 +17,6 @@ Tài liệu toàn diện về hệ thống chữ viết tiếng Việt (chữ Qu
 9. [Phương pháp gõ Telex](#9-phương-pháp-gõ-telex)
 10. [Bảng mã Unicode](#10-bảng-mã-unicode)
 11. [Tài liệu tham khảo](#11-tài-liệu-tham-khảo)
-12. [Thuật toán Xác nhận Âm tiết (Validation)](#12-thuật-toán-xác-nhận-âm-tiết-tiếng-việt-validation)
 
 ---
 
@@ -1034,18 +1033,16 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 - Thompson, Laurence C. (1965). _A Vietnamese Grammar_. University of Washington Press.
 - Đoàn Thiện Thuật (1977). _Ngữ âm tiếng Việt_. NXB Đại học và Trung học chuyên nghiệp.
 
----
+> **Xem thêm**: [Thuật toán Validation](./validation-algorithm.md) - Chi tiết thuật toán xác nhận âm tiết tiếng Việt.
 
 ---
 
-## 12. Thuật toán Xác nhận Âm tiết Tiếng Việt (Validation)
+## Changelog
 
-> **Mục đích**: Xác định buffer hiện tại có phải là âm tiết tiếng Việt hợp lệ hay không trước khi áp dụng transformation.
+- **2025-12-14**: Di chuyển Thuật toán Validation sang file riêng
+  - Xóa mục 12 (Thuật toán Xác nhận Âm tiết) - đã có trong [validation-algorithm.md](./validation-algorithm.md)
 
-### 12.1 Tại sao cần Validation?
-
-```
-VÍ DỤ:
+- **2025-12-08**: Bổ sung Quy tắc Chính tả và Ràng buộc Âm vị học
 │
 ├── "Duoc" + j → "Được" ✓
 │   └── "Duoc" là âm tiết hợp lệ → cho phép replace

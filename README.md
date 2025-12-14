@@ -71,6 +71,8 @@ Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại th
 
 Từ nhu cầu giải quyết vấn đề cá nhân, Gõ Nhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối và kế thừa từ **UniKey**, **OpenKey** và **EVKey**.
 
+Hy vọng dự án này truyền cảm hứng cho nhiều sản phẩm Việt chất lượng khác.
+
 ---
 
 ## 🔧 Dành cho Developer
@@ -93,7 +95,7 @@ Chi tiết: [docs/core-engine-algorithm.md](docs/core-engine-algorithm.md) | [do
 ./scripts/setup.sh
 
 # Development
-make test      # Chạy 185+ tests
+make test      # Chạy tests
 make format    # Format + lint
 make build     # Build full app
 make install   # Copy vào /Applications
@@ -106,7 +108,7 @@ make install   # Copy vào /Applications
 | **Anti-over-engineering** | Không abstraction layer thừa. Inline code khi chỉ dùng 1 chỗ |
 | **Performance-first** | Target: <1ms latency, <10MB RAM. Không allocation trong hot path |
 | **Zero dependency** | Rust core chỉ dùng `std`. Không crates ngoài |
-| **Test-driven** | 185+ tests. Mọi PR phải pass CI. Coverage cho edge cases tiếng Việt |
+| **Test-driven** | 200+ tests với test coverage 100%. Coverage cho edge cases tiếng Việt |
 | **Validation-first** | Reject invalid input sớm. Validate trước khi transform |
 | **Platform-agnostic core** | Core = pure Rust, no OS-specific code. UI layer riêng cho mỗi platform |
 
@@ -116,7 +118,7 @@ make install   # Copy vào /Applications
 |----------|-------|
 | [Kiến trúc hệ thống](docs/system-architecture.md) | FFI, luồng dữ liệu, app compatibility |
 | [Validation](docs/validation-algorithm.md) | 5 quy tắc kiểm tra âm tiết |
-| [Ngữ âm tiếng Việt](docs/vietnamese-language-system.md) | Cơ sở lý thuyết |
+| [Hệ thống chữ viết tiếng Việt & Phương pháp gõ](docs/vietnamese-language-system.md) | Cơ sở lý thuyết |
 | [Hướng dẫn phát triển](docs/development.md) | Build, test, contribute |
 
 ---
