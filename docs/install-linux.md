@@ -45,14 +45,6 @@ curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scrip
 
 ---
 
-## Nâng cấp
-
-```bash
-gn update
-```
-
----
-
 ## Gỡ cài đặt
 
 ```bash
