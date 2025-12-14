@@ -36,7 +36,7 @@ install_fcitx5() {
 
     log_info "Cài đặt Fcitx5..."
     if command -v apt &>/dev/null; then
-        sudo apt update -qq || { log_error "apt update thất bại"; exit 1; }
+        sudo apt update -qq --allow-releaseinfo-change 2>/dev/null || sudo apt update -qq 2>/dev/null || true
         sudo apt install -y fcitx5 || { log_error "Không thể cài fcitx5"; exit 1; }
     elif command -v dnf &>/dev/null; then
         sudo dnf install -y fcitx5 || { log_error "Không thể cài fcitx5"; exit 1; }
