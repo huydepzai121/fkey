@@ -103,7 +103,7 @@ pub fn has_gi_initial(buf: &Buffer) -> bool {
     let third = buf.get(2).map(|c| c.key);
 
     matches!((first, second), (Some(keys::G), Some(keys::I)))
-        && third.map(|k| keys::is_vowel(k)).unwrap_or(false)
+        && third.map(keys::is_vowel).unwrap_or(false)
 }
 
 mod test_utils {

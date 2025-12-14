@@ -90,9 +90,7 @@ const SIMPLE_INITIALS: &[&str] = &[
     "", "b", "c", "d", "g", "h", "k", "l", "m", "n", "p", "r", "s", "t", "v", "x",
 ];
 
-const DOUBLE_INITIALS: &[&str] = &[
-    "ch", "gh", "kh", "ng", "nh", "ph", "th", "tr",
-];
+const DOUBLE_INITIALS: &[&str] = &["ch", "gh", "kh", "ng", "nh", "ph", "th", "tr"];
 
 // Special initials that affect vowel patterns
 const GI_INITIAL: &str = "gi";
@@ -116,7 +114,7 @@ const TONE_MARKS: &[(&str, &str, &str)] = &[
     ("f", "\u{0300}", "huyền"), // ̀ combining grave
     ("r", "\u{0309}", "hỏi"),   // ̉ combining hook above
     ("x", "\u{0303}", "ngã"),   // ̃ combining tilde
-    ("j", "\u{0323}", "nặng"), // ̣ combining dot below
+    ("j", "\u{0323}", "nặng"),  // ̣ combining dot below
 ];
 
 // ============================================================
@@ -554,12 +552,12 @@ fn comprehensive_vowel_patterns_sac() {
         ("eos", "éo"),
         ("ius", "íu"),
         // Special patterns
-        ("ias", "ía"),    // ia: tone on i
-        ("uwas", "ứa"),   // ưa: tone on ư
+        ("ias", "ía"),  // ia: tone on i
+        ("uwas", "ứa"), // ưa: tone on ư
         // Compound vowels (tone on 2nd)
-        ("uows", "ướ"),   // ươ
-        ("uoos", "uố"),   // uô
-        ("iees", "iế"),   // iê
+        ("uows", "ướ"), // ươ
+        ("uoos", "uố"), // uô
+        ("iees", "iế"), // iê
         // Three-vowel (tone on middle)
         ("oais", "oái"),
         ("oays", "oáy"),
