@@ -4,100 +4,123 @@
 set -e
 
 REPO="khaphanspace/gonhanh.org"
+VERSION="1.0.0"
 TMP=$(mktemp -d)
 trap "rm -rf $TMP" EXIT
 
-echo "═══════════════════════════════════════"
-echo "       Gõ Nhanh - Linux Installer      "
-echo "═══════════════════════════════════════"
-echo ""
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Detect distro and install Fcitx5 if needed
+log_info()  { echo -e "${BLUE}[*]${NC} $1"; }
+log_ok()    { echo -e "${GREEN}[✓]${NC} $1"; }
+log_warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
+log_error() { echo -e "${RED}[✗]${NC} $1"; }
+
+header() {
+    echo ""
+    echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║${NC}       Gõ Nhanh v$VERSION - Linux        ${GREEN}║${NC}"
+    echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# Install Fcitx5 if needed
 install_fcitx5() {
     if command -v fcitx5 &>/dev/null; then
-        echo "✓ Fcitx5 đã được cài đặt"
+        log_ok "Fcitx5 đã có sẵn"
         return 0
     fi
 
-    echo "→ Đang cài đặt Fcitx5..."
+    log_info "Cài đặt Fcitx5..."
     if command -v apt &>/dev/null; then
-        sudo apt update -qq
-        sudo apt install -y -qq fcitx5 im-config || sudo apt install -y -qq fcitx5
+        sudo apt update -qq 2>/dev/null
+        sudo apt install -y -qq fcitx5 im-config 2>/dev/null || sudo apt install -y -qq fcitx5 2>/dev/null
     elif command -v dnf &>/dev/null; then
-        sudo dnf install -y -q fcitx5
+        sudo dnf install -y -q fcitx5 2>/dev/null
     elif command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm --quiet fcitx5
+        sudo pacman -S --noconfirm --quiet fcitx5 2>/dev/null
     else
-        echo "✗ Không hỗ trợ distro này. Vui lòng cài fcitx5 thủ công."
+        log_error "Distro không được hỗ trợ"
         exit 1
     fi
-    echo "✓ Đã cài đặt Fcitx5"
+    log_ok "Fcitx5 đã cài đặt"
 }
 
-# Download and install GoNhanh
-install_gonhanh() {
-    echo "→ Đang tải Gõ Nhanh..."
+# Download and install GoNhanh addon
+install_addon() {
+    log_info "Tải Gõ Nhanh addon..."
     cd "$TMP"
-    curl -fsSL "https://github.com/$REPO/releases/latest/download/gonhanh-linux.tar.gz" | tar xz
-    cd gonhanh-linux && ./install.sh
-    echo "✓ Đã cài đặt Gõ Nhanh"
+    if curl -fsSL "https://github.com/$REPO/releases/latest/download/gonhanh-linux.tar.gz" 2>/dev/null | tar xz 2>/dev/null; then
+        cd gonhanh-linux && ./install.sh >/dev/null 2>&1
+        log_ok "Addon đã cài đặt"
+    else
+        log_error "Không thể tải addon"
+        exit 1
+    fi
 }
 
-# Setup environment variables
-setup_environment() {
-    echo "→ Đang cấu hình môi trường..."
+# Install CLI tool
+install_cli() {
+    log_info "Cài đặt CLI..."
+    mkdir -p ~/.local/bin
+    curl -fsSL "https://raw.githubusercontent.com/$REPO/main/platforms/linux/scripts/gonhanh-cli.sh" -o ~/.local/bin/gn 2>/dev/null
+    chmod +x ~/.local/bin/gn
 
-    ENV_VARS='export GTK_IM_MODULE=fcitx
+    # Ensure ~/.local/bin is in PATH
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        SHELL_RC=""
+        [[ -f ~/.zshrc ]] && SHELL_RC=~/.zshrc
+        [[ -f ~/.bashrc ]] && SHELL_RC=~/.bashrc
+
+        if [[ -n "$SHELL_RC" ]] && ! grep -q 'PATH="$HOME/.local/bin' "$SHELL_RC" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+        fi
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    log_ok "CLI (gn) đã cài đặt"
+}
+
+# Setup environment variables for input method
+setup_environment() {
+    log_info "Cấu hình môi trường..."
+
+    ENV_BLOCK='# Gõ Nhanh
+export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx'
 
     for rc in ~/.bashrc ~/.zshrc ~/.profile; do
-        if [[ -f "$rc" ]] && ! grep -q "GTK_IM_MODULE=fcitx" "$rc"; then
+        if [[ -f "$rc" ]] && ! grep -q "GTK_IM_MODULE=fcitx" "$rc" 2>/dev/null; then
             echo "" >> "$rc"
-            echo "# Gõ Nhanh - Vietnamese Input Method" >> "$rc"
-            echo "$ENV_VARS" >> "$rc"
+            echo "$ENV_BLOCK" >> "$rc"
         fi
     done
 
-    # Export for current session
     export GTK_IM_MODULE=fcitx
     export QT_IM_MODULE=fcitx
     export XMODIFIERS=@im=fcitx
-
-    echo "✓ Đã cấu hình biến môi trường"
+    log_ok "Môi trường đã cấu hình"
 }
 
-# Auto-configure Fcitx5 to use GoNhanh
+# Configure Fcitx5 to use GoNhanh
 configure_fcitx5() {
-    echo "→ Đang cấu hình Fcitx5..."
+    log_info "Cấu hình Fcitx5..."
 
-    FCITX5_CONFIG_DIR="$HOME/.config/fcitx5"
-    PROFILE="$FCITX5_CONFIG_DIR/profile"
+    FCITX5_DIR="$HOME/.config/fcitx5"
+    PROFILE="$FCITX5_DIR/profile"
+    mkdir -p "$FCITX5_DIR"
 
-    mkdir -p "$FCITX5_CONFIG_DIR"
+    if [[ -f "$PROFILE" ]] && grep -q "gonhanh" "$PROFILE" 2>/dev/null; then
+        log_ok "Fcitx5 đã được cấu hình"
+        return 0
+    fi
 
-    # Create or update Fcitx5 profile to include GoNhanh
-    if [[ -f "$PROFILE" ]]; then
-        # Check if GoNhanh already in profile
-        if grep -q "gonhanh" "$PROFILE"; then
-            echo "✓ GoNhanh đã có trong cấu hình Fcitx5"
-            return 0
-        fi
-
-        # Add GoNhanh to existing profile
-        # Find the Groups section and add gonhanh
-        if grep -q "^\[Groups/0/Items/0\]" "$PROFILE"; then
-            # Get the next item number
-            LAST_ITEM=$(grep -oP "Groups/0/Items/\K[0-9]+" "$PROFILE" | sort -n | tail -1)
-            NEXT_ITEM=$((LAST_ITEM + 1))
-
-            echo "" >> "$PROFILE"
-            echo "[Groups/0/Items/$NEXT_ITEM]" >> "$PROFILE"
-            echo "Name=gonhanh" >> "$PROFILE"
-        fi
-    else
-        # Create new profile with keyboard and gonhanh
-        cat > "$PROFILE" << 'EOF'
+    # Create fresh profile
+    cat > "$PROFILE" << 'EOF'
 [Groups/0]
 Name=Default
 Default Layout=us
@@ -114,67 +137,68 @@ Layout=
 [GroupOrder]
 0=Default
 EOF
-    fi
-
-    echo "✓ Đã thêm GoNhanh vào Fcitx5"
+    log_ok "Fcitx5 đã được cấu hình"
 }
 
-# Start/restart Fcitx5
-start_fcitx5() {
-    echo "→ Đang khởi động Fcitx5..."
+# Set Fcitx5 as default IM
+set_default_im() {
+    command -v im-config &>/dev/null && im-config -n fcitx5 2>/dev/null || true
+    command -v imsettings-switch &>/dev/null && imsettings-switch fcitx5 2>/dev/null || true
+}
 
-    # Kill existing fcitx5 if running
+# Start Fcitx5
+start_fcitx5() {
+    log_info "Khởi động Fcitx5..."
     pkill -9 fcitx5 2>/dev/null || true
+    sleep 0.3
+    nohup fcitx5 -d &>/dev/null &
     sleep 0.5
 
-    # Start fcitx5 in background
-    nohup fcitx5 -d &>/dev/null &
-    sleep 1
-
     if pgrep -x fcitx5 &>/dev/null; then
-        echo "✓ Fcitx5 đang chạy"
+        log_ok "Fcitx5 đang chạy"
     else
-        echo "! Không thể khởi động Fcitx5. Vui lòng chạy: fcitx5 -d"
+        log_warn "Fcitx5 chưa chạy (cần GUI)"
     fi
 }
 
-# Set Fcitx5 as default IM (for supported systems)
-set_default_im() {
-    # For systems using im-config (Debian/Ubuntu)
-    if command -v im-config &>/dev/null; then
-        im-config -n fcitx5 2>/dev/null || true
+# Print final summary
+print_summary() {
+    echo ""
+    echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║${NC}         Cài đặt hoàn tất!             ${GREEN}║${NC}"
+    echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  ${BLUE}Phím tắt:${NC}  Ctrl+Space hoặc Super+Space"
+    echo ""
+    echo -e "  ${BLUE}Lệnh:${NC}"
+    echo "    gn           Toggle bật/tắt"
+    echo "    gn vni       Chuyển VNI"
+    echo "    gn telex     Chuyển Telex"
+    echo "    gn status    Xem trạng thái"
+    echo "    gn help      Trợ giúp"
+    echo ""
+
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        echo -e "  ${YELLOW}Chạy lệnh sau để dùng ngay:${NC}"
+        echo "    source ~/.bashrc"
+        echo ""
     fi
 
-    # For systems using imsettings (Fedora)
-    if command -v imsettings-switch &>/dev/null; then
-        imsettings-switch fcitx5 2>/dev/null || true
-    fi
+    log_warn "Đăng xuất/đăng nhập lại để áp dụng đầy đủ"
+    echo ""
 }
 
-# Main installation
+# Main
 main() {
+    header
     install_fcitx5
-    install_gonhanh
+    install_addon
+    install_cli
     setup_environment
     configure_fcitx5
     set_default_im
     start_fcitx5
-
-    echo ""
-    echo "═══════════════════════════════════════"
-    echo "✓ Cài đặt hoàn tất!"
-    echo "═══════════════════════════════════════"
-    echo ""
-    echo "Phím tắt:"
-    echo "  Ctrl+Space hoặc Super+Space  Bật/tắt (tùy desktop)"
-    echo ""
-    echo "Lệnh nhanh:"
-    echo "  gn             Toggle bật/tắt"
-    echo "  gn vni         Chuyển sang VNI"
-    echo "  gn telex       Chuyển sang Telex"
-    echo ""
-    echo "Lưu ý: Có thể cần đăng xuất/đăng nhập lại để áp dụng đầy đủ."
-    echo ""
+    print_summary
 }
 
 main
