@@ -489,8 +489,8 @@ Visible to user as transformed or original text
 
 ---
 
-**Last Updated**: 2025-12-10
+**Last Updated**: 2025-12-14
 **Architecture Version**: 2.0 (Validation-First, Cross-Platform)
-**Platforms**: macOS (v1.0.21+, CGEventTap), Windows (production, SetWindowsHookEx), Linux (planned)
+**Platforms**: macOS (v1.0.21+, CGEventTap), Windows (production, SetWindowsHookEx), Linux (beta, Fcitx5)
 **Diagram Format**: ASCII (compatible with all documentation viewers)
 **Codebase Metrics**: 99,444 tokens, 380,026 chars, 78 files (per repomix analysis)

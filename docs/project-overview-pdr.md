@@ -6,9 +6,9 @@ Gõ Nhanh is a **high-performance Vietnamese input method engine** (IME) for mac
 
 ## Product Goals
 
-1. **Performance**: Sub-millisecond keystroke latency (<1ms)
+1. **Performance**: Sub-millisecond keystroke latency (<1ms) - achieved at ~0.2-0.5ms
 2. **Reliability**: Validation-first architecture (phonology rules checked BEFORE transformation)
-3. **Cross-Platform**: macOS + Windows + Linux (planned) with consistent core engine
+3. **Cross-Platform**: macOS + Windows (production) + Linux (beta) with consistent core engine
 4. **User Experience**: Seamless platform integration (CGEventTap on macOS, SetWindowsHookEx on Windows)
 5. **Memory Efficiency**: ~5MB memory footprint with optimized binary packaging
 
@@ -113,19 +113,19 @@ User Keystroke (CGEventTap/SetWindowsHookEx)
 - Validation-first architecture
 - Shortcut system with priority matching
 
-### Phase 2: Cross-Platform (Partial - Windows Complete)
+### Phase 2: Cross-Platform (Windows Complete, Linux In Progress)
 
-**Windows 10/11 (Complete)**
+**Windows 10/11 (Complete - Production Ready)**
 - SetWindowsHookEx keyboard hook
 - WPF/.NET 8 UI with system tray
 - Registry-based settings persistence
 - Feature parity with macOS version
 - Compiled DLL shared with macOS core
 
-**Linux (Planned)**
-- X11/Wayland event hook integration
-- Qt or GTK UI
-- XDG config for settings persistence
+**Linux (Beta)**
+- Fcitx5 addon integration
+- C++ bridge to Rust core
+- X11/Wayland support
 - Feature parity with macOS/Windows
 
 ### Phase 3: Enhanced Features (Future)
@@ -210,7 +210,7 @@ Examples:
 
 ---
 
-**Last Updated**: 2025-12-10
+**Last Updated**: 2025-12-14
 **Status**: Active Development
-**Platforms**: macOS (v1.0.21+), Windows (production), Linux (planned)
+**Platforms**: macOS (v1.0.21+), Windows (production), Linux (beta)
 **Repository**: https://github.com/khaphanspace/gonhanh.org

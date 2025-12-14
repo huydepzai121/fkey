@@ -81,8 +81,18 @@ gonhanh.org/
 │   │   │   └── SettingsWindow.xaml.cs   # Preferences window
 │   │   └── libgonhanh_core.dll  # Compiled Rust DLL
 │   │
-│   └── linux/                   # Placeholder (not implemented)
-│       └── .keep
+│   └── linux/                   # Beta: Fcitx5 addon (~500 LOC)
+│       ├── src/
+│       │   ├── Engine.h/cpp      # Fcitx5 InputMethodEngine implementation
+│       │   ├── RustBridge.h/cpp  # C++ FFI wrapper to Rust core
+│       │   └── KeycodeMap.h      # X11/Wayland keysym → keycode mapping
+│       ├── data/
+│       │   ├── gonhanh-addon.conf # Fcitx5 addon registration
+│       │   └── gonhanh.conf      # Input method configuration
+│       ├── scripts/
+│       │   ├── build.sh          # CMake build script
+│       │   └── install.sh        # User-local installation script
+│       └── libgonhanh_core.so    # Compiled Rust shared library (x86_64)
 │
 ├── scripts/                     # Build automation
 │   ├── setup.sh                # Environment setup (installs Rust, arms cargo-nextest)
@@ -296,6 +306,23 @@ Stores user preferences, input method selection, enable/disable state.
 
 NotifyIcon creation, context menu: Enable/Disable, Input Method, Settings, About.
 
+### Linux Platform (platforms/linux/)
+
+#### `src/Engine.h/cpp` - Fcitx5 Integration
+**Lines**: ~200 | **Responsibility**: Input method engine | **Source**: `platforms/linux/src/Engine.h/cpp`
+
+Implements Fcitx5 `InputMethodEngine` interface. Handles input method registration, key processing, and candidate list management.
+
+#### `src/RustBridge.h/cpp` - C++ FFI Wrapper
+**Lines**: ~150 | **Responsibility**: Bridge C++ ↔ Rust | **Source**: `platforms/linux/src/RustBridge.h/cpp`
+
+C++ wrapper around Rust FFI, handles UTF-32 conversion and memory safety.
+
+#### `src/KeycodeMap.h` - Keycode Mapping
+**Source**: `platforms/linux/src/KeycodeMap.h`
+
+Maps X11/Wayland keysyms to internal keycode representation for compatibility with macOS keycode space.
+
 ## Test Coverage
 
 ### Test Files (core/tests/)
@@ -415,7 +442,8 @@ RustBridge.cs (Windows)
 
 ---
 
-**Last Updated**: 2025-12-10
-**Total Lines**: ~16,000 (Rust + Swift + Windows)
+**Last Updated**: 2025-12-14
+**Total Lines**: ~16,000 (Rust + Swift + Windows + Linux)
 **Total Tokens**: 99,444 (per repomix analysis)
 **Coverage**: 100% of directories documented
+**Platforms**: macOS (v1.0.21+), Windows (production), Linux (beta)

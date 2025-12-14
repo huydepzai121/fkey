@@ -318,6 +318,6 @@ pub extern "C" fn ime_key(key: u16, caps: bool, ctrl: bool) -> *mut Result { }
 
 ---
 
-**Last Updated**: 2025-12-10
+**Last Updated**: 2025-12-14
 **Enforced By**: GitHub Actions CI (`ci.yml`)
 **Test Coverage**: 160+ integration tests across 5 test files in `core/tests/`
