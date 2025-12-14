@@ -19,14 +19,6 @@
   Cài là dùng. Không quảng cáo. Không thu thập dữ liệu.
 </p>
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/screenshot-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="assets/screenshot-light.png">
-    <img src="assets/screenshot-dark.png" alt="Gõ Nhanh Screenshot" width="800">
-  </picture>
-</p>
-
 ---
 
 ## 📥 Tải về & Cài đặt
@@ -36,6 +28,10 @@
 | **macOS** | ✅ Sẵn sàng | [📥 Tải GoNhanh.dmg](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md) |
 | **Linux** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-linux.md) |
 | **Windows** | 🗓️ Sắp ra mắt | — | [Xem lộ trình](docs/install-windows.md) |
+
+<p align="center">
+  <img src="assets/screenshot.png" alt="Gõ Nhanh Light Mode" width="100%">
+</p>
 
 ## ✨ Tính năng
 
