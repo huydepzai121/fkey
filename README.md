@@ -23,7 +23,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/screenshot-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="assets/screenshot-light.png">
-    <img src="assets/screenshot-dark.png" alt="Gõ Nhanh Screenshot" width="600">
+    <img src="assets/screenshot-dark.png" alt="Gõ Nhanh Screenshot" width="800">
   </picture>
 </p>
 
