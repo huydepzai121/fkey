@@ -362,7 +362,7 @@ impl Engine {
             return None;
         }
 
-        // Check revert first
+        // Check revert first (same key pressed twice)
         if let Some(Transform::Tone(last_key, _)) = self.last_transform {
             if last_key == key {
                 return Some(self.revert_tone(key, caps));
@@ -377,18 +377,29 @@ impl Engine {
 
         let tone_val = tone_type.value();
 
-        // Scan buffer for eligible target vowels (without existing tone)
+        // Check if we're switching from one tone to another (e.g., ô → ơ)
+        // Find vowels that have a DIFFERENT tone (to switch) or NO tone (to add)
+        let is_switching = self
+            .buf
+            .iter()
+            .any(|c| targets.contains(&c.key) && c.tone != tone::NONE && c.tone != tone_val);
+
+        // Scan buffer for eligible target vowels
         let mut target_positions = Vec::new();
 
         // Special case: uo/ou compound for horn - find adjacent pair only
-        if tone_type == ToneType::Horn && self.has_uo_compound() {
+        // But ONLY apply compound logic when BOTH vowels are plain (not when switching)
+        if tone_type == ToneType::Horn && self.has_uo_compound() && !is_switching {
             for i in 0..self.buf.len().saturating_sub(1) {
                 let c1 = self.buf.get(i);
                 let c2 = self.buf.get(i + 1);
                 if let (Some(c1), Some(c2)) = (c1, c2) {
                     let is_uo = c1.key == keys::U && c2.key == keys::O;
                     let is_ou = c1.key == keys::O && c2.key == keys::U;
-                    if (is_uo || is_ou) && c1.tone == tone::NONE && c2.tone == tone::NONE {
+                    // Only apply compound when BOTH vowels have no tone
+                    let c1_plain = c1.tone == tone::NONE;
+                    let c2_plain = c2.tone == tone::NONE;
+                    if (is_uo || is_ou) && c1_plain && c2_plain {
                         target_positions.push(i);
                         target_positions.push(i + 1);
                         break; // Only first compound
@@ -399,9 +410,18 @@ impl Engine {
 
         // Normal case: find last matching target
         if target_positions.is_empty() {
-            // For horn modifier, apply smart vowel selection based on Vietnamese phonology
-            if tone_type == ToneType::Horn {
-                target_positions = self.find_horn_target(targets);
+            if is_switching {
+                // When switching, ONLY target vowels that already have a diacritic
+                // (don't add diacritics to plain vowels during switch)
+                for (i, c) in self.buf.iter().enumerate().rev() {
+                    if targets.contains(&c.key) && c.tone != tone::NONE && c.tone != tone_val {
+                        target_positions.push(i);
+                        break;
+                    }
+                }
+            } else if tone_type == ToneType::Horn {
+                // For horn modifier, apply smart vowel selection based on Vietnamese phonology
+                target_positions = self.find_horn_target_with_switch(targets, tone_val);
             } else {
                 // Non-horn modifiers: use standard target matching
                 for (i, c) in self.buf.iter().enumerate().rev() {
@@ -417,8 +437,79 @@ impl Engine {
             return None;
         }
 
-        // Apply tone
+        // Track earliest position modified for rebuild
         let mut earliest_pos = usize::MAX;
+
+        // If switching, clear old tones first for proper rebuild
+        if is_switching {
+            for &pos in &target_positions {
+                if let Some(c) = self.buf.get_mut(pos) {
+                    c.tone = tone::NONE;
+                    earliest_pos = earliest_pos.min(pos);
+                }
+            }
+
+            // Special case: switching from horn compound (ươ) to circumflex (uô)
+            // When switching to circumflex on 'o', also clear horn from adjacent 'u'
+            if tone_type == ToneType::Circumflex {
+                for &pos in &target_positions {
+                    if let Some(c) = self.buf.get(pos) {
+                        if c.key == keys::O {
+                            // Check for adjacent 'u' with horn and clear it
+                            if pos > 0 {
+                                if let Some(prev) = self.buf.get_mut(pos - 1) {
+                                    if prev.key == keys::U && prev.tone == tone::HORN {
+                                        prev.tone = tone::NONE;
+                                        earliest_pos = earliest_pos.min(pos - 1);
+                                    }
+                                }
+                            }
+                            if pos + 1 < self.buf.len() {
+                                if let Some(next) = self.buf.get_mut(pos + 1) {
+                                    if next.key == keys::U && next.tone == tone::HORN {
+                                        next.tone = tone::NONE;
+                                        earliest_pos = earliest_pos.min(pos + 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Special case: switching from circumflex (uô) to horn compound (ươ)
+            // For standalone uo compound (no final consonant), add horn to adjacent 'u'
+            if tone_type == ToneType::Horn && self.has_uo_compound() {
+                // Check if this is a standalone compound (o is last vowel, no final consonant)
+                let has_final = target_positions.iter().any(|&pos| {
+                    pos + 1 < self.buf.len()
+                        && self
+                            .buf
+                            .get(pos + 1)
+                            .is_some_and(|c| !keys::is_vowel(c.key))
+                });
+
+                if !has_final {
+                    for &pos in &target_positions {
+                        if let Some(c) = self.buf.get(pos) {
+                            if c.key == keys::O {
+                                // Add horn to adjacent 'u' for compound
+                                if pos > 0 {
+                                    if let Some(prev) = self.buf.get_mut(pos - 1) {
+                                        if prev.key == keys::U && prev.tone == tone::NONE {
+                                            prev.tone = tone::HORN;
+                                            earliest_pos = earliest_pos.min(pos - 1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply new tone
         for &pos in &target_positions {
             if let Some(c) = self.buf.get_mut(pos) {
                 c.tone = tone_val;
@@ -516,14 +607,19 @@ impl Engine {
         false
     }
 
-    /// Find target position for horn modifier (w key in Telex, 7/8 in VNI)
-    fn find_horn_target(&self, targets: &[u16]) -> Vec<usize> {
-        // Find vowel positions that match targets and have no tone yet
+    /// Find target position for horn modifier with switching support
+    /// Allows selecting vowels that have a different tone (for switching circumflex ↔ horn)
+    fn find_horn_target_with_switch(&self, targets: &[u16], new_tone: u8) -> Vec<usize> {
+        // Find vowel positions that match targets and either:
+        // - have no tone (normal case)
+        // - have a different tone (switching case)
         let vowels: Vec<usize> = self
             .buf
             .iter()
             .enumerate()
-            .filter(|(_, c)| targets.contains(&c.key) && c.tone == tone::NONE)
+            .filter(|(_, c)| {
+                targets.contains(&c.key) && (c.tone == tone::NONE || c.tone != new_tone)
+            })
             .map(|(i, _)| i)
             .collect();
 
@@ -539,7 +635,9 @@ impl Engine {
             .filter(|&pos| {
                 self.buf
                     .get(pos)
-                    .map(|c| targets.contains(&c.key) && c.tone == tone::NONE)
+                    .map(|c| {
+                        targets.contains(&c.key) && (c.tone == tone::NONE || c.tone != new_tone)
+                    })
                     .unwrap_or(false)
             })
             .collect()

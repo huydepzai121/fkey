@@ -587,6 +587,37 @@ const VNI_DELAYED_TONE: &[(&str, &str)] = &[
 ];
 
 // ============================================================
+// SWITCHING DIACRITICS - circumflex ↔ horn
+// ============================================================
+
+const VNI_SWITCH_DIACRITICS: &[(&str, &str)] = &[
+    // Single vowel: switch circumflex ↔ horn (last modifier wins)
+    ("o67", "ơ"),  // ô + 7 → ơ (switch to horn)
+    ("o76", "ô"),  // ơ + 6 → ô (switch to circumflex)
+    ("o676", "ô"), // multiple switches, last wins
+    ("o767", "ơ"), // multiple switches, last wins
+    // Compound vowel: switch between ươ and uô
+    ("uo76", "uô"), // ươ + 6 → uô (switch to circumflex)
+    ("uo67", "ươ"), // uô + 7 → ươ (switch to horn)
+    // Real words: last modifier wins
+    ("buong76", "buông"),  // buơng + 6 → buông (last is circumflex)
+    ("buong67", "buơng"),  // buông + 7 → buơng (last is horn)
+    ("buong767", "buơng"), // can switch multiple times
+    ("buong676", "buông"), // can switch multiple times
+];
+
+const TELEX_SWITCH_DIACRITICS: &[(&str, &str)] = &[
+    // Single vowel: switch circumflex ↔ horn (last modifier wins)
+    ("oow", "ơ"),  // ô + w → ơ (switch to horn)
+    ("owo", "ô"),  // ơ + o → ô (switch to circumflex)
+    ("oowo", "ô"), // multiple switches, last wins
+    ("owow", "ơ"), // multiple switches, last wins
+    // Compound vowel: switch between ươ and uô
+    ("uowo", "uô"), // ươ + o → uô (switch to circumflex)
+    ("uoow", "ươ"), // uô + w → ươ (switch to horn)
+];
+
+// ============================================================
 // TEST FUNCTIONS
 // ============================================================
 
@@ -733,4 +764,14 @@ fn telex_delayed_tone() {
 #[test]
 fn vni_delayed_tone() {
     vni(VNI_DELAYED_TONE);
+}
+
+#[test]
+fn telex_switch_diacritics() {
+    telex(TELEX_SWITCH_DIACRITICS);
+}
+
+#[test]
+fn vni_switch_diacritics() {
+    vni(VNI_SWITCH_DIACRITICS);
 }
