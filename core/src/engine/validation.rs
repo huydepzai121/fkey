@@ -136,6 +136,8 @@ fn rule_valid_final(keys: &[u16], syllable: &Syllable) -> Option<ValidationResul
 /// in English/foreign words don't exist in Vietnamese:
 /// - "ou" (you, our, out, house, about) - Vietnamese uses "ô", "ơ", "ươ" instead
 /// - "yo" (yoke, York, beyond, your) - Vietnamese "y" combines with ê (yêu, yến)
+///
+/// Exception: "uou" is valid (becomes ươu: hươu, rượu, bướu)
 fn rule_valid_vowel_pattern(keys: &[u16], syllable: &Syllable) -> Option<ValidationResult> {
     if syllable.vowel.len() < 2 {
         return None;
@@ -147,6 +149,11 @@ fn rule_valid_vowel_pattern(keys: &[u16], syllable: &Syllable) -> Option<Validat
     // Check for invalid vowel patterns
     for i in 0..vowels.len() - 1 {
         let pair = [vowels[i], vowels[i + 1]];
+
+        // Skip if this pair is part of valid triphthong "uou" → ươu
+        if pair == [keys::O, keys::U] && i > 0 && vowels[i - 1] == keys::U {
+            continue;
+        }
 
         if constants::INVALID_VOWEL_PATTERNS
             .iter()

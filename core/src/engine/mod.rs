@@ -380,11 +380,19 @@ impl Engine {
         // Scan buffer for eligible target vowels (without existing tone)
         let mut target_positions = Vec::new();
 
-        // Special case: uo compound for horn
+        // Special case: uo/ou compound for horn - find adjacent pair only
         if tone_type == ToneType::Horn && self.has_uo_compound() {
-            for (i, c) in self.buf.iter().enumerate() {
-                if (c.key == keys::U || c.key == keys::O) && c.tone == tone::NONE {
-                    target_positions.push(i);
+            for i in 0..self.buf.len().saturating_sub(1) {
+                let c1 = self.buf.get(i);
+                let c2 = self.buf.get(i + 1);
+                if let (Some(c1), Some(c2)) = (c1, c2) {
+                    let is_uo = c1.key == keys::U && c2.key == keys::O;
+                    let is_ou = c1.key == keys::O && c2.key == keys::U;
+                    if (is_uo || is_ou) && c1.tone == tone::NONE && c2.tone == tone::NONE {
+                        target_positions.push(i);
+                        target_positions.push(i + 1);
+                        break; // Only first compound
+                    }
                 }
             }
         }

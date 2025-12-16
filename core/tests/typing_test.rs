@@ -326,6 +326,9 @@ const TELEX_COMMON_ISSUES: &[(&str, &str)] = &[
     ("nghieeng", "nghiêng"),
     ("khuyeens", "khuyến"),
     ("nguoongf", "nguồng"),
+    // ươu triphthong (hươu = deer)
+    ("huouw", "hươu"),
+    ("ruwowuj", "rượu"),
 ];
 
 const VNI_COMMON_ISSUES: &[(&str, &str)] = &[
@@ -380,6 +383,9 @@ const VNI_COMMON_ISSUES: &[(&str, &str)] = &[
     ("ba2n", "bàn"),
     ("nha2", "nhà"),
     ("hoc5", "học"),
+    // ươu triphthong (hươu = deer)
+    ("huou7", "hươu"),
+    ("ruo7u5", "rượu"),
 ];
 
 // ============================================================

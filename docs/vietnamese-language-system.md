@@ -1066,6 +1066,10 @@ Hiện nay tồn tại 2 quan điểm về cách đặt dấu thanh, thường �
 - Ví dụ: "luuw" → "lưu", "huuw" → "hưu", "nguuw" → "ngưu"
 - Đây là pattern "DELAYED modifier" - người dùng gõ xong từ rồi mới thêm dấu
 
+**ươu triphthong**: Khi gõ "u + o + u + w", chỉ HAI nguyên âm ĐẦU (u + o) nhận dấu móc, nguyên âm cuối (u) giữ nguyên.
+- Ví dụ: "huouw" → "hươu" (deer), "ruo7u5" → "rượu" (wine), "buou7" → "bươu" (tumor)
+- Pattern: u + o → ươ (compound), + u → ươu (triphthong)
+
 **ưa pattern**: Context-dependent - phụ thuộc vào phụ âm đầu.
 - Có phụ âm đầu (không phải q): "muaw" → "mưa" (dấu móc trên u)
 - Standalone hoặc sau q: "uaw" → "uă", "quaw" → "quắ" (dấu trăng trên a)
