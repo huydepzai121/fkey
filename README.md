@@ -39,7 +39,7 @@
 
 - ⎋ **ESC khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`. Không cần tắt bộ gõ khi gõ tiếng Anh!
 - 🔤 **Tự nhận diện** — `fix` `just` `fuji` `shisa` → giữ nguyên. Thông minh phân biệt Anh/Việt
-- 🔍 **Fix lỗi Chrome/Spotlight/Claude Code/Jetbrains** — Tự động sửa dính chữ trong address bar, thanh tìm kiếm
+- 🔍 **Fix lỗi Chrome/Spotlight/Claude Code/JetBrains** — Tự động sửa dính chữ trong address bar, thanh tìm kiếm
 - ⚡ **Siêu nhanh** — <1ms latency · ~5MB RAM. Nhanh hơn bạn gõ
 
 ### 📋 Đầy đủ
