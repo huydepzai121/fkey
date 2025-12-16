@@ -64,9 +64,49 @@ const TELEX_RAPID: &[(&str, &str)] = &[
     ("muoons", "muốn"),
     ("cuoocj", "cuộc"),
     ("thuoocj", "thuộc"),
+    // ============================================================
+    // "ưu" vowel cluster - horn on FIRST u (DELAYED modifier pattern)
+    // ============================================================
+    // 2-char
+    ("uuw", "ưu"), // advantage prefix
+    // 3-char (consonant + ưu)
+    ("luuw", "lưu"), // save/store
+    ("huuw", "hưu"), // retire
+    ("suuw", "sưu"), // collect (sưu tầm)
+    // 3-char with mark (consonant + ứu/ừu/ửu/ữu/ựu)
+    ("cuuws", "cứu"), // rescue
+    ("luuws", "lứu"), // (test pattern)
+    ("luuwf", "lừu"), // (test pattern)
+    ("luuwr", "lửu"), // (test pattern)
+    ("luuwx", "lữu"), // (test pattern)
+    ("luuwj", "lựu"), // pomegranate
+    // 4-char (2-consonant cluster + ưu)
+    ("nguuw", "ngưu"), // ox/cow (牛)
+    ("khuuw", "khưu"), // (test pattern)
+    ("truuw", "trưu"), // (test pattern)
+    ("thuuw", "thưu"), // (test pattern)
+    // 4-char with mark
+    ("nguuws", "ngứu"), // ngứu: delayed pattern
+    ("khuuwf", "khừu"), // khừu: delayed pattern
+    // 5-char "nghiêu" pattern (ngh + iê + u)
+    ("nghieeu", "nghiêu"), // nghiêu: valid ngh + front vowels
+    // Alternative typing (inline modifier)
+    ("luwu", "lưu"),   // inline
+    ("cuwus", "cứu"),  // inline with mark
+    ("nguwu", "ngưu"), // inline 4-char
 ];
 
-const VNI_RAPID: &[(&str, &str)] = &[("ngu7o72i2", "người"), ("to6i1", "tối")];
+const VNI_RAPID: &[(&str, &str)] = &[
+    ("ngu7o72i2", "người"),
+    ("to6i1", "tối"),
+    // "ưu" vowel cluster - horn on FIRST u (not second)
+    ("luu7", "lưu"),  // save/store - DELAYED modifier
+    ("lu7u", "lưu"),  // inline modifier
+    ("uu7", "ưu"),    // advantage prefix - DELAYED
+    ("luu71", "lứu"), // with mark - DELAYED
+    ("huu7", "hưu"),  // retire - DELAYED
+    ("cuu71", "cứu"), // save/rescue - DELAYED
+];
 
 // ============================================================
 // CAPITALIZATION

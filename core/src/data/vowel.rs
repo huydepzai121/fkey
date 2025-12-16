@@ -57,37 +57,207 @@ impl Vowel {
     }
 }
 
+// =============================================================================
+// VOWEL PATTERN ENUMS - Shared across tone and horn placement
+// =============================================================================
+
+/// Position for tone mark placement
+///
+/// Based on docs/vietnamese-language-system.md section 7.3
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum TonePosition {
+    /// Position 1 - First vowel (âm chính + glide: ai, ao, ia, ưu...)
+    First,
+    /// Position 2 - Second vowel (âm đệm + chính: oa, uy, compound: iê, uô, ươ)
+    Second,
+    /// Position 3 - Last vowel (only uyê triphthong)
+    Last,
+}
+
+/// Horn placement rule for a vowel pair
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum HornPlacement {
+    /// Apply horn to BOTH vowels (compound ươ)
+    Both,
+    /// Apply horn to FIRST vowel only
+    First,
+    /// Apply horn/breve to SECOND vowel only
+    Second,
+}
+
+/// Vowel pair pattern with horn placement rule
+///
+/// Based on docs/vietnamese-language-system.md section 3.2 (Nguyên âm đôi)
+pub struct VowelPairPattern {
+    /// First vowel key
+    pub v1: u16,
+    /// Second vowel key
+    pub v2: u16,
+    /// Where to place horn modifier
+    pub placement: HornPlacement,
+    /// Description for documentation
+    pub desc: &'static str,
+}
+
+/// All vowel pair patterns for horn/breve placement
+///
+/// Order matters: first match wins
+pub const HORN_PATTERNS: &[VowelPairPattern] = &[
+    // Compound ươ - both vowels get horn
+    VowelPairPattern {
+        v1: keys::U,
+        v2: keys::O,
+        placement: HornPlacement::Both,
+        desc: "ươ compound (được, ướt)",
+    },
+    VowelPairPattern {
+        v1: keys::O,
+        v2: keys::U,
+        placement: HornPlacement::Both,
+        desc: "ươ compound reversed",
+    },
+    // ưu cluster - first u gets horn
+    VowelPairPattern {
+        v1: keys::U,
+        v2: keys::U,
+        placement: HornPlacement::First,
+        desc: "ưu cluster (lưu, hưu, ngưu)",
+    },
+    // Breve patterns - second vowel gets breve
+    VowelPairPattern {
+        v1: keys::O,
+        v2: keys::A,
+        placement: HornPlacement::Second,
+        desc: "oă pattern (hoặc, xoắn)",
+    },
+    // ua pattern - context-dependent (handled specially)
+    // Default: second gets breve, but with consonant prefix: first gets horn
+];
+
+// =============================================================================
+// TONE POSITION PATTERNS - Based on docs/vietnamese-language-system.md 7.3
+// =============================================================================
+
+/// Triphthong pattern for tone placement
+pub struct TriphthongTonePattern {
+    pub v1: u16,
+    pub v2: u16,
+    pub v3: u16,
+    pub position: TonePosition,
+}
+
+/// Diphthongs with tone on FIRST vowel (âm chính + glide)
+///
+/// Section 7.3.1: ai, ao, au, ay, âu, ây, eo, êu, ia, iu, oi, ôi, ơi, ui, ưi, ưu, ua*, ưa
+/// *ua is First only when NOT preceded by 'q'
+pub const TONE_FIRST_PATTERNS: &[[u16; 2]] = &[
+    [keys::A, keys::I], // ai: mái, hài
+    [keys::A, keys::O], // ao: cáo, sào
+    [keys::A, keys::U], // au: sáu, màu
+    [keys::A, keys::Y], // ay: máy, tày
+    [keys::E, keys::O], // eo: kéo, trèo
+    [keys::I, keys::A], // ia: kìa, mía (not after gi)
+    [keys::I, keys::U], // iu: dịu, kíu
+    [keys::O, keys::I], // oi: đói, còi
+    [keys::U, keys::I], // ui: túi, mùi
+    [keys::U, keys::A], // ua: mùa, cúa (not after q)
+    [keys::U, keys::U], // ưu: lưu, hưu (when first has horn)
+];
+
+/// Diphthongs with tone on SECOND vowel (âm đệm + chính, compound)
+///
+/// Section 7.3.1: oa, oă, oe, uê, uy, ua (after q), iê, uô, ươ
+pub const TONE_SECOND_PATTERNS: &[[u16; 2]] = &[
+    [keys::O, keys::A], // oa: hoà, toá
+    [keys::O, keys::E], // oe: khoẻ, xoè
+    [keys::U, keys::E], // uê: huế, tuệ
+    [keys::U, keys::Y], // uy: quý, thuỳ
+    [keys::I, keys::E], // iê: tiên (compound)
+    [keys::U, keys::O], // uô/ươ: (compound - when both have horn)
+];
+
+/// Triphthongs - all use middle (position 2) except uyê
+///
+/// Section 7.3.3
+pub const TRIPHTHONG_PATTERNS: &[TriphthongTonePattern] = &[
+    TriphthongTonePattern {
+        v1: keys::I,
+        v2: keys::E,
+        v3: keys::U,
+        position: TonePosition::Second,
+    }, // iêu: tiếu
+    TriphthongTonePattern {
+        v1: keys::Y,
+        v2: keys::E,
+        v3: keys::U,
+        position: TonePosition::Second,
+    }, // yêu: yếu
+    TriphthongTonePattern {
+        v1: keys::O,
+        v2: keys::A,
+        v3: keys::I,
+        position: TonePosition::Second,
+    }, // oai: ngoài
+    TriphthongTonePattern {
+        v1: keys::O,
+        v2: keys::A,
+        v3: keys::Y,
+        position: TonePosition::Second,
+    }, // oay: xoáy
+    TriphthongTonePattern {
+        v1: keys::O,
+        v2: keys::E,
+        v3: keys::O,
+        position: TonePosition::Second,
+    }, // oeo: khoèo
+    TriphthongTonePattern {
+        v1: keys::U,
+        v2: keys::A,
+        v3: keys::Y,
+        position: TonePosition::Second,
+    }, // uây: khuấy (â in middle)
+    TriphthongTonePattern {
+        v1: keys::U,
+        v2: keys::O,
+        v3: keys::I,
+        position: TonePosition::Second,
+    }, // uôi: cuối
+    TriphthongTonePattern {
+        v1: keys::U,
+        v2: keys::O,
+        v3: keys::I,
+        position: TonePosition::Second,
+    }, // ươi: mười (ư+ơ+i, both have horn)
+    TriphthongTonePattern {
+        v1: keys::U,
+        v2: keys::O,
+        v3: keys::U,
+        position: TonePosition::Second,
+    }, // ươu: rượu
+    // Special: uyê uses Last position
+    TriphthongTonePattern {
+        v1: keys::U,
+        v2: keys::Y,
+        v3: keys::E,
+        position: TonePosition::Last,
+    }, // uyê: khuyến, quyền
+];
+
 /// Vietnamese vowel phonology analyzer
 pub struct Phonology;
 
 impl Phonology {
     /// Find the position where tone mark should be placed
     ///
-    /// ## Vietnamese Tone Placement Rules
+    /// Uses data-driven pattern lookup from TONE_*_PATTERNS and TRIPHTHONG_PATTERNS.
+    /// See docs/vietnamese-language-system.md section 7.3 for the complete matrix.
     ///
-    /// Based on docs/vietnamese-language-system.md section 7:
-    ///
-    /// 1. **Single vowel**: Mark directly on it
-    ///
-    /// 2. **Two vowels with final consonant**: Mark on 2nd vowel
-    ///    - toán, hoàn, tiến, muốn, biển
-    ///
-    /// 3. **Two vowels open syllable**:
-    ///    - Medial + Main (oa, oe, uy, qua, uê): Mark on 2nd (main)
-    ///    - Main + Glide (ai, ao, au, oi, ui): Mark on 1st (main)
-    ///    - Compound (ươ, uô, iê): Mark on 2nd (main has diacritic)
-    ///    - ưa pattern: Mark on 1st (ư has diacritic, a is simple)
-    ///    - ua without q: Mark on 1st (u is main, e.g., mùa)
-    ///
-    /// 4. **Three+ vowels**: Mark on middle vowel
-    ///    - ươi, oai, uôi: Mark on middle
-    ///
-    /// 5. **Diacritic priority**: When vowel has diacritic (ă, â, ê, ô, ơ, ư),
-    ///    it often receives the mark
-    ///
-    /// ## Parameters
-    /// - `has_qu_initial`: true if 'q' precedes 'u' (e.g., "qua" vs "mua")
-    /// - `has_gi_initial`: true if 'gi' + vowel (e.g., "gia" → gi is initial)
+    /// ## Rules Summary
+    /// 1. Single vowel: mark on it
+    /// 2. Diacritic priority: vowel with diacritic (ă,â,ê,ô,ơ,ư) gets the mark
+    /// 3. With final consonant: mark on 2nd vowel
+    /// 4. Open syllable: use pattern tables
+    /// 5. Triphthong: use TRIPHTHONG_PATTERNS (middle, except uyê → last)
     pub fn find_tone_position(
         vowels: &[Vowel],
         has_final_consonant: bool,
@@ -95,104 +265,117 @@ impl Phonology {
         has_qu_initial: bool,
         has_gi_initial: bool,
     ) -> usize {
-        let n = vowels.len();
-        if n == 0 {
-            return 0;
+        match vowels.len() {
+            0 => 0,
+            1 => vowels[0].pos,
+            2 => Self::find_diphthong_position(
+                vowels,
+                has_final_consonant,
+                modern,
+                has_qu_initial,
+                has_gi_initial,
+            ),
+            3 => Self::find_triphthong_position(vowels),
+            _ => Self::find_default_position(vowels),
         }
-        if n == 1 {
-            return vowels[0].pos;
-        }
+    }
 
-        // Two vowels
-        if n == 2 {
-            let v1 = &vowels[0];
-            let v2 = &vowels[1];
+    /// Find tone position for diphthongs (2 vowels)
+    fn find_diphthong_position(
+        vowels: &[Vowel],
+        has_final_consonant: bool,
+        modern: bool,
+        has_qu_initial: bool,
+        has_gi_initial: bool,
+    ) -> usize {
+        let (v1, v2) = (&vowels[0], &vowels[1]);
 
-            // With final consonant: always mark on 2nd vowel
-            if has_final_consonant {
-                return v2.pos;
-            }
-
-            // ưa pattern: ư has diacritic, a doesn't → mark on ư
-            // This must be checked BEFORE compound vowels because ưa is not ươ
-            // General rule: if 1st has diacritic and 2nd doesn't, mark on 1st
-            // Note: when 1st has diacritic, it's no longer a simple medial pair
-            // e.g., "ua" (qua) is medial pair, but "ưa" (sứa) is not
-            if v1.has_diacritic() && !v2.has_diacritic() {
-                return v1.pos;
-            }
-
-            // Compound vowels ươ, uô, iê: mark on 2nd (has diacritic)
-            if Self::is_compound_vowel(v1.key, v2.key) {
-                return v2.pos;
-            }
-
-            // 2nd has diacritic → mark on 2nd
-            if v2.has_diacritic() {
-                return v2.pos;
-            }
-
-            // Medial pairs (oa, oe, uy, uê, and ua with q): mark on 2nd (main vowel)
-            if Self::is_medial_pair(v1.key, v2.key, has_qu_initial) {
-                return if modern { v2.pos } else { v1.pos };
-            }
-
-            // ua without q (mua): u is main vowel, a is glide → mark on u
-            if v1.key == keys::U && v2.key == keys::A && !has_qu_initial {
-                return v1.pos;
-            }
-
-            // ia (kìa, mía): i is main vowel, a is off-glide → mark on i
-            // BUT NOT when gi is initial (gia, giau) - then 'i' is part of initial
-            if v1.key == keys::I && v2.key == keys::A && !has_gi_initial {
-                return v1.pos;
-            }
-
-            // Main + glide (ai, ao, au, oi, ui): mark on 1st (main vowel)
-            if Self::is_main_glide_pair(v1.key, v2.key) {
-                return v1.pos;
-            }
-
-            // Default: mark on 2nd
+        // Rule 1: With final consonant → always 2nd (Section 7.3.2)
+        if has_final_consonant {
             return v2.pos;
         }
 
-        // Three+ vowels
-        if n == 3 {
-            let k0 = vowels[0].key;
-            let k1 = vowels[1].key;
-            let k2 = vowels[2].key;
+        // Rule 2: Diacritic priority (Section 7.2.5)
+        // - If 1st has diacritic and 2nd doesn't → 1st (ưa → ư)
+        // - If 2nd has diacritic → 2nd (iê → ê)
+        if v1.has_diacritic() && !v2.has_diacritic() {
+            return v1.pos;
+        }
+        if v2.has_diacritic() {
+            return v2.pos;
+        }
 
-            // Priority 1: Middle vowel with diacritic
-            // ươi (mười): ư and ơ both have diacritic, mark on ơ (middle)
-            if vowels[1].has_diacritic() {
-                return vowels[1].pos;
+        // Rule 3: Context-dependent patterns
+        // ia: 1st unless gi-initial (gia → a, kìa → i)
+        if v1.key == keys::I && v2.key == keys::A {
+            return if has_gi_initial { v2.pos } else { v1.pos };
+        }
+
+        // ua: 1st unless qu-initial (mùa → u, quá → a)
+        if v1.key == keys::U && v2.key == keys::A {
+            if has_qu_initial {
+                return if modern { v2.pos } else { v1.pos };
             }
+            return v1.pos;
+        }
 
-            // Priority 2: Last vowel with diacritic (and middle doesn't)
-            // uyê (khuyên): mark on ê (has diacritic)
-            if vowels[2].has_diacritic() {
-                return vowels[2].pos;
-            }
+        // Rule 4: Pattern table lookup
+        let pair = [v1.key, v2.key];
 
-            // Priority 3: ươi, uôi patterns: mark on middle
-            if k0 == keys::U && k1 == keys::O {
-                return vowels[1].pos;
-            }
+        // Check TONE_SECOND_PATTERNS (medial + main, compound)
+        if TONE_SECOND_PATTERNS
+            .iter()
+            .any(|p| p[0] == pair[0] && p[1] == pair[1])
+        {
+            return if modern { v2.pos } else { v1.pos };
+        }
 
-            // Priority 4: oai, oay patterns: mark on middle (a)
-            if k0 == keys::O && k1 == keys::A {
-                return vowels[1].pos;
-            }
+        // Check TONE_FIRST_PATTERNS (main + glide)
+        if TONE_FIRST_PATTERNS
+            .iter()
+            .any(|p| p[0] == pair[0] && p[1] == pair[1])
+        {
+            return v1.pos;
+        }
 
-            // Priority 5: uyê pattern (no diacritic on ê yet): mark on ê (last)
-            if k0 == keys::U && k1 == keys::Y && k2 == keys::E {
-                return vowels[2].pos;
+        // Default: 2nd vowel
+        v2.pos
+    }
+
+    /// Find tone position for triphthongs (3 vowels)
+    fn find_triphthong_position(vowels: &[Vowel]) -> usize {
+        let (k0, k1, k2) = (vowels[0].key, vowels[1].key, vowels[2].key);
+
+        // Rule 1: Diacritic priority
+        // Middle with diacritic → middle (ươi: ơ has diacritic)
+        if vowels[1].has_diacritic() {
+            return vowels[1].pos;
+        }
+        // Last with diacritic → last (uyê: ê has diacritic)
+        if vowels[2].has_diacritic() {
+            return vowels[2].pos;
+        }
+
+        // Rule 2: Pattern table lookup
+        for pattern in TRIPHTHONG_PATTERNS {
+            if k0 == pattern.v1 && k1 == pattern.v2 && k2 == pattern.v3 {
+                return match pattern.position {
+                    TonePosition::First => vowels[0].pos,
+                    TonePosition::Second => vowels[1].pos,
+                    TonePosition::Last => vowels[2].pos,
+                };
             }
         }
 
-        // For 4+ vowels: find middle vowel with diacritic first
-        let mid = n / 2;
+        // Default: middle vowel
+        vowels[1].pos
+    }
+
+    /// Find tone position for 4+ vowels (rare cases)
+    fn find_default_position(vowels: &[Vowel]) -> usize {
+        let mid = vowels.len() / 2;
+
+        // Priority: middle with diacritic
         if vowels[mid].has_diacritic() {
             return vowels[mid].pos;
         }
@@ -204,106 +387,91 @@ impl Phonology {
             }
         }
 
-        // Default: middle vowel
+        // Default: middle
         vowels[mid].pos
     }
 
-    /// Determine the role of each vowel in a syllable
-    #[allow(dead_code)]
-    pub fn classify_roles(
-        vowels: &[Vowel],
-        has_final_consonant: bool,
-        has_qu_initial: bool,
-    ) -> Vec<(usize, Role)> {
-        let n = vowels.len();
-        if n == 0 {
-            return vec![];
+    /// Find position(s) for horn modifier based on vowel patterns
+    ///
+    /// Uses HORN_PATTERNS array to match Vietnamese vowel pair patterns.
+    /// Pattern matching is order-dependent (first match wins).
+    ///
+    /// Special "ua" handling (inferred from buffer context):
+    /// - C+ua (mua, chua): horn on u → "mưa"
+    /// - ua, qua: breve on a → "uă", "quă"
+    pub fn find_horn_positions(buffer_keys: &[u16], vowel_positions: &[usize]) -> Vec<usize> {
+        let mut result = Vec::new();
+        let len = vowel_positions.len();
+
+        if len == 0 {
+            return result;
         }
-        if n == 1 {
-            return vec![(vowels[0].pos, Role::Main)];
-        }
 
-        let mut roles = vec![Role::Main; n];
+        // Check adjacent vowel pairs against pattern table
+        if len >= 2 {
+            for i in 0..len - 1 {
+                let pos1 = vowel_positions[i];
+                let pos2 = vowel_positions[i + 1];
 
-        if n == 2 {
-            let (k1, k2) = (vowels[0].key, vowels[1].key);
+                // Must be adjacent buffer positions
+                if pos2 != pos1 + 1 {
+                    continue;
+                }
 
-            if Self::is_medial_pair(k1, k2, has_qu_initial)
-                || Self::is_compound_vowel(k1, k2)
-                || has_final_consonant
-            {
-                roles[0] = Role::Medial;
-                roles[1] = Role::Main;
-            } else if Self::is_main_glide_pair(k1, k2)
-                || (vowels[0].has_diacritic() && !vowels[1].has_diacritic())
-            {
-                // ưa pattern: ư is main
-                roles[0] = Role::Main;
-                roles[1] = Role::Final;
+                let k1 = buffer_keys.get(pos1).copied().unwrap_or(0);
+                let k2 = buffer_keys.get(pos2).copied().unwrap_or(0);
+
+                // Special case: "ua" - check preceding consonant (Q excluded)
+                if k1 == keys::U && k2 == keys::A {
+                    let has_non_q_consonant = pos1 > 0
+                        && buffer_keys
+                            .get(pos1 - 1)
+                            .map(|&k| keys::is_consonant(k) && k != keys::Q)
+                            .unwrap_or(false);
+
+                    result.push(if has_non_q_consonant { pos1 } else { pos2 });
+                    return result;
+                }
+
+                // Match against pattern table
+                for pattern in HORN_PATTERNS {
+                    if k1 == pattern.v1 && k2 == pattern.v2 {
+                        match pattern.placement {
+                            HornPlacement::Both => {
+                                result.push(pos1);
+                                result.push(pos2);
+                            }
+                            HornPlacement::First => {
+                                result.push(pos1);
+                            }
+                            HornPlacement::Second => {
+                                result.push(pos2);
+                            }
+                        }
+                        return result;
+                    }
+                }
             }
-        } else {
-            // Three+ vowels
-            roles[0] = Role::Medial;
-            if !has_final_consonant {
-                roles[n - 1] = Role::Final;
+        }
+
+        // Default: find last u or o (single vowel case)
+        for &pos in vowel_positions.iter().rev() {
+            let k = buffer_keys.get(pos).copied().unwrap_or(0);
+            if k == keys::U || k == keys::O {
+                result.push(pos);
+                return result;
             }
-
-            // Find main vowel
-            let main_idx = n / 2;
-            roles[main_idx] = Role::Main;
         }
 
-        vowels.iter().zip(roles).map(|(v, r)| (v.pos, r)).collect()
-    }
-
-    /// Check if v1+v2 forms a medial+main pair (âm đệm + âm chính)
-    ///
-    /// Medial pairs: oa, oe, uê, uy, and ua (only when preceded by 'q')
-    /// These are when the first vowel acts as a glide before the main vowel
-    ///
-    /// Note: "ua" is special:
-    /// - "qua" → quá (u is medial, mark on a)
-    /// - "mua" → mùa (u is main vowel, mark on u)
-    fn is_medial_pair(v1: u16, v2: u16, has_qu_initial: bool) -> bool {
-        // ua is only medial when preceded by 'q'
-        if v1 == keys::U && v2 == keys::A {
-            return has_qu_initial;
+        // If no u/o, apply to last a (breve case in Telex)
+        if let Some(&pos) = vowel_positions.last() {
+            let k = buffer_keys.get(pos).copied().unwrap_or(0);
+            if k == keys::A {
+                result.push(pos);
+            }
         }
 
-        matches!(
-            (v1, v2),
-            (keys::O, keys::A) | // oa
-            (keys::O, keys::E) | // oe
-            (keys::U, keys::E) | // uê
-            (keys::U, keys::Y) // uy
-        )
-    }
-
-    /// Check if v1+v2 forms a main+glide pair (âm chính + bán nguyên âm)
-    ///
-    /// Final glide pairs: ai, ay, ao, au, oi, ôi, ơi, ui, ưi, êu, iu, etc.
-    fn is_main_glide_pair(v1: u16, v2: u16) -> bool {
-        // Second vowel must be a glide (i, y, o, u)
-        let is_glide = matches!(v2, keys::I | keys::Y | keys::O | keys::U);
-        if !is_glide {
-            return false;
-        }
-
-        // Not a medial or compound pattern
-        // Note: for is_main_glide_pair, we pass false for has_qu_initial since
-        // this check is about the pair pattern, not the specific context
-        !Self::is_medial_pair(v1, v2, false) && !Self::is_compound_vowel(v1, v2)
-    }
-
-    /// Check if v1+v2 forms a compound vowel (ươ, uô, iê)
-    ///
-    /// These are diphthongs where second vowel (with diacritic) carries the tone
-    fn is_compound_vowel(v1: u16, v2: u16) -> bool {
-        matches!(
-            (v1, v2),
-            (keys::U, keys::O) | // ươ, uô
-            (keys::I, keys::E) // iê
-        )
+        result
     }
 }
 

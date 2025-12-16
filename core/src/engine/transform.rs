@@ -4,10 +4,10 @@
 //! Scans entire buffer instead of case-by-case processing.
 
 use super::buffer::Buffer;
-use crate::data::vowel::Phonology;
 use crate::data::{
     chars::{mark, tone},
     keys,
+    vowel::Phonology,
 };
 use crate::utils;
 
@@ -116,7 +116,7 @@ fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) 
         }
         // w → horn/breve
         else if tone_value == tone::HORN && key == keys::W {
-            targets = find_horn_targets(buffer_keys, &vowel_positions);
+            targets = Phonology::find_horn_positions(buffer_keys, &vowel_positions);
         }
     }
     // VNI patterns
@@ -132,7 +132,7 @@ fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) 
         }
         // 7 → horn for o, u
         else if tone_value == tone::HORN && key == keys::N7 {
-            targets = find_horn_targets(buffer_keys, &vowel_positions);
+            targets = Phonology::find_horn_positions(buffer_keys, &vowel_positions);
         }
         // 8 → breve for a only
         else if tone_value == tone::HORN && key == keys::N8 {
@@ -142,57 +142,6 @@ fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) 
                     break;
                 }
             }
-        }
-    }
-
-    targets
-}
-
-/// Find targets for horn modifier (ơ, ư, ươ compound)
-///
-/// Special: if "uo" adjacent, apply horn to BOTH (ươ compound)
-fn find_horn_targets(buffer_keys: &[u16], vowel_positions: &[usize]) -> Vec<usize> {
-    let mut targets = vec![];
-
-    // Check for uo compound first
-    let len = vowel_positions.len();
-    if len >= 2 {
-        for i in 0..len - 1 {
-            let pos1 = vowel_positions[i];
-            let pos2 = vowel_positions[i + 1];
-
-            // Must be adjacent positions
-            if pos2 == pos1 + 1 {
-                let k1 = buffer_keys[pos1];
-                let k2 = buffer_keys[pos2];
-
-                // uo or ou compound
-                if (k1 == keys::U && k2 == keys::O) || (k1 == keys::O && k2 == keys::U) {
-                    // Apply to both
-                    targets.push(pos1);
-                    targets.push(pos2);
-                    return targets;
-                }
-            }
-        }
-    }
-
-    // No compound found, prioritize u/o (horn: ư, ơ) over a (breve: ă)
-    // First try to find u or o for horn transformation
-    for &pos in vowel_positions.iter().rev() {
-        let k = buffer_keys[pos];
-        if matches!(k, keys::O | keys::U) {
-            targets.push(pos);
-            return targets;
-        }
-    }
-
-    // If no u/o found, apply breve to a
-    for &pos in vowel_positions.iter().rev() {
-        let k = buffer_keys[pos];
-        if k == keys::A {
-            targets.push(pos);
-            break;
         }
     }
 
