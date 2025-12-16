@@ -100,27 +100,27 @@ info "🤖 Calling Claude Code..."
 # Call Claude Code with strict settings
 AI_OUTPUT=$(claude -p --output-format text --dangerously-skip-permissions "$PROMPT" 2>/dev/null) || error "Claude Code failed to execute"
 
-# Validate output quality
+# Validate output quality - STRICT validation
 validate_release_notes() {
     local text="$1"
 
     # Must not be empty
-    [ -z "$text" ] && return 1
+    [ -z "$text" ] && { echo "FAIL: empty" >&2; return 1; }
 
-    # Must be at least 50 chars (meaningful content)
-    [ ${#text} -lt 50 ] && return 1
+    # Must be at least 100 chars (meaningful content)
+    [ ${#text} -lt 100 ] && { echo "FAIL: too short (<100 chars)" >&2; return 1; }
 
-    # Must start with proper header
-    echo "$text" | head -1 | grep -qE '^##' || return 1
+    # Must start with "## What's Changed" exactly
+    echo "$text" | head -1 | grep -qE '^## What'"'"'s Changed' || { echo "FAIL: missing '## What's Changed' header" >&2; return 1; }
 
-    # Must contain at least one section (✨ or 🐛 or ⚡)
-    echo "$text" | grep -qE '(✨|🐛|⚡|###)' || return 1
+    # Must contain at least one section with emoji header
+    echo "$text" | grep -qE '^### (✨|🐛|⚡)' || { echo "FAIL: missing section headers (### ✨/🐛/⚡)" >&2; return 1; }
 
     # Must contain changelog link
-    echo "$text" | grep -q "Full Changelog" || return 1
+    echo "$text" | grep -q "Full Changelog" || { echo "FAIL: missing Full Changelog link" >&2; return 1; }
 
     # Must not contain AI preamble/thinking
-    echo "$text" | head -3 | grep -qiE '(here|let me|i will|certainly|sure)' && return 1
+    echo "$text" | head -3 | grep -qiE '(here|let me|i will|certainly|sure|of course)' && { echo "FAIL: contains AI preamble" >&2; return 1; }
 
     return 0
 }
