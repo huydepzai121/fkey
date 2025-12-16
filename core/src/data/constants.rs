@@ -58,6 +58,15 @@ pub const VALID_FINALS_2: &[[u16; 2]] = &[
     [keys::N, keys::H], // nh
 ];
 
+/// Invalid vowel patterns that don't exist in Vietnamese
+/// These patterns are common in English/foreign words but not in Vietnamese:
+/// - "ou" (you, our, out, house, about)
+/// - "yo" (yoke, York, beyond, your)
+pub const INVALID_VOWEL_PATTERNS: &[[u16; 2]] = &[
+    [keys::O, keys::U], // ou - English: you, our, out, house
+    [keys::Y, keys::O], // yo - English: yoke, York, your
+];
+
 /// Spelling rules: (consonant, invalid_vowels, description)
 /// If consonant + vowel matches, it's INVALID
 pub const SPELLING_RULES: &[(&[u16], &[u16], &str)] = &[

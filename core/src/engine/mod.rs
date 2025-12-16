@@ -25,7 +25,7 @@ use crate::input::{self, ToneType};
 use crate::utils;
 use buffer::{Buffer, Char, MAX};
 use shortcut::{InputMethod, ShortcutTable};
-use validation::is_valid;
+use validation::{is_foreign_word_pattern, is_valid};
 
 /// Engine action result
 #[repr(u8)]
@@ -442,9 +442,29 @@ impl Engine {
             }
         }
 
-        // Validate buffer
+        // Check if buffer has horn transforms - indicates intentional Vietnamese typing
+        // (e.g., "rượu" has base keys [R,U,O,U] which looks like "ou" pattern,
+        // but with horns applied it's valid "ươu")
+        let has_horn_transforms = self.buf.iter().any(|c| c.tone == tone::HORN);
+
+        // Validate buffer (skip if has horn transforms - already intentional Vietnamese)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !is_valid(&buffer_keys) {
+        if !has_horn_transforms && !is_valid(&buffer_keys) {
+            return None;
+        }
+
+        // Skip modifier if buffer shows foreign word patterns.
+        // Only check when NO horn transforms exist.
+        //
+        // Detected patterns:
+        // - Invalid vowel combinations (ou, yo) that don't exist in Vietnamese
+        // - Consonant clusters after finals common in English (T+R, P+R, C+R)
+        //
+        // Examples:
+        // - "met" + 'r' → T+R cluster common in English → skip modifier
+        // - "you" + 'r' → "ou" vowel pattern invalid → skip modifier
+        // - "rươu" + 'j' → has horn transforms → DON'T skip, apply mark normally
+        if !has_horn_transforms && is_foreign_word_pattern(&buffer_keys, key) {
             return None;
         }
 
@@ -704,11 +724,77 @@ impl Engine {
 
         self.last_transform = None;
         if keys::is_letter(key) {
+            // Add the letter to buffer
             self.buf.push(Char::new(key, caps));
+
+            // Check if adding this letter creates invalid vowel pattern (foreign word detection)
+            // Only revert if the horn transforms are from w-as-vowel (standalone w→ư),
+            // not from w-as-tone (adding horn to existing vowels like in "rượu")
+            //
+            // w-as-vowel: first horn is U at position 0 (was standalone 'w')
+            // w-as-tone: horns are on vowels after initial consonant
+            if self.has_w_as_vowel_transform() {
+                let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+                if is_foreign_word_pattern(&buffer_keys, key) {
+                    return self.revert_w_as_vowel_transforms();
+                }
+            }
         } else {
             self.buf.clear();
         }
         Result::none()
+    }
+
+    /// Check if buffer has w-as-vowel transform (standalone w→ư at start)
+    /// This is different from w-as-tone which adds horn to existing vowels
+    fn has_w_as_vowel_transform(&self) -> bool {
+        // w-as-vowel creates U with horn at position 0 or after consonants
+        // The key distinguishing feature: the U with horn was created from 'w',
+        // meaning there was no preceding vowel at that position
+        //
+        // Simple heuristic: if first char is U with horn, it's w-as-vowel
+        // (words like "rượu" start with consonant R, not U)
+        self.buf
+            .get(0)
+            .map(|c| c.key == keys::U && c.tone == tone::HORN)
+            .unwrap_or(false)
+    }
+
+    /// Revert w-as-vowel transforms and rebuild output
+    /// Used when foreign word pattern is detected after w→ư transformation
+    fn revert_w_as_vowel_transforms(&mut self) -> Result {
+        // Only revert if first char is U with horn (w-as-vowel pattern)
+        if !self.has_w_as_vowel_transform() {
+            return Result::none();
+        }
+
+        // Find all horn transforms to revert
+        let horn_positions: Vec<usize> = self
+            .buf
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| c.tone == tone::HORN)
+            .map(|(i, _)| i)
+            .collect();
+
+        if horn_positions.is_empty() {
+            return Result::none();
+        }
+
+        let first_pos = horn_positions[0];
+
+        // Clear horn tones and change U back to W (for w-as-vowel positions)
+        for &pos in &horn_positions {
+            if let Some(c) = self.buf.get_mut(pos) {
+                // U with horn was from 'w' → change key to W
+                if c.key == keys::U {
+                    c.key = keys::W;
+                }
+                c.tone = tone::NONE;
+            }
+        }
+
+        self.rebuild_from(first_pos)
     }
 
     /// Collect vowels from buffer

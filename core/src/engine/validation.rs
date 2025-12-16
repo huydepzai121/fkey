@@ -14,6 +14,7 @@ pub enum ValidationResult {
     InvalidInitial,
     InvalidFinal,
     InvalidSpelling,
+    InvalidVowelPattern,
     NoVowel,
 }
 
@@ -37,6 +38,7 @@ const RULES: &[Rule] = &[
     rule_all_chars_parsed,
     rule_spelling,
     rule_valid_final,
+    rule_valid_vowel_pattern,
 ];
 
 // =============================================================================
@@ -128,6 +130,35 @@ fn rule_valid_final(keys: &[u16], syllable: &Syllable) -> Option<ValidationResul
     None
 }
 
+/// Rule 6: Vowel patterns must be valid Vietnamese
+///
+/// Vietnamese has specific valid vowel combinations. Some patterns common
+/// in English/foreign words don't exist in Vietnamese:
+/// - "ou" (you, our, out, house, about) - Vietnamese uses "ô", "ơ", "ươ" instead
+/// - "yo" (yoke, York, beyond, your) - Vietnamese "y" combines with ê (yêu, yến)
+fn rule_valid_vowel_pattern(keys: &[u16], syllable: &Syllable) -> Option<ValidationResult> {
+    if syllable.vowel.len() < 2 {
+        return None;
+    }
+
+    // Get consecutive vowel keys
+    let vowels: Vec<u16> = syllable.vowel.iter().map(|&i| keys[i]).collect();
+
+    // Check for invalid vowel patterns
+    for i in 0..vowels.len() - 1 {
+        let pair = [vowels[i], vowels[i + 1]];
+
+        if constants::INVALID_VOWEL_PATTERNS
+            .iter()
+            .any(|p| p[0] == pair[0] && p[1] == pair[1])
+        {
+            return Some(ValidationResult::InvalidVowelPattern);
+        }
+    }
+
+    None
+}
+
 // =============================================================================
 // PUBLIC API
 // =============================================================================
@@ -153,6 +184,65 @@ pub fn validate(buffer_keys: &[u16]) -> ValidationResult {
 /// Quick check if buffer could be valid Vietnamese
 pub fn is_valid(buffer_keys: &[u16]) -> bool {
     validate(buffer_keys).is_valid()
+}
+
+/// Check if the buffer shows patterns that suggest foreign word input.
+///
+/// This is a heuristic to detect when the user is likely typing a foreign word
+/// rather than Vietnamese. It checks for:
+/// 1. Invalid vowel patterns (ou, yo) that don't exist in Vietnamese
+/// 2. Consonant clusters after finals that are common in English (T+R, P+R, C+R)
+///
+/// Returns true if the pattern suggests foreign word input.
+pub fn is_foreign_word_pattern(buffer_keys: &[u16], modifier_key: u16) -> bool {
+    let syllable = parse(buffer_keys);
+
+    // Check 1: Invalid vowel patterns in current buffer
+    if syllable.vowel.len() >= 2 {
+        let vowels: Vec<u16> = syllable.vowel.iter().map(|&i| buffer_keys[i]).collect();
+        for i in 0..vowels.len() - 1 {
+            let pair = [vowels[i], vowels[i + 1]];
+            if constants::INVALID_VOWEL_PATTERNS
+                .iter()
+                .any(|p| p[0] == pair[0] && p[1] == pair[1])
+            {
+                return true;
+            }
+        }
+    }
+
+    // Check 2: Consonant clusters common in foreign words
+    // Only applies when:
+    // - Buffer has a final consonant (T, P, or C)
+    // - Modifier key is R (forms T+R, P+R, C+R clusters common in English)
+    if modifier_key == keys::R && syllable.final_c.len() == 1 && !syllable.initial.is_empty() {
+        let final_key = buffer_keys[syllable.final_c[0]];
+        if matches!(final_key, keys::T | keys::P | keys::C) {
+            return true;
+        }
+    }
+
+    // Check 3: Detect common English prefix patterns
+    // "de" + 's' often leads to words like "describe", "destroy", "design"
+    // Only apply if buffer is exactly consonant + single vowel (likely prefix)
+    if modifier_key == keys::S
+        && syllable.initial.len() == 1
+        && syllable.vowel.len() == 1
+        && syllable.final_c.is_empty()
+    {
+        let initial = buffer_keys[syllable.initial[0]];
+        let vowel = buffer_keys[syllable.vowel[0]];
+
+        // Common English prefixes: de-, re-, pre-
+        // "de" + 's' → describe, destroy, design, desk
+        // "re" + 's' → respond, result, restore (but Vietnamese "rẻ" exists)
+        // Be conservative: only block "de" + 's' pattern
+        if initial == keys::D && vowel == keys::E {
+            return true;
+        }
+    }
+
+    false
 }
 
 // =============================================================================

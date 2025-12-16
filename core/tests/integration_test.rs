@@ -428,6 +428,198 @@ fn foreign_word_exxpe_no_transform() {
     );
 }
 
+// Issue #15: "metric" should not become "mẻtic"
+// When buffer has final consonant AND no existing diacritics,
+// modifier keys that would create unparsed consonants should be treated as letters
+#[test]
+fn foreign_word_metric_no_mark() {
+    let mut e = Engine::new();
+    // "met" + r: buffer [M,E,T] is valid, but 'r' after final T looks like English
+    // Should NOT apply hỏi mark to 'e'
+    let result = type_word(&mut e, "metric");
+    assert!(
+        !result.contains('ẻ'),
+        "metric should not become mẻtic, got: {}",
+        result
+    );
+    assert_eq!(result, "metric", "metric should stay as metric");
+}
+
+#[test]
+fn foreign_word_string_no_mark() {
+    let mut e = Engine::new();
+    // "string" - 'str' is invalid initial, should not apply any marks
+    let result = type_word(&mut e, "string");
+    assert!(
+        !result.contains('ỉ'),
+        "string should not have diacritics, got: {}",
+        result
+    );
+}
+
+#[test]
+fn foreign_word_express_no_mark() {
+    let mut e = Engine::new();
+    // "express" - 'r' after 'p' should not apply mark
+    let result = type_word(&mut e, "express");
+    assert!(
+        !result.contains('ẻ'),
+        "express should not have diacritics, got: {}",
+        result
+    );
+}
+
+// ============================================================
+// FOREIGN WORDS: Should NOT get Vietnamese diacritics
+// These tests verify that common English/foreign words are not transformed
+// The validation algorithm should detect invalid Vietnamese patterns
+// ============================================================
+
+// --- Words with invalid vowel patterns (not in Vietnamese) ---
+
+#[test]
+fn foreign_word_your_no_mark() {
+    let mut e = Engine::new();
+    // "yo" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "your");
+    assert_eq!(result, "your", "your should stay unchanged");
+}
+
+#[test]
+fn foreign_word_you_no_mark() {
+    let mut e = Engine::new();
+    // "yo" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "yous");
+    assert_eq!(result, "yous", "yous should stay unchanged");
+}
+
+#[test]
+fn foreign_word_about_no_mark() {
+    let mut e = Engine::new();
+    // "ou" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "abouts");
+    assert_eq!(result, "abouts", "abouts should stay unchanged");
+}
+
+#[test]
+fn foreign_word_house_no_mark() {
+    let mut e = Engine::new();
+    // "ou" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "houses");
+    assert_eq!(result, "houses", "houses should stay unchanged");
+}
+
+#[test]
+fn foreign_word_south_no_mark() {
+    let mut e = Engine::new();
+    // "ou" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "souths");
+    assert_eq!(result, "souths", "souths should stay unchanged");
+}
+
+#[test]
+fn foreign_word_could_no_mark() {
+    let mut e = Engine::new();
+    // "ou" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "coulds");
+    assert_eq!(result, "coulds", "coulds should stay unchanged");
+}
+
+#[test]
+fn foreign_word_would_no_mark() {
+    let mut e = Engine::new();
+    // "ou" pattern doesn't exist in Vietnamese
+    let result = type_word(&mut e, "woulds");
+    assert_eq!(result, "woulds", "woulds should stay unchanged");
+}
+
+// --- Words with invalid consonant continuations (T+R, P+R, C+R) ---
+
+#[test]
+fn foreign_word_control_no_mark() {
+    let mut e = Engine::new();
+    // t+r pattern common in foreign words
+    let result = type_word(&mut e, "control");
+    assert_eq!(result, "control", "control should stay unchanged");
+}
+
+#[test]
+fn foreign_word_matrix_no_mark() {
+    let mut e = Engine::new();
+    // t+r pattern
+    let result = type_word(&mut e, "matrix");
+    assert_eq!(result, "matrix", "matrix should stay unchanged");
+}
+
+#[test]
+fn foreign_word_central_no_mark() {
+    let mut e = Engine::new();
+    // t+r pattern
+    let result = type_word(&mut e, "central");
+    assert_eq!(result, "central", "central should stay unchanged");
+}
+
+#[test]
+fn foreign_word_spectrum_no_mark() {
+    let mut e = Engine::new();
+    // c+r pattern (spec-trum)
+    let result = type_word(&mut e, "spectrum");
+    assert_eq!(result, "spectrum", "spectrum should stay unchanged");
+}
+
+#[test]
+fn foreign_word_describe_no_mark() {
+    let mut e = Engine::new();
+    // c+r pattern
+    let result = type_word(&mut e, "describe");
+    assert_eq!(result, "describe", "describe should stay unchanged");
+}
+
+#[test]
+fn foreign_word_compress_no_mark() {
+    let mut e = Engine::new();
+    // p+r pattern
+    let result = type_word(&mut e, "compress");
+    assert_eq!(result, "compress", "compress should stay unchanged");
+}
+
+#[test]
+fn foreign_word_supreme_no_mark() {
+    let mut e = Engine::new();
+    // p+r pattern
+    let result = type_word(&mut e, "supreme");
+    assert_eq!(result, "supreme", "supreme should stay unchanged");
+}
+
+// Vietnamese words with diacritics should still work correctly
+#[test]
+fn vietnamese_duoc_with_mark() {
+    let mut e = Engine::new();
+    // "dduwowcj" → "được" - standard typing for "được"
+    // dd=đ, uwow=ươ, c=c, j=nặng
+    let result = type_word(&mut e, "dduwowcj");
+    assert_eq!(result, "được", "dduwowcj should become được");
+}
+
+#[test]
+fn vietnamese_viet_with_mark_after_final() {
+    let mut e = Engine::new();
+    // "vieets" → "viết" - user types circumflex first, then mark after final
+    // ee=ê (commits to Vietnamese), t=final, s=sắc mark (ế)
+    let result = type_word(&mut e, "vieets");
+    assert_eq!(result, "viết", "vieets should become viết");
+}
+
+#[test]
+fn vietnamese_an_with_mark_after_final() {
+    let mut e = Engine::new();
+    // "anf" → "àn" - mark after final consonant
+    // Note: This should work because buffer has no final consonant blocking the 'f'
+    // (the check only blocks consonant modifier keys when they can't extend the final)
+    let result = type_word(&mut e, "anf");
+    assert_eq!(result, "àn", "anf should become àn");
+}
+
 // ============================================================
 // VNI: SHIFT+NUMBER PASSTHROUGH (for symbols like @, #, $)
 // ============================================================

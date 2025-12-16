@@ -79,6 +79,26 @@ VALID_FINALS_2: [ch, ng, nh]
 | `gh` | a, o, u | → `g` |
 | `ngh` | a, o, u | → `ng` |
 
+### 3.4 Invalid Vowel Patterns (Exclusion Approach)
+
+```rust
+// Pattern nguyên âm KHÔNG tồn tại trong tiếng Việt
+INVALID_VOWEL_PATTERNS: [[O, U], [Y, O]]
+// ou → you, our, house, about, would
+// yo → yoke, York, your, beyond
+```
+
+**Tại sao dùng Exclusion thay vì Inclusion?**
+
+| Aspect | Inclusion (valid patterns) | Exclusion (invalid patterns) |
+|--------|---------------------------|------------------------------|
+| Danh sách | ~30+ diphthongs, ~10 triphthongs | Chỉ 2: `ou`, `yo` |
+| Maintenance | Cao - phải cover hết | Thấp - chỉ thêm khi gặp |
+| Risk | False negative (miss valid) | False positive (miss invalid) |
+
+Validation hiện tại đã cover: initials (27), finals (12), spelling rules (6).
+Chỉ còn rất ít vowel patterns "lọt lưới" → Exclusion hiệu quả hơn.
+
 ---
 
 ## 4. Thuật toán Parse
@@ -118,15 +138,16 @@ parse(buffer_keys: &[u16]) -> Syllable
 
 ## 5. Validation Rules
 
-Engine chạy 5 rules tuần tự. Rule đầu tiên fail → trả về lỗi ngay.
+Engine chạy 6 rules tuần tự. Rule đầu tiên fail → trả về lỗi ngay.
 
 ```rust
 const RULES: &[Rule] = &[
-    rule_has_vowel,        // Rule 1
-    rule_valid_initial,    // Rule 2
-    rule_all_chars_parsed, // Rule 3
-    rule_spelling,         // Rule 4
-    rule_valid_final,      // Rule 5
+    rule_has_vowel,           // Rule 1
+    rule_valid_initial,       // Rule 2
+    rule_all_chars_parsed,    // Rule 3
+    rule_spelling,            // Rule 4
+    rule_valid_final,         // Rule 5
+    rule_valid_vowel_pattern, // Rule 6 (NEW)
 ];
 ```
 
@@ -179,9 +200,37 @@ match final.len() {
 }
 ```
 
+### Rule 6: Valid Vowel Pattern
+
+```rust
+// Check vowel pairs không thuộc INVALID_VOWEL_PATTERNS
+for pair in consecutive_vowel_pairs {
+    if pair in INVALID_VOWEL_PATTERNS → InvalidVowelPattern
+}
+// Ví dụ: "you" có pair [O,U] → Invalid
+// Ví dụ: "yeu" có pair [E,U] → Valid (không trong list)
+```
+
 ---
 
-## 6. API
+## 6. Foreign Word Detection
+
+Ngoài validation, engine còn có hàm `is_foreign_word_pattern()` để detect foreign words:
+
+```rust
+pub fn is_foreign_word_pattern(buffer_keys: &[u16], modifier_key: u16) -> bool
+```
+
+**Patterns detected:**
+1. Invalid vowel patterns (ou, yo) trong buffer
+2. Consonant clusters sau finals: T+R, P+R, C+R (metric, spectrum)
+3. English prefix: "de" + 's' (describe, design)
+
+**Đặc biệt:** Skip check khi đã có horn transforms (ư, ơ, ươ) → user đang gõ tiếng Việt có chủ đích (vd: "rượu").
+
+---
+
+## 7. API
 
 ```rust
 /// Validate và trả về kết quả chi tiết
@@ -190,18 +239,22 @@ pub fn validate(buffer_keys: &[u16]) -> ValidationResult
 /// Quick check
 pub fn is_valid(buffer_keys: &[u16]) -> bool
 
+/// Check foreign word pattern (for modifier skipping)
+pub fn is_foreign_word_pattern(buffer_keys: &[u16], modifier_key: u16) -> bool
+
 pub enum ValidationResult {
     Valid,
     InvalidInitial,
     InvalidFinal,
     InvalidSpelling,
+    InvalidVowelPattern,  // NEW
     NoVowel,
 }
 ```
 
 ---
 
-## 7. Test Cases
+## 8. Test Cases
 
 ### Valid
 
@@ -237,9 +290,18 @@ ge             → nên dùng ghe
 exp, expect, test, claudeco, claus
 ```
 
+### Invalid - Vowel Patterns (NEW)
+
+```
+you, your, house, about, would, south  → "ou" pattern
+yoke, York, beyond                      → "yo" pattern
+metric, spectrum, matrix                → T+R, C+R clusters
+describe, design                        → "de" + 's' prefix
+```
+
 ---
 
-## 8. Integration với Engine
+## 9. Integration với Engine
 
 ```
 on_key(key)
@@ -259,6 +321,14 @@ on_key(key)
 ---
 
 ## Changelog
+
+- **2025-12-16**: Thêm Rule 6 (Vowel Pattern Validation)
+  - Thêm `INVALID_VOWEL_PATTERNS` (ou, yo) vào constants
+  - Thêm `rule_valid_vowel_pattern` - Rule 6
+  - Thêm `is_foreign_word_pattern()` cho foreign word detection
+  - Thêm `InvalidVowelPattern` vào ValidationResult
+  - Document approach: Exclusion vs Inclusion (chọn Exclusion)
+  - Fix issue #15: "metric" không còn bị transform thành "mẻtic"
 
 - **2025-12-11**: Viết lại document theo code thực tế
   - Cập nhật Syllable struct với `Vec<usize>` và `glide` field
