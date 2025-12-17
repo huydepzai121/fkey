@@ -7,14 +7,7 @@ body:
     attributes:
       label: Loại lỗi
       options:
-        - Nhảy chữ / chữ bị đảo vị trí
-        - Dính chữ / chữ bị gộp lại
-        - Mất dấu / không lên dấu
-        - Sai dấu / dấu đặt sai vị trí
         - Gõ ra kết quả không như mong đợi
-        - Gõ tiếng Việt không hoạt động
-        - Ứng dụng bị crash / đóng đột ngột
-        - Không bật được Gõ Nhanh
         - Khác
     validations:
       required: true
