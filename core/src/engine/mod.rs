@@ -98,6 +98,9 @@ pub struct Engine {
     /// True if current word has non-letter characters before letters
     /// Used to prevent false shortcut matches (e.g., "149k" should not match "k")
     has_non_letter_prefix: bool,
+    /// Skip w→ư shortcut in Telex mode (user preference)
+    /// When true, typing 'w' at word start stays as 'w' instead of converting to 'ư'
+    skip_w_shortcut: bool,
 }
 
 impl Default for Engine {
@@ -117,6 +120,7 @@ impl Engine {
             raw_input: Vec::with_capacity(64),
             raw_mode: false,
             has_non_letter_prefix: false,
+            skip_w_shortcut: false,
         }
     }
 
@@ -129,6 +133,11 @@ impl Engine {
         if !enabled {
             self.buf.clear();
         }
+    }
+
+    /// Set whether to skip w→ư shortcut in Telex mode
+    pub fn set_skip_w_shortcut(&mut self, skip: bool) {
+        self.skip_w_shortcut = skip;
     }
 
     pub fn shortcuts(&self) -> &ShortcutTable {
@@ -337,6 +346,12 @@ impl Engine {
     /// - "ww" → revert to "w" (shortcut skipped)
     /// - "www" → "ww" (subsequent w just adds normally)
     fn try_w_as_vowel(&mut self, caps: bool) -> Option<Result> {
+        // If user disabled w→ư shortcut at word start, only skip when buffer is empty
+        // This allows "hw" → "hư" even when shortcut is disabled
+        if self.skip_w_shortcut && self.buf.is_empty() {
+            return None;
+        }
+
         // If shortcut was previously skipped, don't try again
         if matches!(self.last_transform, Some(Transform::WShortcutSkipped)) {
             return None;
@@ -635,6 +650,12 @@ impl Engine {
             return None;
         }
 
+        // Issue #29: Retroactively form ươ compound for pattern "ư + o + C"
+        // When user types "dduwocj", after "dduwoc" we have [đ, ư, o, c]
+        // The 'o' is plain (no horn), but it should be part of the ươ compound
+        // Apply horn to 'o' retroactively before placing the mark
+        let rebuild_from_compound = self.retroactive_uo_compound();
+
         let vowels = self.collect_vowels();
         if vowels.is_empty() {
             return None;
@@ -650,9 +671,40 @@ impl Engine {
         if let Some(c) = self.buf.get_mut(pos) {
             c.mark = mark_val;
             self.last_transform = Some(Transform::Mark(key, mark_val));
-            return Some(self.rebuild_from(pos));
+            // Rebuild from the earlier position if compound was formed
+            let rebuild_pos = rebuild_from_compound.map_or(pos, |cp| cp.min(pos));
+            return Some(self.rebuild_from(rebuild_pos));
         }
 
+        None
+    }
+
+    /// Retroactively form ươ compound when "ư + o + X" pattern is detected
+    /// where X is either a consonant or 'i' (forming ươi triphthong)
+    /// Returns Some(position) if compound was formed, None otherwise
+    fn retroactive_uo_compound(&mut self) -> Option<usize> {
+        // Look for pattern: U with horn + O without horn + (consonant OR 'i')
+        for i in 0..self.buf.len().saturating_sub(2) {
+            let c1 = self.buf.get(i)?;
+            let c2 = self.buf.get(i + 1)?;
+            let c3 = self.buf.get(i + 2)?;
+
+            // Check: U with horn + O plain
+            let is_u_with_horn = c1.key == keys::U && c1.tone == tone::HORN;
+            let is_o_plain = c2.key == keys::O && c2.tone == tone::NONE;
+
+            // Third char must be consonant OR 'i' (for ươi triphthong)
+            let is_consonant = !keys::is_vowel(c3.key);
+            let is_i = c3.key == keys::I;
+
+            if is_u_with_horn && is_o_plain && (is_consonant || is_i) {
+                // Apply horn to O to form the compound
+                if let Some(c) = self.buf.get_mut(i + 1) {
+                    c.tone = tone::HORN;
+                    return Some(i + 1);
+                }
+            }
+        }
         None
     }
 
@@ -831,7 +883,8 @@ impl Engine {
     /// Handle normal letter input
     fn handle_normal_letter(&mut self, key: u16, caps: bool) -> Result {
         // Special case: "o" after "w→ư" should form "ươ" compound
-        // This allows typing "ddwocj" → "được" instead of "đưọc"
+        // This only handles the WAsVowel case (typing "w" alone creates ư)
+        // For "uw" pattern, the compound is formed in try_mark via retroactive_uo_compound
         if key == keys::O && matches!(self.last_transform, Some(Transform::WAsVowel)) {
             // Add O with horn to form ươ compound
             let mut c = Char::new(key, caps);

@@ -1227,3 +1227,159 @@ fn telex_doc_in_sentence() {
     let result2 = type_word(&mut e, "sachs");
     assert_eq!(result2, "sách");
 }
+
+// ============================================================
+// SKIP W SHORTCUT: User preference for w→ư at word start
+// ============================================================
+
+/// When skip_w_shortcut is enabled, standalone "w" should NOT convert to "ư"
+#[test]
+fn skip_w_shortcut_standalone_w_stays_w() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // Standalone "w" should pass through (not convert to ư)
+    let r = e.on_key(keys::W, false, false);
+    assert_eq!(r.action, Action::None as u8, "w should pass through");
+}
+
+/// When skip_w_shortcut is enabled, "hw" should still produce "hư"
+/// (only word-start w is skipped, not w after consonants)
+#[test]
+fn skip_w_shortcut_hw_still_produces_hu() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // "h" + "w" should produce "hư" (w after consonant is NOT skipped)
+    e.on_key(keys::H, false, false);
+    let r = e.on_key(keys::W, false, false);
+    assert_eq!(r.action, Action::Send as u8, "hw should produce ư");
+    assert_eq!(r.chars[0], 'ư' as u32);
+}
+
+/// When skip_w_shortcut is enabled, "nhw" should produce "như"
+#[test]
+fn skip_w_shortcut_nhw_produces_nhu() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // "nh" + "w" should produce "như"
+    e.on_key(keys::N, false, false);
+    e.on_key(keys::H, false, false);
+    let r = e.on_key(keys::W, false, false);
+    assert_eq!(r.action, Action::Send as u8, "nhw should produce ư");
+    assert_eq!(r.chars[0], 'ư' as u32);
+}
+
+/// When skip_w_shortcut is DISABLED (default), standalone "w" converts to "ư"
+#[test]
+fn skip_w_shortcut_disabled_w_converts() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(false); // Explicitly disabled (same as default)
+
+    // Standalone "w" should convert to "ư"
+    let r = e.on_key(keys::W, false, false);
+    assert_eq!(r.action, Action::Send as u8, "w should convert to ư");
+    assert_eq!(r.chars[0], 'ư' as u32);
+}
+
+/// skip_w_shortcut should NOT affect VNI mode
+#[test]
+fn skip_w_shortcut_vni_mode_unaffected() {
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+    e.set_skip_w_shortcut(true);
+
+    // In VNI, "w" always passes through (no w→ư shortcut in VNI)
+    let r = e.on_key(keys::W, false, false);
+    assert_eq!(r.action, Action::None as u8, "VNI: w should pass through");
+}
+
+/// Full word test: "như" with skip_w_shortcut enabled
+#[test]
+fn skip_w_shortcut_full_word_nhu() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    let result = type_word(&mut e, "nhw");
+    assert_eq!(
+        result, "như",
+        "nhw should produce như even with skip enabled"
+    );
+}
+
+/// Full word test: "tư" with skip_w_shortcut enabled
+#[test]
+fn skip_w_shortcut_full_word_tu() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    let result = type_word(&mut e, "tw");
+    assert_eq!(result, "tư", "tw should produce tư even with skip enabled");
+}
+
+/// Full word test: "được" with skip_w_shortcut enabled
+#[test]
+fn skip_w_shortcut_full_word_duoc() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // "dduwowcj" → "được"
+    let result = type_word(&mut e, "dduwowcj");
+    assert_eq!(result, "được", "dduwowcj should produce được");
+}
+
+/// Uppercase W with skip enabled
+#[test]
+fn skip_w_shortcut_uppercase_w_stays_w() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // Uppercase "W" at word start should pass through
+    let r = e.on_key(keys::W, true, false); // caps=true
+    assert_eq!(r.action, Action::None as u8, "W should pass through");
+}
+
+/// Uppercase W after consonant still converts
+#[test]
+fn skip_w_shortcut_uppercase_hw_produces_hu() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // "H" + "W" should produce "HƯ"
+    e.on_key(keys::H, true, false); // H
+    let r = e.on_key(keys::W, true, false); // W
+    assert_eq!(r.action, Action::Send as u8, "HW should produce Ư");
+    assert_eq!(r.chars[0], 'Ư' as u32);
+}
+
+/// Complex test: Multiple words with skip_w_shortcut
+#[test]
+fn skip_w_shortcut_multiple_words() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.set_skip_w_shortcut(true);
+
+    // Word 1: "w" at start → stays "w"
+    let r1 = e.on_key(keys::W, false, false);
+    assert_eq!(r1.action, Action::None as u8);
+    e.clear();
+
+    // Word 2: "như" → converts "w" after "nh"
+    let result2 = type_word(&mut e, "nhw");
+    assert_eq!(result2, "như");
+    e.clear();
+
+    // Word 3: "uw" → "ư" (u at start, then w as horn)
+    let result3 = type_word(&mut e, "uw");
+    assert_eq!(result3, "ư");
+}
