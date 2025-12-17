@@ -60,27 +60,6 @@ body:
     validations:
       required: true
 
-  - type: input
-    id: typed-input
-    attributes:
-      label: Bạn đã gõ gì?
-      description: Các phím bạn đã bấm (ví dụ "vieetj")
-      placeholder: "vieetj"
-
-  - type: input
-    id: expected-output
-    attributes:
-      label: Kết quả mong đợi
-      description: Từ bạn muốn nhận được
-      placeholder: "việt"
-
-  - type: input
-    id: actual-output
-    attributes:
-      label: Kết quả thực tế
-      description: Từ bạn nhận được (bị sai)
-      placeholder: "viêtj"
-
   - type: dropdown
     id: os
     attributes:
