@@ -45,9 +45,11 @@ target_link_libraries(gonhanh
 set_target_properties(gonhanh PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-    # Set RPATH so addon can find libgonhanh_core.so in ~/.local/lib
-    BUILD_RPATH "$ORIGIN/../../lib;$ORIGIN/../.."
-    INSTALL_RPATH "$ORIGIN/../../lib;$ORIGIN/../.."
+    # Set RPATH so addon can find libgonhanh_core.so
+    # - $ORIGIN/..         : ~/.local/lib/fcitx5/../ = ~/.local/lib (user-local)
+    # - $ORIGIN/../../lib  : /usr/lib/fcitx5/../../lib = /usr/lib (system)
+    BUILD_RPATH "$ORIGIN/..;$ORIGIN/../../lib"
+    INSTALL_RPATH "$ORIGIN/..;$ORIGIN/../../lib"
 )
 
 # Get Fcitx5 addon install paths (with fallback for CI)

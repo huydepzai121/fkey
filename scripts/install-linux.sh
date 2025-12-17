@@ -94,7 +94,8 @@ setup_environment() {
     ENV_BLOCK='# Gõ Nhanh
 export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx'
+export XMODIFIERS=@im=fcitx
+export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"'
 
     for rc in ~/.bashrc ~/.zshrc ~/.profile; do
         if [[ -f "$rc" ]] && ! grep -q "GTK_IM_MODULE=fcitx" "$rc" 2>/dev/null; then
@@ -106,6 +107,7 @@ export XMODIFIERS=@im=fcitx'
     export GTK_IM_MODULE=fcitx
     export QT_IM_MODULE=fcitx
     export XMODIFIERS=@im=fcitx
+    export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     log_ok "Môi trường đã cấu hình"
 }
 
@@ -154,6 +156,8 @@ start_fcitx5() {
     log_info "Khởi động Fcitx5..."
     pkill -9 fcitx5 2>/dev/null || true
     sleep 0.3
+    # Ensure library path includes user local libraries
+    export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     nohup fcitx5 -d &>/dev/null &
     sleep 0.5
 
