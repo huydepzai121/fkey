@@ -162,35 +162,38 @@ jobs:
           git clone https://x-access-token:${GH_TOKEN}@github.com/khaphanspace/homebrew-gonhanh.git
           cd homebrew-gonhanh
 
-          cat > Casks/gonhanh.rb << CASKEOF
-cask "gonhanh" do
-  version "${VERSION}"
-  sha256 "${SHA256}"
+          cat > Casks/gonhanh.rb << 'EOF'
+          cask "gonhanh" do
+            version "VERSION_PLACEHOLDER"
+            sha256 "SHA256_PLACEHOLDER"
 
-  url "https://github.com/khaphanspace/gonhanh.org/releases/download/v#{version}/GoNhanh.dmg"
-  name "Gõ Nhanh"
-  desc "High-performance Vietnamese Input Method Engine for macOS"
-  homepage "https://github.com/khaphanspace/gonhanh.org"
+            url "https://github.com/khaphanspace/gonhanh.org/releases/download/v#{version}/GoNhanh.dmg"
+            name "Gõ Nhanh"
+            desc "High-performance Vietnamese Input Method Engine for macOS"
+            homepage "https://github.com/khaphanspace/gonhanh.org"
 
-  livecheck do
-    url :url
-    strategy :github_latest
-  end
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
 
-  app "Gõ Nhanh.app"
+            app "Gõ Nhanh.app"
 
-  postflight do
-    system_command "/usr/bin/xattr",
-                   args: ["-cr", "#{appdir}/Gõ Nhanh.app"],
-                   sudo: false
-  end
+            postflight do
+              system_command "/usr/bin/xattr",
+                             args: ["-cr", "#{appdir}/Gõ Nhanh.app"],
+                             sudo: false
+            end
 
-  zap trash: [
-    "~/Library/Preferences/space.khaphan.gonhanh.plist",
-    "~/Library/Application Support/Gõ Nhanh",
-  ]
-end
-CASKEOF
+            zap trash: [
+              "~/Library/Preferences/space.khaphan.gonhanh.plist",
+              "~/Library/Application Support/Gõ Nhanh",
+            ]
+          end
+          EOF
+          sed -i 's/^          //' Casks/gonhanh.rb
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/" Casks/gonhanh.rb
+          sed -i "s/SHA256_PLACEHOLDER/${SHA256}/" Casks/gonhanh.rb
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
