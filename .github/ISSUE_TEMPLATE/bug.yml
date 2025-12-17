@@ -7,11 +7,14 @@ body:
     attributes:
       label: Loại lỗi
       options:
+        - Nhảy chữ / chữ bị đảo vị trí
+        - Dính chữ / chữ bị gộp lại
+        - Mất dấu / không lên dấu
+        - Sai dấu / dấu đặt sai vị trí
+        - Gõ ra kết quả không như mong đợi
         - Gõ tiếng Việt không hoạt động
-        - Gõ sai ký tự / dấu
         - Ứng dụng bị crash / đóng đột ngột
         - Không bật được Gõ Nhanh
-        - Phím tắt không hoạt động
         - Khác
     validations:
       required: true
@@ -35,22 +38,6 @@ body:
       label: App bị lỗi (nếu biết)
       description: Tên app bị lỗi, ví dụ Chrome, VS Code, Telegram...
       placeholder: "Chrome, VS Code..."
-
-  - type: dropdown
-    id: input-type
-    attributes:
-      label: Loại ô nhập liệu
-      description: Bạn đang gõ ở đâu khi gặp lỗi?
-      options:
-        - Ô nhập văn bản thông thường (textarea, input)
-        - Thanh địa chỉ trình duyệt
-        - Terminal / Command line
-        - Trình soạn thảo code (VS Code, Xcode...)
-        - Ứng dụng Office (Word, Excel...)
-        - Chat app (Telegram, Zalo, Messenger...)
-        - Không nhớ / Không chắc
-    validations:
-      required: true
 
   - type: textarea
     id: description
@@ -79,20 +66,6 @@ body:
         - Không biết
     validations:
       required: true
-
-  - type: dropdown
-    id: previous-ime
-    attributes:
-      label: Bộ gõ trước đây
-      description: Trước khi dùng Gõ Nhanh, bạn dùng bộ gõ nào?
-      options:
-        - Unikey
-        - EVKey
-        - OpenKey
-        - Bộ gõ macOS mặc định
-        - GoTiengViet
-        - Không dùng bộ gõ nào
-        - Khác
 
   - type: input
     id: typed-input
