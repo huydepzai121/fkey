@@ -27,11 +27,32 @@
 
 ## 📥 Tải về & Cài đặt
 
+### 🍺 Homebrew (macOS - Khuyến nghị)
+
+```bash
+brew tap khaphanspace/gonhanh
+brew install --cask gonhanh
+```
+
+### 📦 Tải thủ công
+
 | Nền tảng | Trạng thái | Tải xuống | Hướng dẫn |
 |:--------:|:----------:|:---------:|:----------|
 | **macOS** | ✅ Sẵn sàng | [📥 Tải GoNhanh.dmg](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md) |
 | **Linux** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-linux.md) |
 | **Windows** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-windows.md) |
+
+<details>
+<summary><strong>⚠️ macOS: App không mở được?</strong></summary>
+
+```bash
+# Chạy lệnh này trong Terminal sau khi kéo app vào Applications
+xattr -cr /Applications/GoNhanh.app
+```
+
+Sau đó: **System Settings → Privacy & Security → Accessibility → Bật GoNhanh**
+
+</details>
 
 ## ✨ Tính năng
 
@@ -139,6 +160,18 @@ Hy vọng Gõ Nhanh góp phần truyền cảm hứng cho cộng đồng mã ngu
 ---
 
 ## 🔧 Dành cho Developer
+
+### Tech Stack
+
+| Layer | Công nghệ |
+|-------|-----------|
+| **Core Engine** | Rust 2021 (pure `std`, zero runtime deps) |
+| **macOS** | SwiftUI + CGEventTap + C FFI |
+| **Windows** | WPF/.NET 8 + SetWindowsHookEx + P/Invoke |
+| **Linux** | Fcitx5 + C++ + C FFI |
+| **Testing** | rstest + serial_test (470+ tests) |
+| **CI/CD** | GitHub Actions + auto-versioning + AI-generated release notes |
+| **Dev Tools** | [Claude Code](https://claude.ai/code) with [ClaudeKit](https://claudekit.cc/) |
 
 ### Cách hoạt động
 
