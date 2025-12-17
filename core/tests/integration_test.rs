@@ -971,3 +971,60 @@ fn shortcut_not_triggered_by_letter() {
         "letter should not trigger shortcut"
     );
 }
+
+/// Issue #23: Shortcut "zz" should work in Telex mode
+/// Even though "z" is a remove modifier, when there's nothing to remove,
+/// it should be added to buffer so shortcuts like "zz" can trigger.
+#[test]
+fn shortcut_zz_works_in_telex() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+
+    e.shortcuts_mut().add(Shortcut::new("zz", "tiếp tục"));
+
+    // Type "zz" + SPACE - should trigger shortcut
+    e.on_key(keys::Z, false, false);
+    e.on_key(keys::Z, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    // Should trigger shortcut with output "tiếp tục "
+    assert_eq!(r.action, Action::Send as u8, "shortcut 'zz' should trigger");
+    assert_eq!(r.backspace, 2, "should backspace 2 chars for 'zz'");
+
+    // Verify output contains "tiếp tục "
+    let chars: String = (0..r.count as usize)
+        .map(|i| char::from_u32(r.chars[i]).unwrap_or('?'))
+        .collect();
+    assert_eq!(chars, "tiếp tục ", "output should be 'tiếp tục '");
+}
+
+/// Issue #23: Verify "z" still removes marks when there ARE marks to remove
+#[test]
+fn z_still_removes_marks_in_telex() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+
+    // Type "as" to get "á"
+    e.on_key(keys::A, false, false);
+    let r = e.on_key(keys::S, false, false);
+    assert_eq!(r.action, Action::Send as u8);
+
+    // Type "z" to remove the mark - should work
+    let r = e.on_key(keys::Z, false, false);
+    assert_eq!(r.action, Action::Send as u8, "z should remove mark");
+
+    // The result should be "a" (mark removed)
+    let chars: String = (0..r.count as usize)
+        .map(|i| char::from_u32(r.chars[i]).unwrap_or('?'))
+        .collect();
+    assert_eq!(chars, "a", "mark should be removed, resulting in 'a'");
+}
+
+/// Issue #24: Verify "ddojc" produces "đọc" in Telex mode
+/// Engine test - verifies core functionality works correctly
+#[test]
+fn telex_ddojc_produces_doc() {
+    // telex() panics on assertion failure, so if this runs successfully,
+    // the test passes
+    telex(&[("ddojc", "đọc")]);
+}

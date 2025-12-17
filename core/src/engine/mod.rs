@@ -271,9 +271,12 @@ impl Engine {
         }
 
         // 4. Remove modifier
+        // Only consume key if there's something to remove; otherwise fall through to normal letter
+        // This allows shortcuts like "zz" to work when buffer has no marks/tones to remove
         if !skip_vni_modifiers && m.remove(key) {
-            self.last_transform = None;
-            return self.handle_remove();
+            if let Some(result) = self.try_remove() {
+                return result;
+            }
         }
 
         // 5. In Telex: "w" as vowel "ư" when valid Vietnamese context
@@ -787,21 +790,26 @@ impl Engine {
         Result::none()
     }
 
-    /// Handle remove modifier
-    fn handle_remove(&mut self) -> Result {
+    /// Try to apply remove modifier
+    /// Returns Some(Result) if a mark/tone was removed, None if nothing to remove
+    /// When None is returned, the key falls through to handle_normal_letter()
+    fn try_remove(&mut self) -> Option<Result> {
+        self.last_transform = None;
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
                 if c.mark > mark::NONE {
                     c.mark = mark::NONE;
-                    return self.rebuild_from(pos);
+                    return Some(self.rebuild_from(pos));
                 }
                 if c.tone > tone::NONE {
                     c.tone = tone::NONE;
-                    return self.rebuild_from(pos);
+                    return Some(self.rebuild_from(pos));
                 }
             }
         }
-        Result::none()
+        // Nothing to remove - return None so key can be processed as normal letter
+        // This allows shortcuts like "zz" to work
+        None
     }
 
     /// Handle normal letter input
