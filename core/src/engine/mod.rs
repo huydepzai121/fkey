@@ -820,6 +820,75 @@ impl Engine {
         None
     }
 
+    /// Reposition tone (sắc/huyền/hỏi/ngã/nặng) after new vowel is added
+    ///
+    /// When user types out-of-order (e.g., "osa" instead of "oas"), the tone may be
+    /// placed on wrong vowel. This function moves it to the correct position based
+    /// on Vietnamese phonology rules.
+    ///
+    /// Returns Some((old_pos, new_pos)) if tone was moved, None otherwise.
+    fn reposition_tone_if_needed(&mut self) -> Option<(usize, usize)> {
+        // Find vowel with tone mark (sắc/huyền/hỏi/ngã/nặng)
+        let tone_info: Option<(usize, u8)> = self
+            .buf
+            .iter()
+            .enumerate()
+            .find(|(_, c)| c.mark > mark::NONE && keys::is_vowel(c.key))
+            .map(|(i, c)| (i, c.mark));
+
+        if let Some((old_pos, tone_value)) = tone_info {
+            let vowels = self.collect_vowels();
+            if vowels.is_empty() {
+                return None;
+            }
+
+            // Check for syllable boundary: if there's a consonant between the toned vowel
+            // and any later vowel, the toned vowel is in a closed syllable - don't reposition.
+            // Example: "bủn" + "o" → 'n' closes "bủn", so 'o' starts new syllable.
+            let has_consonant_after_tone = (old_pos + 1..self.buf.len()).any(|i| {
+                self.buf
+                    .get(i)
+                    .is_some_and(|c| !keys::is_vowel(c.key) && c.key != keys::W)
+            });
+            let has_vowel_after_consonant = has_consonant_after_tone
+                && vowels
+                    .iter()
+                    .any(|v| v.pos > old_pos && self.has_consonant_between(old_pos, v.pos));
+
+            if has_vowel_after_consonant {
+                // Syllable boundary detected - tone is in previous syllable, don't move it
+                return None;
+            }
+
+            let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
+            let has_final = self.has_final_consonant(last_vowel_pos);
+            let has_qu = self.has_qu_initial();
+            let has_gi = self.has_gi_initial();
+            let new_pos = Phonology::find_tone_position(&vowels, has_final, true, has_qu, has_gi);
+
+            if new_pos != old_pos {
+                // Move tone from old position to new position
+                if let Some(c) = self.buf.get_mut(old_pos) {
+                    c.mark = mark::NONE;
+                }
+                if let Some(c) = self.buf.get_mut(new_pos) {
+                    c.mark = tone_value;
+                }
+                return Some((old_pos, new_pos));
+            }
+        }
+        None
+    }
+
+    /// Check if there's a consonant between two positions
+    fn has_consonant_between(&self, start: usize, end: usize) -> bool {
+        (start + 1..end).any(|i| {
+            self.buf
+                .get(i)
+                .is_some_and(|c| !keys::is_vowel(c.key) && c.key != keys::W)
+        })
+    }
+
     /// Common revert logic: clear modifier, add key to buffer, rebuild output
     fn revert_and_rebuild(&mut self, pos: usize, key: u16, caps: bool) -> Result {
         // Calculate backspace BEFORE adding key (based on old buffer state)
@@ -930,10 +999,35 @@ impl Engine {
             // This ensures "dduwo" → "đươ" without waiting for a mark
             // Only in Telex mode (0) - VNI uses explicit '7' for horn
             if self.method == 0 && key == keys::O && self.normalize_uo_compound().is_some() {
-                // The 'o' was just added but not yet typed to screen
-                // So we output 'ơ' directly (no backspace needed)
+                // ươ compound formed - now check if mark needs to move
+                // For ươ compound, mark should be on ơ (2nd vowel with diacritic)
+                // Example: "uwso" → ứo + "o" becomes ứơ but should be ướ (mark on ơ)
+                if let Some(old_pos) = self.reposition_mark_if_needed() {
+                    // Mark was moved - need to rebuild from the old position
+                    // to show the correction
+                    return self.rebuild_from_after_insert(old_pos);
+                }
+
+                // No mark to reposition - just output the ơ character
                 let vowel_char = chars::to_char(keys::O, caps, tone::HORN, 0).unwrap();
                 return Result::send(0, &[vowel_char]);
+            }
+
+            // Auto-correct tone position when new character changes the correct placement
+            //
+            // Two scenarios:
+            // 1. New vowel changes diphthong pattern:
+            //    "osa" → tone on 'o', then 'a' added → "oa" needs tone on 'a'
+            // 2. New consonant creates final, which changes tone position:
+            //    "muas" → tone on 'u' (ua open), then 'n' added → "uan" needs tone on 'a'
+            //
+            // Both cases need to reposition the tone mark based on Vietnamese phonology.
+            if let Some((old_pos, _new_pos)) = self.reposition_tone_if_needed() {
+                // Tone was moved - rebuild output from the old position
+                // Note: the new char was just added to buffer but NOT yet displayed
+                // So backspace = (chars from old_pos to BEFORE new char)
+                // And output = (chars from old_pos to end INCLUDING new char)
+                return self.rebuild_from_after_insert(old_pos);
             }
 
             // Check if adding this letter creates invalid vowel pattern (foreign word detection)
@@ -942,7 +1036,13 @@ impl Engine {
             //
             // w-as-vowel: first horn is U at position 0 (was standalone 'w')
             // w-as-tone: horns are on vowels after initial consonant
-            if self.has_w_as_vowel_transform() {
+            //
+            // Exception: complete ươ compound + vowel = valid Vietnamese triphthong
+            // (like "rượu" = ươu, "mười" = ươi) - don't revert in these cases
+            // Only skip for vowels that form valid triphthongs (u, i), not for consonants
+            let is_valid_triphthong_ending =
+                self.has_complete_uo_compound() && (key == keys::U || key == keys::I);
+            if self.has_w_as_vowel_transform() && !is_valid_triphthong_ending {
                 let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
                 if is_foreign_word_pattern(&buffer_keys, key) {
                     return self.revert_w_as_vowel_transforms();
@@ -1039,6 +1139,40 @@ impl Engine {
             if let Some(c) = self.buf.get(i) {
                 backspace += 1;
 
+                if c.key == keys::D && c.stroke {
+                    output.push(chars::get_d(c.caps));
+                } else if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
+                    output.push(ch);
+                } else if let Some(ch) = utils::key_to_char(c.key, c.caps) {
+                    output.push(ch);
+                }
+            }
+        }
+
+        if output.is_empty() {
+            Result::none()
+        } else {
+            Result::send(backspace, &output)
+        }
+    }
+
+    /// Rebuild output from position after a new character was inserted
+    ///
+    /// Unlike rebuild_from, this accounts for the fact that the last character
+    /// in the buffer was just added but NOT yet displayed on screen.
+    /// So backspace count = (chars from `from` to end - 1) because last char isn't on screen.
+    fn rebuild_from_after_insert(&self, from: usize) -> Result {
+        if self.buf.is_empty() {
+            return Result::none();
+        }
+
+        let mut output = Vec::with_capacity(self.buf.len() - from);
+        // Backspace = number of chars from `from` to BEFORE the new char
+        // The new char (last in buffer) hasn't been displayed yet
+        let backspace = (self.buf.len().saturating_sub(1).saturating_sub(from)) as u8;
+
+        for i in from..self.buf.len() {
+            if let Some(c) = self.buf.get(i) {
                 if c.key == keys::D && c.stroke {
                     output.push(chars::get_d(c.caps));
                 } else if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {

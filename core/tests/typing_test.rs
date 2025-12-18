@@ -27,6 +27,337 @@ const TELEX_TYPOS: &[(&str, &str)] = &[
     // Wrong order - mark before vowel
     ("sa", "sa"),
     ("as", "á"),
+    // ============================================================
+    // OUT-OF-ORDER TONE PLACEMENT - COMPREHENSIVE TEST SUITE
+    // Covers ALL vowel patterns from Vietnamese phonology rules
+    // Engine should AUTO-CORRECT tone position based on rules
+    // ============================================================
+    //
+    // ============================================================
+    // GROUP 1: TONE MOVES TO 2ND VOWEL (Medial + Main patterns)
+    // When typing tone on 1st vowel then adding 2nd → tone moves to 2nd
+    // ============================================================
+    //
+    // --- Pattern: oa (medial o + main a) ---
+    ("osa", "oá"),   // o + s + a → oá
+    ("ofa", "oà"),   // o + f + a → oà
+    ("ora", "oả"),   // o + r + a → oả
+    ("oxa", "oã"),   // o + x + a → oã
+    ("oja", "oạ"),   // o + j + a → oạ
+    ("hosa", "hoá"), // with initial: h + o + s + a → hoá
+    ("hofa", "hoà"), // with initial: h + o + f + a → hoà
+    ("tosa", "toá"), // with initial: t + o + s + a → toá
+    ("losa", "loá"), // with initial: l + o + s + a → loá
+    //
+    // --- Pattern: oă (medial o + main ă) ---
+    ("osaw", "oắ"),   // o + s + a + w → oắ (aw = ă)
+    ("hosaw", "hoắ"), // h + o + s + a + w → hoắ
+    ("xosaw", "xoắ"), // x + o + s + a + w → xoắ
+    //
+    // --- Pattern: oe (medial o + main e) ---
+    ("ose", "oé"),     // o + s + e → oé
+    ("ofe", "oè"),     // o + f + e → oè
+    ("khose", "khoé"), // kh + o + s + e → khoé
+    ("xose", "xoé"),   // x + o + s + e → xoé
+    //
+    // --- Pattern: uê (medial u + main ê) ---
+    ("usee", "uế"),   // u + s + ee → uế
+    ("husee", "huế"), // h + u + s + ee → huế
+    ("tusee", "tuế"), // t + u + s + ee → tuế
+    //
+    // --- Pattern: uy (medial u + main y) ---
+    ("usy", "uý"),     // u + s + y → uý
+    ("qusy", "quý"),   // qu + s + y → quý
+    ("husy", "huý"),   // h + u + s + y → huý
+    ("tusy", "tuý"),   // t + u + s + y → tuý
+    ("thusy", "thuý"), // th + u + s + y → thuý
+    //
+    // --- Pattern: ua (after q) → qua ---
+    ("qusa", "quá"), // q + u + s + a → quá
+    ("qufa", "quà"), // q + u + f + a → quà
+    ("qura", "quả"), // q + u + r + a → quả
+    ("quxa", "quã"), // q + u + x + a → quã
+    ("quja", "quạ"), // q + u + j + a → quạ
+    //
+    // --- Pattern: iê (compound vowel) ---
+    ("isee", "iế"),   // i + s + ee → iế
+    ("tisee", "tiế"), // t + i + s + ee → tiế
+    ("kisee", "kiế"), // k + i + s + ee → kiế
+    ("lisee", "liế"), // l + i + s + ee → liế
+    //
+    // --- Pattern: uô (compound vowel) ---
+    ("usoo", "uố"),   // u + s + oo → uố
+    ("musoo", "muố"), // m + u + s + oo → muố
+    ("cusoo", "cuố"), // c + u + s + oo → cuố
+    ("lusoo", "luố"), // l + u + s + oo → luố
+    //
+    // --- Pattern: ươ (compound vowel) ---
+    ("uwsow", "ướ"),   // uw + s + ow → ướ
+    ("muwsow", "mướ"), // m + uw + s + ow → mướ
+    ("luwsow", "lướ"), // l + uw + s + ow → lướ
+    ("suwsow", "sướ"), // s + uw + s + ow → sướ
+    //
+    // ============================================================
+    // GROUP 2: TONE STAYS ON 1ST VOWEL (Main + Glide patterns)
+    // When typing tone on 1st vowel then adding glide → tone stays
+    // ============================================================
+    //
+    // --- Pattern: ai (a + glide i) ---
+    ("asi", "ái"),   // a + s + i → ái
+    ("afi", "ài"),   // a + f + i → ài
+    ("ari", "ải"),   // a + r + i → ải
+    ("axi", "ãi"),   // a + x + i → ãi
+    ("aji", "ại"),   // a + j + i → ại
+    ("masi", "mái"), // m + a + s + i → mái
+    ("basi", "bái"), // b + a + s + i → bái
+    ("tasi", "tái"), // t + a + s + i → tái
+    //
+    // --- Pattern: ao (a + glide o) ---
+    ("aso", "áo"),   // a + s + o → áo
+    ("afo", "ào"),   // a + f + o → ào
+    ("aro", "ảo"),   // a + r + o → ảo
+    ("axo", "ão"),   // a + x + o → ão
+    ("ajo", "ạo"),   // a + j + o → ạo
+    ("caso", "cáo"), // c + a + s + o → cáo
+    ("baso", "báo"), // b + a + s + o → báo
+    ("saso", "sáo"), // s + a + s + o → sáo
+    //
+    // --- Pattern: au (a + glide u) ---
+    ("asu", "áu"),   // a + s + u → áu
+    ("afu", "àu"),   // a + f + u → àu
+    ("aru", "ảu"),   // a + r + u → ảu
+    ("axu", "ãu"),   // a + x + u → ãu
+    ("aju", "ạu"),   // a + j + u → ạu
+    ("sasu", "sáu"), // s + a + s + u → sáu
+    ("masu", "máu"), // m + a + s + u → máu
+    //
+    // --- Pattern: ay (a + glide y) ---
+    ("asy", "áy"),   // a + s + y → áy
+    ("afy", "ày"),   // a + f + y → ày
+    ("ary", "ảy"),   // a + r + y → ảy
+    ("axy", "ãy"),   // a + x + y → ãy
+    ("ajy", "ạy"),   // a + j + y → ạy
+    ("masy", "máy"), // m + a + s + y → máy
+    ("hasy", "háy"), // h + a + s + y → háy
+    //
+    // --- Pattern: âu (â + glide u) ---
+    ("aasu", "ấu"),   // aa + s + u → ấu (aa = â)
+    ("aafu", "ầu"),   // aa + f + u → ầu
+    ("aaru", "ẩu"),   // aa + r + u → ẩu
+    ("aaxu", "ẫu"),   // aa + x + u → ẫu
+    ("aaju", "ậu"),   // aa + j + u → ậu
+    ("daasu", "dấu"), // d + aa + s + u → dấu
+    ("caasu", "cấu"), // c + aa + s + u → cấu
+    //
+    // --- Pattern: ây (â + glide y) ---
+    ("aasy", "ấy"),   // aa + s + y → ấy (aa = â)
+    ("aafy", "ầy"),   // aa + f + y → ầy
+    ("aary", "ẩy"),   // aa + r + y → ẩy
+    ("aaxy", "ẫy"),   // aa + x + y → ẫy
+    ("aajy", "ậy"),   // aa + j + y → ậy
+    ("daasy", "dấy"), // d + aa + s + y → dấy
+    ("maasy", "mấy"), // m + aa + s + y → mấy
+    //
+    // --- Pattern: eo (e + glide o) ---
+    ("eso", "éo"),     // e + s + o → éo
+    ("efo", "èo"),     // e + f + o → èo
+    ("ero", "ẻo"),     // e + r + o → ẻo
+    ("exo", "ẽo"),     // e + x + o → ẽo
+    ("ejo", "ẹo"),     // e + j + o → ẹo
+    ("keso", "kéo"),   // k + e + s + o → kéo
+    ("treso", "tréo"), // tr + e + s + o → tréo
+    //
+    // --- Pattern: êu (ê + glide u) ---
+    ("eesu", "ếu"),   // ee + s + u → ếu (ee = ê)
+    ("eefu", "ều"),   // ee + f + u → ều
+    ("eeru", "ểu"),   // ee + r + u → ểu
+    ("eexu", "ễu"),   // ee + x + u → ễu
+    ("eeju", "ệu"),   // ee + j + u → ệu
+    ("keesu", "kếu"), // k + ee + s + u → kếu
+    ("reesu", "rếu"), // r + ee + s + u → rếu
+    //
+    // --- Pattern: ia (i + glide a) - descending diphthong ---
+    ("isa", "ía"),   // i + s + a → ía
+    ("ifa", "ìa"),   // i + f + a → ìa
+    ("ira", "ỉa"),   // i + r + a → ỉa
+    ("ixa", "ĩa"),   // i + x + a → ĩa
+    ("ija", "ịa"),   // i + j + a → ịa
+    ("kisa", "kía"), // k + i + s + a → kía
+    ("misa", "mía"), // m + i + s + a → mía
+    ("tisa", "tía"), // t + i + s + a → tía
+    //
+    // --- Pattern: iu (i + glide u) ---
+    ("isu", "íu"),   // i + s + u → íu
+    ("ifu", "ìu"),   // i + f + u → ìu
+    ("iru", "ỉu"),   // i + r + u → ỉu
+    ("ixu", "ĩu"),   // i + x + u → ĩu
+    ("iju", "ịu"),   // i + j + u → ịu
+    ("disu", "díu"), // d + i + s + u → díu
+    ("kisu", "kíu"), // k + i + s + u → kíu
+    //
+    // --- Pattern: oi (o + glide i) ---
+    ("osi", "ói"),   // o + s + i → ói
+    ("ofi", "òi"),   // o + f + i → òi
+    ("ori", "ỏi"),   // o + r + i → ỏi
+    ("oxi", "õi"),   // o + x + i → õi
+    ("oji", "ọi"),   // o + j + i → ọi
+    ("dosi", "dói"), // d + o + s + i → dói
+    ("nosi", "nói"), // n + o + s + i → nói
+    //
+    // --- Pattern: ôi (ô + glide i) ---
+    ("oosi", "ối"),   // oo + s + i → ối (oo = ô)
+    ("oofi", "ồi"),   // oo + f + i → ồi
+    ("oori", "ổi"),   // oo + r + i → ổi
+    ("ooxi", "ỗi"),   // oo + x + i → ỗi
+    ("ooji", "ội"),   // oo + j + i → ội
+    ("doosi", "dối"), // d + oo + s + i → dối
+    ("toosi", "tối"), // t + oo + s + i → tối
+    //
+    // --- Pattern: ơi (ơ + glide i) ---
+    ("owsi", "ới"),   // ow + s + i → ới (ow = ơ)
+    ("owfi", "ời"),   // ow + f + i → ời
+    ("owri", "ởi"),   // ow + r + i → ởi
+    ("owxi", "ỡi"),   // ow + x + i → ỡi
+    ("owji", "ợi"),   // ow + j + i → ợi
+    ("bowsi", "bới"), // b + ow + s + i → bới
+    ("dowsi", "dới"), // d + ow + s + i → dới
+    //
+    // --- Pattern: ui (u + glide i) ---
+    ("usi", "úi"),   // u + s + i → úi
+    ("ufi", "ùi"),   // u + f + i → ùi
+    ("uri", "ủi"),   // u + r + i → ủi
+    ("uxi", "ũi"),   // u + x + i → ũi
+    ("uji", "ụi"),   // u + j + i → ụi
+    ("tusi", "túi"), // t + u + s + i → túi
+    ("musi", "múi"), // m + u + s + i → múi
+    //
+    // --- Pattern: ưi (ư + glide i) ---
+    ("uwsi", "ứi"),   // uw + s + i → ứi (uw = ư)
+    ("uwfi", "ừi"),   // uw + f + i → ừi
+    ("uwri", "ửi"),   // uw + r + i → ửi
+    ("uwxi", "ữi"),   // uw + x + i → ữi
+    ("uwji", "ựi"),   // uw + j + i → ựi
+    ("guwsi", "gứi"), // g + uw + s + i → gứi
+    //
+    // --- Pattern: ưu (ư + glide u) ---
+    ("uwsu", "ứu"),   // uw + s + u → ứu (uw = ư)
+    ("uwfu", "ừu"),   // uw + f + u → ừu
+    ("uwru", "ửu"),   // uw + r + u → ửu
+    ("uwxu", "ữu"),   // uw + x + u → ữu
+    ("uwju", "ựu"),   // uw + j + u → ựu
+    ("luwsu", "lứu"), // l + uw + s + u → lứu
+    ("huwsu", "hứu"), // h + uw + s + u → hứu
+    //
+    // --- Pattern: ua (NOT after q) → u is main ---
+    ("musa", "múa"), // m + u + s + a → múa
+    ("cusa", "cúa"), // c + u + s + a → cúa
+    ("mufa", "mùa"), // m + u + f + a → mùa
+    ("mura", "mủa"), // m + u + r + a → mủa
+    ("muxa", "mũa"), // m + u + x + a → mũa
+    ("muja", "mụa"), // m + u + j + a → mụa
+    //
+    // --- Pattern: ưa (ư is main, a is glide) ---
+    ("uwsa", "ứa"),   // uw + s + a → ứa
+    ("uwfa", "ừa"),   // uw + f + a → ừa
+    ("uwra", "ửa"),   // uw + r + a → ửa
+    ("uwxa", "ữa"),   // uw + x + a → ữa
+    ("uwja", "ựa"),   // uw + j + a → ựa
+    ("muwsa", "mứa"), // m + uw + s + a → mứa
+    ("cuwsa", "cứa"), // c + uw + s + a → cứa
+    //
+    // ============================================================
+    // GROUP 3: TRIPLE VOWELS - TONE ON MIDDLE VOWEL
+    // ============================================================
+    //
+    // --- Pattern: oai (o + a + i) → tone on a ---
+    ("osai", "oái"),      // o + s + a + i → oái
+    ("hosai", "hoái"),    // h + o + s + a + i → hoái
+    ("ngoafif", "ngoài"), // correct existing test
+    //
+    // --- Pattern: oay (o + a + y) → tone on a ---
+    ("osay", "oáy"),   // o + s + a + y → oáy
+    ("xosay", "xoáy"), // x + o + s + a + y → xoáy
+    //
+    // --- Pattern: uôi (u + ô + i) → tone on ô ---
+    ("uoosi", "uối"),   // u + oo + s + i → uối
+    ("cuoosi", "cuối"), // c + u + oo + s + i → cuối
+    ("tuoosi", "tuối"), // t + u + oo + s + i → tuối
+    //
+    // --- Pattern: ươi (ư + ơ + i) → tone on ơ ---
+    ("uwowsi", "ưới"),   // uw + ow + s + i → ưới
+    ("muwowsi", "mưới"), // m + uw + ow + s + i → mưới
+    ("tuwowsi", "tưới"), // t + uw + ow + s + i → tưới
+    //
+    // --- Pattern: ươu (ư + ơ + u) → tone on ơ ---
+    ("uwowsu", "ướu"),   // uw + ow + s + u → ướu
+    ("ruwowsu", "rướu"), // r + uw + ow + s + u → rướu
+    ("huwowsu", "hướu"), // h + uw + ow + s + u → hướu
+    //
+    // --- Pattern: iêu (i + ê + u) → tone on ê ---
+    ("ieesu", "iếu"),   // i + ee + s + u → iếu
+    ("tieesu", "tiếu"), // t + i + ee + s + u → tiếu
+    ("kieesu", "kiếu"), // k + i + ee + s + u → kiếu
+    //
+    // --- Pattern: yêu (y + ê + u) → tone on ê ---
+    ("yeesu", "yếu"), // y + ee + s + u → yếu
+    ("yeefu", "yều"), // y + ee + f + u → yều
+    //
+    // --- Pattern: uây (u + â + y) → tone on â ---
+    ("uaasy", "uấy"),     // u + aa + s + y → uấy
+    ("khuaasy", "khuấy"), // kh + u + aa + s + y → khuấy
+    //
+    // Note: oeo triple vowel (khoèo, ngoẹo) has a fundamental conflict with
+    // Telex's oo→ô transformation. When typing o-e-o, the second 'o' triggers
+    // circumflex on the first 'o'. This is a rare pattern and a known Telex limitation.
+    // For oeo words, users typically type the tone AFTER all vowels: "oeos" → but
+    // this also conflicts with oo→ô. VNI handles this better with numeric tones.
+    //
+    // --- Pattern: uyê (u + y + ê) → tone on ê (LAST vowel) ---
+    ("uysee", "uyế"),     // u + y + s + ee → uyế
+    ("quysee", "quyế"),   // qu + y + s + ee → quyế
+    ("khuysee", "khuyế"), // kh + u + y + s + ee → khuyế
+    //
+    // ============================================================
+    // GROUP 4: VV + C (Two vowels + final consonant)
+    // Tone always on 2nd vowel when closed syllable
+    // ============================================================
+    //
+    // --- oa + C → tone on a ---
+    ("toasn", "toán"),   // t + o + a + s + n → toán
+    ("hoasm", "hoám"),   // h + o + a + s + m → hoám
+    ("loangs", "loáng"), // l + o + a + n + g + s → loáng? (complex)
+    //
+    // --- ua + C (with q) → tone on a ---
+    ("quasn", "quán"),   // qu + a + s + n → quán
+    ("quasng", "quáng"), // qu + a + s + ng → quáng
+    //
+    // --- ua + C (without q) → tone on a (closed changes rule) ---
+    ("muasn", "muán"), // m + u + a + s + n → muán (final changes rule)
+    //
+    // --- iê + C → tone on ê ---
+    ("tieesn", "tiến"), // t + i + ee + s + n → tiến
+    ("bieesp", "biếp"), // b + i + ee + s + p → biếp? (invalid?)
+    //
+    // --- uô + C → tone on ô ---
+    ("muoosn", "muốn"), // m + u + oo + s + n → muốn
+    ("cuoosc", "cuốc"), // c + u + oo + s + c → cuốc
+    //
+    // --- ươ + C → tone on ơ ---
+    ("muwowsn", "mướn"),   // m + uw + ow + s + n → mướn
+    ("luwowsng", "lướng"), // l + uw + ow + s + ng → lướng
+    //
+    // ============================================================
+    // GROUP 5: gi- INITIAL (special handling)
+    // ============================================================
+    //
+    ("gisa", "giá"),      // gi + s + a → giá (gi is initial, a is vowel)
+    ("giaf", "già"),      // gi + a + f → già
+    ("gioosng", "giống"), // gi + oo + s + ng → giống
+    //
+    // ============================================================
+    // EXISTING TEST CASES (preserved)
+    // ============================================================
+    //
     // Double mark → revert
     ("ass", "as"),
     ("aff", "af"),
