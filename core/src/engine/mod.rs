@@ -612,9 +612,28 @@ impl Engine {
                 // For horn modifier, apply smart vowel selection based on Vietnamese phonology
                 target_positions = self.find_horn_target_with_switch(targets, tone_val);
             } else {
-                // Non-horn modifiers: use standard target matching
+                // Non-horn modifiers (circumflex): use standard target matching
+                // For Telex circumflex (aa, ee, oo pattern), require either:
+                // 1. Target at LAST position (immediate doubling: "oo" → "ô")
+                // 2. No consonants between target and end (delayed diphthong: "oio" → "ôi")
+                // This prevents transformation in words like "teacher" where consonants
+                // (c, h) appear between the two 'e's
+                let is_telex_circumflex = self.method == 0
+                    && tone_type == ToneType::Circumflex
+                    && matches!(key, keys::A | keys::E | keys::O);
+
                 for (i, c) in self.buf.iter().enumerate().rev() {
                     if targets.contains(&c.key) && c.tone == tone::NONE {
+                        // For Telex circumflex, check if there are consonants after target
+                        if is_telex_circumflex && i != self.buf.len() - 1 {
+                            // Check for consonants between target position and end of buffer
+                            let has_consonant_after = (i + 1..self.buf.len())
+                                .any(|j| self.buf.get(j).is_some_and(|ch| !keys::is_vowel(ch.key)));
+                            if has_consonant_after {
+                                // Consonants between target and current → likely English
+                                continue;
+                            }
+                        }
                         target_positions.push(i);
                         break;
                     }
@@ -791,6 +810,7 @@ impl Engine {
 
         // Validate buffer structure (skip if has horn transforms - already intentional Vietnamese)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+        let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
         if !has_horn_transforms && !is_valid_for_transform(&buffer_keys) {
             return None;
         }
@@ -806,7 +826,7 @@ impl Engine {
         // - "met" + 'r' → T+R cluster common in English → skip modifier
         // - "you" + 'r' → "ou" vowel pattern invalid → skip modifier
         // - "rươu" + 'j' → has horn transforms → DON'T skip, apply mark normally
-        if !has_horn_transforms && is_foreign_word_pattern(&buffer_keys, key) {
+        if !has_horn_transforms && is_foreign_word_pattern(&buffer_keys, &buffer_tones, key) {
             return None;
         }
 
@@ -1154,7 +1174,8 @@ impl Engine {
                 self.has_complete_uo_compound() && (key == keys::U || key == keys::I);
             if self.has_w_as_vowel_transform() && !is_valid_triphthong_ending {
                 let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-                if is_foreign_word_pattern(&buffer_keys, key) {
+                let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
+                if is_foreign_word_pattern(&buffer_keys, &buffer_tones, key) {
                     return self.revert_w_as_vowel_transforms();
                 }
             }
@@ -1688,9 +1709,10 @@ mod tests {
     ];
 
     // Normal mode (without prefix): Vietnamese transforms apply
+    // Note: "text" is no longer included since it's now correctly detected as English
     const RAW_MODE_NORMAL: &[(&str, &str)] = &[
         ("gox", "gõ"),      // Without prefix: "gox" → "gõ"
-        ("text", "tẽt"),    // Without prefix: Vietnamese transforms
+        ("tas", "tá"),      // Without prefix: Vietnamese transforms (s adds sắc)
         ("vieejt", "việt"), // Normal Vietnamese typing
     ];
 
