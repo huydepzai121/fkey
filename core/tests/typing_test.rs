@@ -303,15 +303,22 @@ const TELEX_COMMON_ISSUES: &[(&str, &str)] = &[
     // Issue #14: Alternative typing with wo → ươ compound
     ("ddwocj", "được"),
     // Issue #29: uw + o should form ươ compound (u with horn + o → ươ)
+    // Pattern: ư + o + consonant
     ("dduwocj", "được"),
     ("nuwocs", "nước"),
     ("suwongs", "sướng"),
     ("truwongf", "trường"),
+    // Pattern: ư + o + i (triphthong ươi)
     ("nguwoif", "người"),
+    ("muwoif", "mười"),
+    ("tuwoir", "tưởi"),
+    // Pattern: w alone creates ư, then o forms ươ
     ("nwocj", "nược"),
     ("swongs", "sướng"),
     ("bwomf", "bườm"),
     ("twoir", "tưởi"),
+    // Edge case: ươ without final consonant (open syllable)
+    ("ruwouj", "rượu"),
     ("ddif", "đì"),
     ("ddi", "đi"),
     ("ddang", "đang"),

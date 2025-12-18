@@ -357,6 +357,13 @@ impl Engine {
             return None;
         }
 
+        // If we already have a complete ươ compound, swallow the second 'w'
+        // This handles "dduwowcj" where the second 'w' should be no-op
+        // Use send(0, []) to intercept and consume the key without output
+        if self.has_complete_uo_compound() {
+            return Some(Result::send(0, &[]));
+        }
+
         // Check revert: ww → w (skip shortcut)
         // Preserve original case: Ww → W, wW → w
         if let Some(Transform::WAsVowel) = self.last_transform {
@@ -599,6 +606,11 @@ impl Engine {
             }
         }
 
+        // Normalize ưo → ươ compound if horn was applied to 'u'
+        if let Some(compound_pos) = self.normalize_uo_compound() {
+            earliest_pos = earliest_pos.min(compound_pos);
+        }
+
         self.last_transform = Some(Transform::Tone(key, tone_val));
 
         // Reposition mark if needed
@@ -650,11 +662,9 @@ impl Engine {
             return None;
         }
 
-        // Issue #29: Retroactively form ươ compound for pattern "ư + o + C"
-        // When user types "dduwocj", after "dduwoc" we have [đ, ư, o, c]
-        // The 'o' is plain (no horn), but it should be part of the ươ compound
-        // Apply horn to 'o' retroactively before placing the mark
-        let rebuild_from_compound = self.retroactive_uo_compound();
+        // Issue #29: Normalize ưo → ươ compound before placing mark
+        // In Vietnamese, "ưo" is never valid - it's always "ươ"
+        let rebuild_from_compound = self.normalize_uo_compound();
 
         let vowels = self.collect_vowels();
         if vowels.is_empty() {
@@ -679,26 +689,25 @@ impl Engine {
         None
     }
 
-    /// Retroactively form ươ compound when "ư + o + X" pattern is detected
-    /// where X is either a consonant or 'i' (forming ươi triphthong)
-    /// Returns Some(position) if compound was formed, None otherwise
-    fn retroactive_uo_compound(&mut self) -> Option<usize> {
-        // Look for pattern: U with horn + O without horn + (consonant OR 'i')
-        for i in 0..self.buf.len().saturating_sub(2) {
+    /// Normalize ưo → ươ compound
+    ///
+    /// In Vietnamese, "ưo" (u with horn + plain o) is NEVER valid.
+    /// It should always be "ươ" (both with horn).
+    /// This function finds and fixes this pattern anywhere in the buffer.
+    ///
+    /// Returns Some(position) of the 'o' that was modified, None if no change.
+    fn normalize_uo_compound(&mut self) -> Option<usize> {
+        // Look for pattern: U with horn + O without horn (anywhere in buffer)
+        for i in 0..self.buf.len().saturating_sub(1) {
             let c1 = self.buf.get(i)?;
             let c2 = self.buf.get(i + 1)?;
-            let c3 = self.buf.get(i + 2)?;
 
-            // Check: U with horn + O plain
+            // Check: U with horn + O plain → always normalize to ươ
             let is_u_with_horn = c1.key == keys::U && c1.tone == tone::HORN;
             let is_o_plain = c2.key == keys::O && c2.tone == tone::NONE;
 
-            // Third char must be consonant OR 'i' (for ươi triphthong)
-            let is_consonant = !keys::is_vowel(c3.key);
-            let is_i = c3.key == keys::I;
-
-            if is_u_with_horn && is_o_plain && (is_consonant || is_i) {
-                // Apply horn to O to form the compound
+            if is_u_with_horn && is_o_plain {
+                // Apply horn to O to form the ươ compound
                 if let Some(c) = self.buf.get_mut(i + 1) {
                     c.tone = tone::HORN;
                     return Some(i + 1);
@@ -708,7 +717,7 @@ impl Engine {
         None
     }
 
-    /// Check for uo compound in buffer
+    /// Check for uo compound in buffer (any tone state)
     fn has_uo_compound(&self) -> bool {
         let mut prev_key: Option<u16> = None;
         for c in self.buf.iter() {
@@ -721,6 +730,21 @@ impl Engine {
                 prev_key = Some(c.key);
             } else {
                 prev_key = None;
+            }
+        }
+        false
+    }
+
+    /// Check for complete ươ compound (both u and o have horn)
+    fn has_complete_uo_compound(&self) -> bool {
+        for i in 0..self.buf.len().saturating_sub(1) {
+            if let (Some(c1), Some(c2)) = (self.buf.get(i), self.buf.get(i + 1)) {
+                // Check ư + ơ pattern (both with horn)
+                let is_u_horn = c1.key == keys::U && c1.tone == tone::HORN;
+                let is_o_horn = c2.key == keys::O && c2.tone == tone::HORN;
+                if is_u_horn && is_o_horn {
+                    return true;
+                }
             }
         }
         false
@@ -884,7 +908,7 @@ impl Engine {
     fn handle_normal_letter(&mut self, key: u16, caps: bool) -> Result {
         // Special case: "o" after "w→ư" should form "ươ" compound
         // This only handles the WAsVowel case (typing "w" alone creates ư)
-        // For "uw" pattern, the compound is formed in try_mark via retroactive_uo_compound
+        // For "uw" pattern, the compound is normalized in try_mark via normalize_uo_compound
         if key == keys::O && matches!(self.last_transform, Some(Transform::WAsVowel)) {
             // Add O with horn to form ươ compound
             let mut c = Char::new(key, caps);
@@ -901,6 +925,16 @@ impl Engine {
         if keys::is_letter(key) {
             // Add the letter to buffer
             self.buf.push(Char::new(key, caps));
+
+            // Normalize ưo → ươ immediately when 'o' is typed after 'ư'
+            // This ensures "dduwo" → "đươ" without waiting for a mark
+            // Only in Telex mode (0) - VNI uses explicit '7' for horn
+            if self.method == 0 && key == keys::O && self.normalize_uo_compound().is_some() {
+                // The 'o' was just added but not yet typed to screen
+                // So we output 'ơ' directly (no backspace needed)
+                let vowel_char = chars::to_char(keys::O, caps, tone::HORN, 0).unwrap();
+                return Result::send(0, &[vowel_char]);
+            }
 
             // Check if adding this letter creates invalid vowel pattern (foreign word detection)
             // Only revert if the horn transforms are from w-as-vowel (standalone w→ư),
