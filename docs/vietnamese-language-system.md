@@ -872,7 +872,7 @@ Dấu phụ (circumflex ^, horn, breve ˘) được định nghĩa trong cột *
 | 28 | ưu | U+U | u₁→ư (ʼ) | **ứ**u | **ừ**u | **ử**u | **ữ**u | **ự**u |
 | 29 | yê | Y+E | e→ê (^) | y**ế** | y**ề** | y**ể** | y**ễ** | y**ệ** |
 
-**B. Nguyên âm ba (Triphthongs) - 10 patterns**
+**B. Nguyên âm ba (Triphthongs) - 11 patterns**
 
 | # | Pattern | Keys | Modifier | sắc | huyền | hỏi | ngã | nặng |
 |--:|---------|------|----------|-----|-------|-----|-----|------|
@@ -883,9 +883,10 @@ Dấu phụ (circumflex ^, horn, breve ˘) được định nghĩa trong cột *
 | 34 | oeo | O+E+O | - | o**é**o | o**è**o | o**ẻ**o | o**ẽ**o | o**ẹ**o |
 | 35 | uây | U+A+Y | a→â (^) | u**ấ**y | u**ầ**y | u**ẩ**y | u**ẫ**y | u**ậ**y |
 | 36 | uôi | U+O+I | o→ô (^) | u**ố**i | u**ồ**i | u**ổ**i | u**ỗ**i | u**ộ**i |
-| 37 | ươi | U+O+I | u→ư, o→ơ (ʼʼ) | ư**ớ**i | ư**ờ**i | ư**ở**i | ư**ỡ**i | ư**ợ**i |
-| 38 | ươu | U+O+U | u₁→ư, o→ơ (ʼʼ) | ư**ớ**u | ư**ờ**u | ư**ở**u | ư**ỡ**u | ư**ợ**u |
-| 39 | uyê | U+Y+E | e→ê (^) | uy**ế** | uy**ề** | uy**ể** | uy**ễ** | uy**ệ** |
+| 37 | uya | U+Y+A | - | u**ý**a | u**ỳ**a | u**ỷ**a | u**ỹ**a | u**ỵ**a |
+| 38 | ươi | U+O+I | u→ư, o→ơ (ʼʼ) | ư**ớ**i | ư**ờ**i | ư**ở**i | ư**ỡ**i | ư**ợ**i |
+| 39 | ươu | U+O+U | u₁→ư, o→ơ (ʼʼ) | ư**ớ**u | ư**ờ**u | ư**ở**u | ư**ỡ**u | ư**ợ**u |
+| 40 | uyê | U+Y+E | e→ê (^) | uy**ế** | uy**ề** | uy**ể** | uy**ễ** | uy**ệ** |
 
 > **Note**: Bold (**x**) = nguyên âm nhận dấu thanh. Pattern 19 (ua sau q) có vị trí dấu khác pattern 18.
 
@@ -946,8 +947,8 @@ Dấu phụ (circumflex ^, horn, breve ˘) được định nghĩa trong cột *
 | **oe** | o |
 | **uâ** | y |
 | **uô** | i |
+| **uy** | a, ê |
 | **ươ** | i, u |
-| **uy** | ê |
 
 > **Cách dùng**: Whitelist approach - pattern không có trong bảng → REJECT.
 
@@ -1186,8 +1187,9 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 - **2025-12-18**: Refactor toàn diện - Section 7.6 là SINGLE SOURCE OF TRUTH
   - **Section 7.6.1** redesign: Ma trận với cột thanh điệu tường minh (sắc, huyền, hỏi, ngã, nặng)
     - Mỗi ô hiển thị chính xác output với dấu (bold = nguyên âm nhận dấu)
-    - 39 patterns (29 diphthongs + 10 triphthongs)
+    - **40 patterns** (29 diphthongs + 11 triphthongs)
     - Cột Modifier: chỉ rõ dấu phụ (^=circumflex, ˘=breve, ʼ=horn)
+    - **Added**: uya (#37) - pattern cho từ "khuya"
   - **Section 7.6.2**: Validation & Placement Rules (flowchart)
   - **Section 7.6.3**: Bảng tra nhanh (V1→V2, V1+V2→V3)
   - **Loại bỏ các phần trùng lặp**:
