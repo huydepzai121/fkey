@@ -60,10 +60,14 @@ pub trait Method {
     fn remove(&self, key: u16) -> bool;
 }
 
-/// Get method by id
-pub fn get(id: u8) -> Box<dyn Method> {
+/// Static method instances (zero-sized types, no heap allocation)
+static TELEX: Telex = Telex;
+static VNI: Vni = Vni;
+
+/// Get method by id (returns static reference, no allocation)
+pub fn get(id: u8) -> &'static dyn Method {
     match id {
-        1 => Box::new(Vni),
-        _ => Box::new(Telex),
+        1 => &VNI,
+        _ => &TELEX,
     }
 }

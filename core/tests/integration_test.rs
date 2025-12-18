@@ -1425,3 +1425,866 @@ fn skip_w_shortcut_multiple_words() {
     let result3 = type_word(&mut e, "uw");
     assert_eq!(result3, "ư");
 }
+
+// ============================================================
+// BACKSPACE-AFTER-SPACE: Issue #32
+// ============================================================
+
+/// Basic: Add mark after space (du + SPACE + < + j → dụ)
+#[test]
+fn backspace_after_space_telex_add_mark() {
+    let mut e = Engine::new();
+    // "du " + backspace + "j" → "dụ"
+    let result = type_word(&mut e, "du <j");
+    assert_eq!(result, "dụ", "du + space + backspace + j should produce dụ");
+}
+
+/// Basic: Add mark after space (VNI mode)
+#[test]
+fn backspace_after_space_vni_add_mark() {
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+                     // "du " + backspace + "5" → "dụ"
+    let result = type_word(&mut e, "du <5");
+    assert_eq!(
+        result, "dụ",
+        "VNI: du + space + backspace + 5 should produce dụ"
+    );
+}
+
+/// Change existing mark after space (cháo + SPACE + < + f → chào)
+#[test]
+fn backspace_after_space_telex_change_mark() {
+    let mut e = Engine::new();
+    // "chaos" → "cháo", then space + backspace + "f" → "chào"
+    let result = type_word(&mut e, "chaos <f");
+    assert_eq!(
+        result, "chào",
+        "cháo + space + backspace + f should change to chào"
+    );
+}
+
+/// Multiple backspaces to delete chars (doc + SPACE + << + j → dọ)
+#[test]
+fn backspace_after_space_multiple_backspace() {
+    let mut e = Engine::new();
+    // "doc " + backspace×2 + "j" → "dọ"
+    let result = type_word(&mut e, "doc <<j");
+    assert_eq!(
+        result, "dọ",
+        "doc + space + 2 backspaces + j should produce dọ"
+    );
+}
+
+/// Second backspace is normal delete (not restore again)
+#[test]
+fn backspace_after_space_second_is_normal() {
+    let mut e = Engine::new();
+    // "du " + backspace (restore "du") + backspace (delete 'u') → "d"
+    let result = type_word(&mut e, "du <<");
+    assert_eq!(result, "d", "Second backspace should delete normally");
+}
+
+/// Break key clears history (punctuation)
+#[test]
+fn backspace_after_space_break_clears_history() {
+    let mut e = Engine::new();
+    // Type "du", space, comma (break key), then backspace
+    // Comma clears history, so backspace should just delete comma
+    type_word(&mut e, "du ");
+    e.on_key(keys::COMMA, false, false); // Break key clears history
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "After break key, backspace is normal"
+    );
+}
+
+/// Ctrl clears history
+#[test]
+fn backspace_after_space_ctrl_clears_history() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::C, false, true); // Ctrl+C clears history
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "After Ctrl, backspace is normal"
+    );
+}
+
+/// History stores multiple words
+#[test]
+fn backspace_after_space_history_multiple_words() {
+    let mut e = Engine::new();
+    // Type "an " then "em " then backspace → restore "em", type "j" → "ẹm"
+    let result = type_word(&mut e, "an em <j");
+    assert_eq!(
+        result, "an ẹm",
+        "Should restore most recent word 'em' and add mark"
+    );
+}
+
+/// Uppercase preserved after restore
+#[test]
+fn backspace_after_space_preserve_case() {
+    let mut e = Engine::new();
+    // "Du " + backspace + "j" → "Dụ"
+    let result = type_word(&mut e, "Du <j");
+    assert_eq!(result, "Dụ", "Uppercase should be preserved after restore");
+}
+
+/// Complex word with multiple transforms
+#[test]
+fn backspace_after_space_complex_word() {
+    let mut e = Engine::new();
+    // "vieejt " + backspace + "s" → changes ệ to ế
+    let result = type_word(&mut e, "vieejt <s");
+    assert_eq!(
+        result, "viết",
+        "Should be able to change mark on complex word"
+    );
+}
+
+/// Add tone after space (aa + SPACE + < + s → ấ)
+#[test]
+fn backspace_after_space_add_tone() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "aa <s");
+    assert_eq!(result, "ấ", "Should add mark to circumflex vowel");
+}
+
+/// Stroke word (đi + SPACE + < continues editing)
+#[test]
+fn backspace_after_space_stroke_word() {
+    let mut e = Engine::new();
+    // "ddi " + backspace + "s" → "đí"
+    let result = type_word(&mut e, "ddi <s");
+    assert_eq!(result, "đí", "Stroke should be preserved after restore");
+}
+
+// ============================================================
+// BACKSPACE-AFTER-SPACE: Extended behaviors
+// ============================================================
+
+/// Multiple spaces: restore word only after ALL spaces deleted
+#[test]
+fn backspace_after_multiple_spaces() {
+    let mut e = Engine::new();
+    // "du" + space + space → spaces_after_commit = 2
+    type_word(&mut e, "du ");
+    e.on_key(keys::SPACE, false, false); // Second space
+
+    // First backspace: delete one space but NOT restore yet
+    let r1 = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r1.action, Action::Send as u8, "Should delete space");
+    assert_eq!(r1.backspace, 1, "Delete one space");
+    assert_eq!(r1.count, 0, "No chars to add");
+
+    // Second backspace: delete last space AND restore word
+    let r2 = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r2.action,
+        Action::Send as u8,
+        "Should delete space and restore"
+    );
+    assert_eq!(r2.backspace, 1, "Delete last space");
+    // Word "du" is now restored to buffer for editing
+}
+
+/// Arrow key LEFT clears history
+#[test]
+fn backspace_after_space_left_arrow_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::LEFT, false, false); // Arrow clears history
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "LEFT arrow should clear history"
+    );
+}
+
+/// Arrow key RIGHT clears history
+#[test]
+fn backspace_after_space_right_arrow_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::RIGHT, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "RIGHT arrow should clear history"
+    );
+}
+
+/// Tab key clears history
+#[test]
+fn backspace_after_space_tab_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::TAB, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::None as u8, "TAB should clear history");
+}
+
+/// Enter key clears history
+#[test]
+fn backspace_after_space_enter_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::RETURN, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::None as u8, "ENTER should clear history");
+}
+
+/// ESC key clears history
+#[test]
+fn backspace_after_space_esc_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::ESC, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::None as u8, "ESC should clear history");
+}
+
+/// Dot punctuation clears history
+#[test]
+fn backspace_after_space_dot_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.on_key(keys::DOT, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::None as u8, "DOT should clear history");
+}
+
+/// Typing new word after space, backspace restores new word only
+#[test]
+fn backspace_after_space_new_word_typed() {
+    let mut e = Engine::new();
+    // "du " then type "an " then backspace → restore "an"
+    let result = type_word(&mut e, "du an <s");
+    assert_eq!(result, "du án", "Should restore most recent word 'an'");
+}
+
+/// Empty buffer on space doesn't push to history
+#[test]
+fn backspace_after_space_empty_buffer() {
+    let mut e = Engine::new();
+    // Just spaces, no actual word typed
+    e.on_key(keys::SPACE, false, false);
+    e.on_key(keys::SPACE, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "Empty buffer should not be pushed to history"
+    );
+}
+
+/// Long Vietnamese word restore
+#[test]
+fn backspace_after_space_long_word() {
+    let mut e = Engine::new();
+    // "nghiêng" + space + backspace + "s" → "nghiếng"
+    let result = type_word(&mut e, "nghieeng <s");
+    assert_eq!(result, "nghiếng", "Long word should be restored correctly");
+}
+
+/// Word with multiple vowels
+#[test]
+fn backspace_after_space_multiple_vowels() {
+    let mut e = Engine::new();
+    // "khuya" + space + backspace + "f" → "khuỳa" (tone on 'y' per Vietnamese phonology)
+    let result = type_word(&mut e, "khuya <f");
+    assert_eq!(
+        result, "khuỳa",
+        "Word with multiple vowels should restore correctly"
+    );
+}
+
+/// Continue typing after restore without adding mark
+#[test]
+fn backspace_after_space_continue_typing() {
+    let mut e = Engine::new();
+    // "du " + backspace + "n" → "dun"
+    let result = type_word(&mut e, "du <n");
+    assert_eq!(result, "dun", "Should be able to add letters after restore");
+}
+
+/// Backspace all chars after restore
+#[test]
+fn backspace_after_space_delete_all() {
+    let mut e = Engine::new();
+    // "du " + backspace + delete both chars → ""
+    let result = type_word(&mut e, "du <<<");
+    assert_eq!(result, "", "Should delete all chars after restore");
+}
+
+/// Three words, restore only affects most recent
+#[test]
+fn backspace_after_space_three_words() {
+    let mut e = Engine::new();
+    // "toi di hoc" + space + backspace + "j" → "toi di học"
+    let result = type_word(&mut e, "toi di hoc <j");
+    assert_eq!(
+        result, "toi di học",
+        "Should only restore most recent word 'hoc'"
+    );
+}
+
+/// Consecutive word commits and restores
+#[test]
+fn backspace_after_space_consecutive_restores() {
+    let mut e = Engine::new();
+    // "an " (commit) + backspace (restore) + space (commit again) + backspace (restore again)
+    type_word(&mut e, "an ");
+    let r1 = e.on_key(keys::DELETE, false, false); // Restore "an"
+    assert_eq!(r1.action, Action::Send as u8, "First restore");
+    e.on_key(keys::SPACE, false, false); // Commit "an" again
+    let r2 = e.on_key(keys::DELETE, false, false); // Should restore "an" again
+    assert_eq!(r2.action, Action::Send as u8, "Second restore should work");
+}
+
+/// Backspace after typing a number (numbers don't break buffer)
+#[test]
+fn backspace_after_space_with_number_in_word() {
+    let mut e = Engine::new();
+    // In Telex, typing "so1" - number is in buffer but not affected
+    // space + backspace + type more
+    let result = type_word(&mut e, "so1 <2");
+    // "so1" + space + backspace restores "so1", then "2" is just typed
+    // Since "so1" has a number, Vietnamese transforms might not apply
+    assert!(
+        result.contains("so"),
+        "Word with number should be restorable"
+    );
+}
+
+/// VNI: Multiple words with marks
+#[test]
+fn backspace_after_space_vni_multiple_words() {
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+                     // VNI: 6=circumflex, 9=stroke(đ), 5=hỏi, 2=huyền
+                     // "to6i d9i ho5c" + space + backspace + "2" → change hỏc → hòc
+    let result = type_word(&mut e, "to6i d9i ho5c <2");
+    assert_eq!(result, "tôi đi hòc", "VNI multi-word restore should work");
+}
+
+/// Uppercase in middle of word
+#[test]
+fn backspace_after_space_mixed_case() {
+    let mut e = Engine::new();
+    // "iPhone" like pattern - mixed case
+    let result = type_word(&mut e, "vieEt <s");
+    assert_eq!(result, "viết", "Mixed case should normalize on transform");
+}
+
+/// Single char word restore
+#[test]
+fn backspace_after_space_single_char() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "a <s");
+    assert_eq!(result, "á", "Single char word should restore correctly");
+}
+
+/// Backspace immediately (no typing after restore)
+#[test]
+fn backspace_after_space_immediate() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    let r = e.on_key(keys::DELETE, false, false);
+    // Should restore "du" - action is Send with backspace=1
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 1, "Should delete the space");
+}
+
+/// History capacity: ensure ring buffer works
+#[test]
+fn backspace_after_space_history_capacity() {
+    let mut e = Engine::new();
+    // Type 12 words (more than capacity of 10)
+    for i in 0..12 {
+        let word = format!("w{}", i);
+        for c in word.chars() {
+            let key = match c {
+                'w' => keys::W,
+                '0' => keys::N0,
+                '1' => keys::N1,
+                '2' => keys::N2,
+                '3' => keys::N3,
+                '4' => keys::N4,
+                '5' => keys::N5,
+                '6' => keys::N6,
+                '7' => keys::N7,
+                '8' => keys::N8,
+                '9' => keys::N9,
+                _ => continue,
+            };
+            e.on_key(key, false, false);
+        }
+        e.on_key(keys::SPACE, false, false);
+    }
+    // Backspace should restore most recent word (w11)
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "Should restore from ring buffer"
+    );
+}
+
+/// Quick typing pattern: word space word space backspace
+#[test]
+fn backspace_after_space_quick_typing() {
+    let mut e = Engine::new();
+    // Simulate fast typing: "toi " "di " then realize mistake
+    let result = type_word(&mut e, "toi di <r");
+    assert_eq!(result, "toi dỉ", "Quick typing then backspace should work");
+}
+
+/// Disable engine clears history
+#[test]
+fn backspace_after_space_disable_clears() {
+    let mut e = Engine::new();
+    type_word(&mut e, "du ");
+    e.set_enabled(false);
+    e.set_enabled(true);
+    let r = e.on_key(keys::DELETE, false, false);
+    // Disabling engine should have cleared history
+    assert_eq!(r.action, Action::None as u8, "Disable should clear history");
+}
+
+/// EDGE CASE: Type word, space, new chars, delete all, delete space → restore
+/// Scenario: "chà" + " " + "o" + backspace + backspace → should restore "chà"
+#[test]
+fn backspace_after_space_type_delete_restore() {
+    let mut e = Engine::new();
+    // Type "chà " (chaf + space)
+    type_word(&mut e, "chaf ");
+    // Type "o"
+    e.on_key(keys::O, false, false);
+    // Delete "o"
+    e.on_key(keys::DELETE, false, false);
+    // Buffer is now empty, but spaces_after_commit should still be 1
+    // Delete space to restore "chà"
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::Send as u8, "Should restore previous word");
+    assert_eq!(r.backspace, 1, "Should delete the space");
+}
+
+/// EDGE CASE: Continue typing after restore
+/// "chà" + " " + "o" + backspace + backspace + "o" → "chào"
+#[test]
+fn backspace_after_space_restore_then_type() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "chaf o<<o");
+    assert_eq!(result, "chào", "Restore then continue typing should work");
+}
+
+/// EDGE CASE: Delete multiple chars before restore
+/// "việt" + " " + "abc" + 3 backspaces + 1 backspace → restore "việt"
+#[test]
+fn backspace_after_space_delete_multi_chars() {
+    let mut e = Engine::new();
+    type_word(&mut e, "vieejt ");
+    type_word(&mut e, "abc");
+    // Delete "abc"
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    // Now buffer is empty, delete space to restore
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "Should restore after deleting all new chars"
+    );
+}
+
+/// EDGE CASE: Type Vietnamese word after space, delete it, restore original
+/// "tôi" + " " + "đi" + 2 backspaces + 1 backspace → restore "tôi"
+#[test]
+fn backspace_after_space_new_viet_word_then_delete() {
+    let mut e = Engine::new();
+    type_word(&mut e, "tooi ");
+    type_word(&mut e, "ddi");
+    // Delete "đi"
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    // Delete space
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::Send as u8);
+}
+
+/// EDGE CASE: Multiple cycles of type-delete-restore
+/// "anh" + " " + "x" + backspace + backspace → restore → " " + "y" + backspace + backspace → restore
+#[test]
+fn backspace_after_space_multiple_restore_cycles() {
+    let mut e = Engine::new();
+    type_word(&mut e, "anh ");
+    // Cycle 1: type x, delete x, restore
+    e.on_key(keys::X, false, false);
+    e.on_key(keys::DELETE, false, false);
+    let r1 = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r1.action, Action::Send as u8, "First restore should work");
+
+    // Type space again
+    e.on_key(keys::SPACE, false, false);
+    // Cycle 2: type y, delete y, restore
+    e.on_key(keys::Y, false, false);
+    e.on_key(keys::DELETE, false, false);
+    let r2 = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r2.action, Action::Send as u8, "Second restore should work");
+}
+
+/// EDGE CASE: Restore then apply tone mark
+/// "cha" + " " + "x" + backspace + backspace + "f" → "chà"
+#[test]
+fn backspace_after_space_restore_apply_tone() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "cha x<<f");
+    assert_eq!(result, "chà", "Should apply tone after restore");
+}
+
+/// EDGE CASE: Restore then apply vowel mark
+/// "cô" + " " + "x" + backspace + backspace + "s" → "cố"
+#[test]
+fn backspace_after_space_restore_apply_vowel_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "coo x<<s");
+    assert_eq!(result, "cố", "Should apply mark after restore");
+}
+
+/// EDGE CASE: Type number after space, delete, restore
+/// "một" + " " + "123" + 3 backspaces + 1 backspace → restore
+#[test]
+fn backspace_after_space_type_numbers_delete() {
+    let mut e = Engine::new();
+    type_word(&mut e, "mootj ");
+    e.on_key(keys::N1, false, false);
+    e.on_key(keys::N2, false, false);
+    e.on_key(keys::N3, false, false);
+    // Delete numbers (numbers don't go to buffer, but we track them)
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    // Delete space
+    let r = e.on_key(keys::DELETE, false, false);
+    // Note: numbers after space clear spaces_after_commit, so restore won't work
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "Numbers break the restore chain"
+    );
+}
+
+/// EDGE CASE: Very long sequence - type, partial delete, more type, delete all
+/// "mình" + " " + "abc" + delete 1 + "def" + delete 5 + restore
+#[test]
+fn backspace_after_space_complex_edit_sequence() {
+    let mut e = Engine::new();
+    type_word(&mut e, "minhf ");
+    // Type "abc"
+    type_word(&mut e, "abc");
+    // Delete 1 char (now "ab")
+    e.on_key(keys::DELETE, false, false);
+    // Type "def" (now "abdef")
+    type_word(&mut e, "def");
+    // Delete all 5 chars
+    for _ in 0..5 {
+        e.on_key(keys::DELETE, false, false);
+    }
+    // Buffer empty, delete space to restore
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "Complex edit should still allow restore"
+    );
+}
+
+/// EDGE CASE: Two spaces then partial backspace
+/// "word" + " " + " " + backspace (one space) → should NOT restore yet
+#[test]
+fn backspace_after_space_two_spaces_partial() {
+    let mut e = Engine::new();
+    type_word(&mut e, "word ");
+    e.on_key(keys::SPACE, false, false); // Second space
+                                         // Delete one space
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r.action, Action::Send as u8, "Should delete space");
+    // Should NOT have restored yet - still one space remaining
+    // spaces_after_commit should be 1 now
+    // Delete second space to actually restore
+    let r2 = e.on_key(keys::DELETE, false, false);
+    assert_eq!(r2.action, Action::Send as u8, "Should restore now");
+}
+
+/// EDGE CASE: Backspace on empty buffer without history
+#[test]
+fn backspace_after_space_empty_no_history() {
+    let mut e = Engine::new();
+    // Just backspace without any prior typing
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "Empty buffer, no history = no action"
+    );
+}
+
+/// EDGE CASE: Single char word restore then continue
+/// "a" + " " + "x" + backspace + backspace + "s" → "á"
+#[test]
+fn backspace_after_space_single_char_restore_continue() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "a x<<s");
+    assert_eq!(result, "á", "Single char restore then tone should work");
+}
+
+/// EDGE CASE: Word with đ, restore, continue
+/// "đi" + " " + "x" + backspace + backspace + "s" → "đí"
+#[test]
+fn backspace_after_space_d_stroke_restore() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "ddi x<<s");
+    assert_eq!(result, "đí", "đ word restore then tone should work");
+}
+
+/// EDGE CASE: VNI mode - type, delete, restore, continue
+/// "chà" (VNI: cha2) + " " + "x" + backspace + backspace + "1" → "chá"
+#[test]
+fn backspace_after_space_vni_restore_continue() {
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+    let result = type_word(&mut e, "cha2 x<<1");
+    assert_eq!(result, "chá", "VNI restore then continue should work");
+}
+
+/// EDGE CASE: Rapid alternating - restore, type, restore, type
+#[test]
+fn backspace_after_space_rapid_alternating() {
+    let mut e = Engine::new();
+    type_word(&mut e, "mot ");
+    // Restore
+    e.on_key(keys::DELETE, false, false);
+    // Type space (commit "mot" again)
+    e.on_key(keys::SPACE, false, false);
+    // Type something
+    e.on_key(keys::X, false, false);
+    // Delete x
+    e.on_key(keys::DELETE, false, false);
+    // Restore again
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "Rapid alternating should work"
+    );
+}
+
+/// EDGE CASE: Uppercase word restore then lowercase continue
+/// "TÔI" + " " + "x" + backspace + backspace + type lowercase
+#[test]
+fn backspace_after_space_uppercase_then_lowercase() {
+    let mut e = Engine::new();
+    // Type "TÔI" (uppercase)
+    e.on_key(keys::T, true, false);
+    e.on_key(keys::O, true, false);
+    e.on_key(keys::O, true, false);
+    e.on_key(keys::I, true, false);
+    e.on_key(keys::SPACE, false, false);
+    // Type x
+    e.on_key(keys::X, false, false);
+    // Delete x and space
+    e.on_key(keys::DELETE, false, false);
+    let r = e.on_key(keys::DELETE, false, false);
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "Uppercase word restore should work"
+    );
+}
+
+// ============================================================
+// RESTORE_WORD: Buffer restoration from Vietnamese string
+// ============================================================
+
+/// Helper: simulate typing on existing screen text after restore_word
+fn restore_and_type(e: &mut Engine, initial: &str, input: &str) -> String {
+    use gonhanh_core::utils::char_to_key;
+
+    // Start with screen showing initial word
+    let mut screen: String = initial.into();
+
+    // Restore buffer to match screen
+    e.restore_word(initial);
+
+    // Type each character and apply results to screen
+    for c in input.chars() {
+        let key = char_to_key(c);
+        let is_caps = c.is_uppercase();
+
+        let r = e.on_key(key, is_caps, false);
+        if r.action == Action::Send as u8 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+        } else {
+            // Pass through if not handled
+            screen.push(c);
+        }
+    }
+    screen
+}
+
+/// Basic restore_word: restore simple Vietnamese word
+#[test]
+fn restore_word_simple() {
+    let mut e = Engine::new();
+    // Screen has "việt", restore buffer, then type 's' to change mark
+    let result = restore_and_type(&mut e, "việt", "s");
+    assert_eq!(result, "viết", "After restore, tone mark should work");
+}
+
+/// restore_word with multiple vowels
+#[test]
+fn restore_word_multiple_vowels() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "khuỳa", "s");
+    assert_eq!(result, "khuýa", "Should change tone on restored word");
+}
+
+/// restore_word with đ (stroked consonant)
+#[test]
+fn restore_word_with_d_stroke() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "đi", "s");
+    assert_eq!(result, "đí", "đ should be preserved, tone added");
+}
+
+/// restore_word with circumflex (ô, â, ê)
+#[test]
+fn restore_word_with_circumflex() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "cô", "s");
+    assert_eq!(result, "cố", "Circumflex should be preserved");
+}
+
+/// restore_word with horn (ơ, ư)
+#[test]
+fn restore_word_with_horn() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "mưa", "f");
+    assert_eq!(result, "mừa", "Horn should be preserved, tone added");
+}
+
+/// restore_word with uppercase
+#[test]
+fn restore_word_uppercase() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "Việt", "f");
+    // Typing 'f' (huyền) should change ệ to ề
+    assert_eq!(result, "Viềt", "Should change mark on uppercase word");
+}
+
+/// restore_word empty string
+#[test]
+fn restore_word_empty() {
+    let mut e = Engine::new();
+    e.restore_word("");
+    // Type a new word from scratch
+    let result = type_word(&mut e, "as");
+    assert_eq!(result, "á", "Empty restore should allow fresh typing");
+}
+
+/// restore_word with plain ASCII word then add mark
+#[test]
+fn restore_word_then_add_mark() {
+    let mut e = Engine::new();
+    // Restore "ban", then type 's' to add sắc
+    let result = restore_and_type(&mut e, "ban", "s");
+    assert_eq!(result, "bán", "Should add mark to restored ASCII word");
+}
+
+/// restore_word full example: user typed "đường", wants to add/change tone
+#[test]
+fn restore_word_full_example() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "đường", "s");
+    assert_eq!(result, "đướng", "Should replace huyền with sắc");
+}
+
+/// restore_word then type consonant (extends word)
+#[test]
+fn restore_word_then_extend() {
+    let mut e = Engine::new();
+    let result = restore_and_type(&mut e, "việt", "nam");
+    // Vietnamese chars preserved when extending
+    assert_eq!(
+        result, "việtnam",
+        "Should extend word preserving existing chars"
+    );
+}
+
+/// Real scenario: "chào" + space + random chars + backspace to before 'o' + add mark
+/// This simulates: user types "chào ", then more stuff, then backspaces back into word
+#[test]
+fn restore_word_chao_scenario() {
+    let mut e = Engine::new();
+
+    // Step 1: Type "chào " (word committed with space)
+    let screen1 = type_word(&mut e, "chaof ");
+    assert_eq!(screen1, "chào ", "Should type chào with space");
+
+    // Step 2: Type more spaces and random chars
+    let screen2 = type_word(&mut e, "  abc");
+    assert_eq!(screen2, "  abc", "Should type spaces and random chars");
+
+    // Full screen at this point: "chào   abc"
+
+    // Step 3: Backspace to delete "abc", "  ", and "o" (7 backspaces)
+    // After backspacing, screen shows "chà" (the 'o' is deleted)
+    // At this point, native app should detect cursor in word and call restore_word
+
+    // Step 4: Simulate native app calling restore_word with remaining text "chà"
+    e.restore_word("chà");
+
+    // Step 5: Type 's' to change huyền to sắc on 'à'
+    let result = restore_and_type(&mut e, "chà", "s");
+    assert_eq!(result, "chá", "Should change huyền to sắc after restore");
+}
+
+/// Another scenario: restore partial word and continue typing
+#[test]
+fn restore_word_partial_then_complete() {
+    let mut e = Engine::new();
+
+    // User had "đường" but backspaced to "đườ" and wants to continue
+    let result = restore_and_type(&mut e, "đườ", "ng");
+    assert_eq!(
+        result, "đường",
+        "Should complete word after partial restore"
+    );
+}
+
+/// Scenario: restore word, change mark, then add more chars
+#[test]
+fn restore_word_change_mark_then_extend() {
+    let mut e = Engine::new();
+
+    // Screen has "chà", restore and change to sắc, then add 'o'
+    let result = restore_and_type(&mut e, "chà", "so");
+    assert_eq!(result, "cháo", "Should change mark and extend word");
+}

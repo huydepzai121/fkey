@@ -40,6 +40,7 @@ impl Char {
 }
 
 /// Typing buffer
+#[derive(Clone)]
 pub struct Buffer {
     data: [Char; MAX],
     len: usize,
@@ -142,41 +143,9 @@ impl Buffer {
 
     /// Convert buffer to string preserving case (for shortcut case matching)
     pub fn to_string_preserve_case(&self) -> String {
-        use crate::data::keys;
         self.data[..self.len]
             .iter()
-            .filter_map(|c| {
-                let ch = match c.key {
-                    keys::A => 'a',
-                    keys::B => 'b',
-                    keys::C => 'c',
-                    keys::D => 'd',
-                    keys::E => 'e',
-                    keys::F => 'f',
-                    keys::G => 'g',
-                    keys::H => 'h',
-                    keys::I => 'i',
-                    keys::J => 'j',
-                    keys::K => 'k',
-                    keys::L => 'l',
-                    keys::M => 'm',
-                    keys::N => 'n',
-                    keys::O => 'o',
-                    keys::P => 'p',
-                    keys::Q => 'q',
-                    keys::R => 'r',
-                    keys::S => 's',
-                    keys::T => 't',
-                    keys::U => 'u',
-                    keys::V => 'v',
-                    keys::W => 'w',
-                    keys::X => 'x',
-                    keys::Y => 'y',
-                    keys::Z => 'z',
-                    _ => return None,
-                };
-                Some(if c.caps { ch.to_ascii_uppercase() } else { ch })
-            })
+            .filter_map(|c| utils::key_to_char(c.key, c.caps))
             .collect()
     }
 

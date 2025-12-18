@@ -84,6 +84,54 @@ enum Transform {
     WShortcutSkipped,
 }
 
+/// Word history ring buffer capacity (stores last N committed words)
+const HISTORY_CAPACITY: usize = 10;
+
+/// Ring buffer for word history (stack-allocated, O(1) push/pop)
+///
+/// Used for backspace-after-space feature: when user presses backspace
+/// immediately after committing a word with space, restore the previous
+/// buffer state to allow editing.
+struct WordHistory {
+    data: [Buffer; HISTORY_CAPACITY],
+    head: usize,
+    len: usize,
+}
+
+impl WordHistory {
+    fn new() -> Self {
+        Self {
+            data: std::array::from_fn(|_| Buffer::new()),
+            head: 0,
+            len: 0,
+        }
+    }
+
+    /// Push buffer to history (overwrites oldest if full)
+    fn push(&mut self, buf: Buffer) {
+        self.data[self.head] = buf;
+        self.head = (self.head + 1) % HISTORY_CAPACITY;
+        if self.len < HISTORY_CAPACITY {
+            self.len += 1;
+        }
+    }
+
+    /// Pop most recent buffer from history
+    fn pop(&mut self) -> Option<Buffer> {
+        if self.len == 0 {
+            return None;
+        }
+        self.head = (self.head + HISTORY_CAPACITY - 1) % HISTORY_CAPACITY;
+        self.len -= 1;
+        Some(self.data[self.head].clone())
+    }
+
+    fn clear(&mut self) {
+        self.len = 0;
+        self.head = 0;
+    }
+}
+
 /// Main Vietnamese IME engine
 pub struct Engine {
     buf: Buffer,
@@ -101,6 +149,11 @@ pub struct Engine {
     /// Skip w→ư shortcut in Telex mode (user preference)
     /// When true, typing 'w' at word start stays as 'w' instead of converting to 'ư'
     skip_w_shortcut: bool,
+    /// Word history for backspace-after-space feature
+    word_history: WordHistory,
+    /// Number of spaces typed after committing a word (for backspace tracking)
+    /// When this reaches 0 on backspace, we restore the committed word
+    spaces_after_commit: u8,
 }
 
 impl Default for Engine {
@@ -121,6 +174,8 @@ impl Engine {
             raw_mode: false,
             has_non_letter_prefix: false,
             skip_w_shortcut: false,
+            word_history: WordHistory::new(),
+            spaces_after_commit: 0,
         }
     }
 
@@ -132,6 +187,8 @@ impl Engine {
         self.enabled = enabled;
         if !enabled {
             self.buf.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
         }
     }
 
@@ -196,6 +253,8 @@ impl Engine {
     pub fn on_key_ext(&mut self, key: u16, caps: bool, ctrl: bool, shift: bool) -> Result {
         if !self.enabled || ctrl {
             self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
             return Result::none();
         }
 
@@ -209,6 +268,14 @@ impl Engine {
         // Check for word boundary shortcuts ONLY on SPACE
         if key == keys::SPACE {
             let result = self.try_word_boundary_shortcut();
+            // Push buffer to history before clearing (for backspace-after-space feature)
+            if !self.buf.is_empty() {
+                self.word_history.push(self.buf.clone());
+                self.spaces_after_commit = 1; // First space after word
+            } else if self.spaces_after_commit > 0 {
+                // Additional space after commit - increment counter
+                self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
+            }
             self.clear();
             return result;
         }
@@ -217,16 +284,39 @@ impl Engine {
         if key == keys::ESC {
             let result = self.restore_to_raw();
             self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
             return result;
         }
 
         // Other break keys (punctuation, arrows, etc.) just clear buffer
         if keys::is_break(key) {
             self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
             return Result::none();
         }
 
         if key == keys::DELETE {
+            // Backspace-after-space feature: restore previous word when all spaces deleted
+            // Track spaces typed after commit, restore word when counter reaches 0
+            if self.spaces_after_commit > 0 && self.buf.is_empty() {
+                self.spaces_after_commit -= 1;
+                if self.spaces_after_commit == 0 {
+                    // All spaces deleted - restore the word buffer
+                    if let Some(restored_buf) = self.word_history.pop() {
+                        // Restore raw_input from buffer (for ESC restore to work)
+                        self.restore_raw_input_from_buffer(&restored_buf);
+                        self.buf = restored_buf;
+                    }
+                }
+                // Delete one space
+                return Result::send(1, &[]);
+            }
+            // DON'T reset spaces_after_commit here!
+            // User might delete all new input and want to restore previous word.
+            // Reset only happens on: break keys, ESC, ctrl, or new commit.
+
             // If buffer is already empty, user is deleting content from previous word
             // that we don't track. Mark this to prevent false shortcut matches.
             // e.g., "đa" + SPACE + backspace×2 + "a" should NOT match shortcut "a"
@@ -1172,6 +1262,24 @@ impl Engine {
         self.has_non_letter_prefix = false;
     }
 
+    /// Restore buffer from a Vietnamese word string
+    ///
+    /// Used when native app detects cursor at word boundary and wants to edit.
+    /// Parses Vietnamese characters back to buffer components.
+    pub fn restore_word(&mut self, word: &str) {
+        self.clear();
+        for c in word.chars() {
+            if let Some(parsed) = chars::parse_char(c) {
+                let mut ch = Char::new(parsed.key, parsed.caps);
+                ch.tone = parsed.tone;
+                ch.mark = parsed.mark;
+                ch.stroke = parsed.stroke;
+                self.buf.push(ch);
+                self.raw_input.push((parsed.key, parsed.caps));
+            }
+        }
+    }
+
     /// Restore buffer to raw ASCII (undo all Vietnamese transforms)
     ///
     /// Called when ESC is pressed. Replaces transformed output with original keystrokes.
@@ -1205,6 +1313,14 @@ impl Engine {
         let backspace = self.buf.len() as u8;
 
         Result::send(backspace, &raw_chars)
+    }
+
+    /// Restore raw_input from buffer (for ESC restore to work after backspace-restore)
+    fn restore_raw_input_from_buffer(&mut self, buf: &Buffer) {
+        self.raw_input.clear();
+        for c in buf.iter() {
+            self.raw_input.push((c.key, c.caps));
+        }
     }
 }
 

@@ -251,6 +251,36 @@ pub extern "C" fn ime_clear_shortcuts() {
 }
 
 // ============================================================
+// Word Restore FFI
+// ============================================================
+
+/// Restore buffer from a Vietnamese word string.
+///
+/// Used when native app detects cursor at word boundary and user
+/// wants to continue editing (e.g., backspace into previous word).
+/// Parses Vietnamese characters back to buffer components.
+///
+/// # Arguments
+/// * `word` - C string containing the Vietnamese word to restore
+///
+/// # Safety
+/// Pointer must be a valid null-terminated UTF-8 string.
+#[no_mangle]
+pub unsafe extern "C" fn ime_restore_word(word: *const std::os::raw::c_char) {
+    if word.is_null() {
+        return;
+    }
+    let word_str = match std::ffi::CStr::from_ptr(word).to_str() {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.restore_word(word_str);
+    }
+}
+
+// ============================================================
 // Tests
 // ============================================================
 
@@ -401,6 +431,50 @@ mod tests {
         drop(guard);
 
         ime_clear_shortcuts();
+        ime_clear();
+    }
+
+    #[test]
+    #[serial]
+    fn test_restore_word_ffi() {
+        ime_init();
+        ime_method(0); // Telex
+
+        // Restore a Vietnamese word
+        let word = CString::new("việt").unwrap();
+        unsafe {
+            ime_restore_word(word.as_ptr());
+        }
+
+        // Type 's' to add sắc mark - should change ệ to ế
+        // Engine returns replacement for changed portion
+        let r = ime_key(keys::S, false, false);
+        assert!(!r.is_null());
+        unsafe {
+            assert_eq!((*r).action, 1, "Should send replacement");
+            // Engine outputs the modified result
+            assert!((*r).count > 0, "Should have output chars");
+            ime_free(r);
+        }
+
+        ime_clear();
+    }
+
+    #[test]
+    #[serial]
+    fn test_restore_word_ffi_null_safety() {
+        ime_init();
+
+        // Should not crash with null pointer
+        unsafe {
+            ime_restore_word(std::ptr::null());
+        }
+
+        // Engine should still work
+        let r = ime_key(keys::A, false, false);
+        assert!(!r.is_null());
+        unsafe { ime_free(r) };
+
         ime_clear();
     }
 }
