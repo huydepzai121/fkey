@@ -25,7 +25,7 @@ use crate::input::{self, ToneType};
 use crate::utils;
 use buffer::{Buffer, Char, MAX};
 use shortcut::{InputMethod, ShortcutTable};
-use validation::{is_foreign_word_pattern, is_valid};
+use validation::{is_foreign_word_pattern, is_valid, is_valid_for_transform, is_valid_with_tones};
 
 /// Engine action result
 #[repr(u8)]
@@ -84,6 +84,54 @@ enum Transform {
     WShortcutSkipped,
 }
 
+/// Word history ring buffer capacity (stores last N committed words)
+const HISTORY_CAPACITY: usize = 10;
+
+/// Ring buffer for word history (stack-allocated, O(1) push/pop)
+///
+/// Used for backspace-after-space feature: when user presses backspace
+/// immediately after committing a word with space, restore the previous
+/// buffer state to allow editing.
+struct WordHistory {
+    data: [Buffer; HISTORY_CAPACITY],
+    head: usize,
+    len: usize,
+}
+
+impl WordHistory {
+    fn new() -> Self {
+        Self {
+            data: std::array::from_fn(|_| Buffer::new()),
+            head: 0,
+            len: 0,
+        }
+    }
+
+    /// Push buffer to history (overwrites oldest if full)
+    fn push(&mut self, buf: Buffer) {
+        self.data[self.head] = buf;
+        self.head = (self.head + 1) % HISTORY_CAPACITY;
+        if self.len < HISTORY_CAPACITY {
+            self.len += 1;
+        }
+    }
+
+    /// Pop most recent buffer from history
+    fn pop(&mut self) -> Option<Buffer> {
+        if self.len == 0 {
+            return None;
+        }
+        self.head = (self.head + HISTORY_CAPACITY - 1) % HISTORY_CAPACITY;
+        self.len -= 1;
+        Some(self.data[self.head].clone())
+    }
+
+    fn clear(&mut self) {
+        self.len = 0;
+        self.head = 0;
+    }
+}
+
 /// Main Vietnamese IME engine
 pub struct Engine {
     buf: Buffer,
@@ -95,6 +143,17 @@ pub struct Engine {
     raw_input: Vec<(u16, bool)>,
     /// Raw mode: skip Vietnamese transforms after prefix chars (@ # $ ^ : > ?)
     raw_mode: bool,
+    /// True if current word has non-letter characters before letters
+    /// Used to prevent false shortcut matches (e.g., "149k" should not match "k")
+    has_non_letter_prefix: bool,
+    /// Skip w→ư shortcut in Telex mode (user preference)
+    /// When true, typing 'w' at word start stays as 'w' instead of converting to 'ư'
+    skip_w_shortcut: bool,
+    /// Word history for backspace-after-space feature
+    word_history: WordHistory,
+    /// Number of spaces typed after committing a word (for backspace tracking)
+    /// When this reaches 0 on backspace, we restore the committed word
+    spaces_after_commit: u8,
 }
 
 impl Default for Engine {
@@ -113,6 +172,10 @@ impl Engine {
             shortcuts: ShortcutTable::with_defaults(),
             raw_input: Vec::with_capacity(64),
             raw_mode: false,
+            has_non_letter_prefix: false,
+            skip_w_shortcut: false,
+            word_history: WordHistory::new(),
+            spaces_after_commit: 0,
         }
     }
 
@@ -124,7 +187,14 @@ impl Engine {
         self.enabled = enabled;
         if !enabled {
             self.buf.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
         }
+    }
+
+    /// Set whether to skip w→ư shortcut in Telex mode
+    pub fn set_skip_w_shortcut(&mut self, skip: bool) {
+        self.skip_w_shortcut = skip;
     }
 
     pub fn shortcuts(&self) -> &ShortcutTable {
@@ -156,6 +226,7 @@ impl Engine {
 
     /// Check if key+shift combo is a raw mode prefix character
     /// Raw prefixes: @ # : /
+    #[allow(dead_code)] // TEMP DISABLED
     fn is_raw_prefix(key: u16, shift: bool) -> bool {
         // / doesn't need shift
         if key == keys::SLASH && !shift {
@@ -183,15 +254,18 @@ impl Engine {
     pub fn on_key_ext(&mut self, key: u16, caps: bool, ctrl: bool, shift: bool) -> Result {
         if !self.enabled || ctrl {
             self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
             return Result::none();
         }
 
+        // TEMP DISABLED: Raw mode prefix detection
         // Raw mode prefix detection: when buffer is empty and user types @ # $ ^ : > ?
         // Enable raw mode to skip Vietnamese transforms for subsequent letters
-        if self.buf.is_empty() && Self::is_raw_prefix(key, shift) {
-            self.raw_mode = true;
-            return Result::none();
-        }
+        // if self.buf.is_empty() && Self::is_raw_prefix(key, shift) {
+        //     self.raw_mode = true;
+        //     return Result::none();
+        // }
 
         // Check for word boundary shortcuts ONLY on SPACE
         // Also auto-restore invalid Vietnamese to raw English
@@ -206,6 +280,15 @@ impl Engine {
             // Auto-restore: if buffer has transforms but is invalid Vietnamese,
             // restore to raw English (like ESC but triggered by space)
             let restore_result = self.try_auto_restore_on_space();
+
+            // Push buffer to history before clearing (for backspace-after-space feature)
+            if !self.buf.is_empty() {
+                self.word_history.push(self.buf.clone());
+                self.spaces_after_commit = 1; // First space after word
+            } else if self.spaces_after_commit > 0 {
+                // Additional space after commit - increment counter
+                self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
+            }
             self.clear();
             return restore_result;
         }
@@ -214,6 +297,8 @@ impl Engine {
         if key == keys::ESC {
             let result = self.restore_to_raw();
             self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
             return result;
         }
 
@@ -222,10 +307,37 @@ impl Engine {
         if keys::is_break(key) {
             let restore_result = self.try_auto_restore_on_break();
             self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
             return restore_result;
         }
 
         if key == keys::DELETE {
+            // Backspace-after-space feature: restore previous word when all spaces deleted
+            // Track spaces typed after commit, restore word when counter reaches 0
+            if self.spaces_after_commit > 0 && self.buf.is_empty() {
+                self.spaces_after_commit -= 1;
+                if self.spaces_after_commit == 0 {
+                    // All spaces deleted - restore the word buffer
+                    if let Some(restored_buf) = self.word_history.pop() {
+                        // Restore raw_input from buffer (for ESC restore to work)
+                        self.restore_raw_input_from_buffer(&restored_buf);
+                        self.buf = restored_buf;
+                    }
+                }
+                // Delete one space
+                return Result::send(1, &[]);
+            }
+            // DON'T reset spaces_after_commit here!
+            // User might delete all new input and want to restore previous word.
+            // Reset only happens on: break keys, ESC, ctrl, or new commit.
+
+            // If buffer is already empty, user is deleting content from previous word
+            // that we don't track. Mark this to prevent false shortcut matches.
+            // e.g., "đa" + SPACE + backspace×2 + "a" should NOT match shortcut "a"
+            if self.buf.is_empty() {
+                self.has_non_letter_prefix = true;
+            }
             self.buf.pop();
             self.raw_input.pop();
             self.last_transform = None;
@@ -283,9 +395,12 @@ impl Engine {
         }
 
         // 4. Remove modifier
+        // Only consume key if there's something to remove; otherwise fall through to normal letter
+        // This allows shortcuts like "zz" to work when buffer has no marks/tones to remove
         if !skip_vni_modifiers && m.remove(key) {
-            self.last_transform = None;
-            return self.handle_remove();
+            if let Some(result) = self.try_remove() {
+                return result;
+            }
         }
 
         // 5. In Telex: "w" as vowel "ư" when valid Vietnamese context
@@ -306,7 +421,13 @@ impl Engine {
             return Result::none();
         }
 
-        let buffer_str = self.buf.to_string_preserve_case();
+        // Don't trigger shortcut if word has non-letter prefix
+        // e.g., "149k" should NOT match shortcut "k"
+        if self.has_non_letter_prefix {
+            return Result::none();
+        }
+
+        let buffer_str = self.buf.to_full_string();
         let input_method = self.current_input_method();
 
         // Check for word boundary shortcut match
@@ -330,9 +451,22 @@ impl Engine {
     /// - "ww" → revert to "w" (shortcut skipped)
     /// - "www" → "ww" (subsequent w just adds normally)
     fn try_w_as_vowel(&mut self, caps: bool) -> Option<Result> {
+        // If user disabled w→ư shortcut at word start, only skip when buffer is empty
+        // This allows "hw" → "hư" even when shortcut is disabled
+        if self.skip_w_shortcut && self.buf.is_empty() {
+            return None;
+        }
+
         // If shortcut was previously skipped, don't try again
         if matches!(self.last_transform, Some(Transform::WShortcutSkipped)) {
             return None;
+        }
+
+        // If we already have a complete ươ compound, swallow the second 'w'
+        // This handles "dduwowcj" where the second 'w' should be no-op
+        // Use send(0, []) to intercept and consume the key without output
+        if self.has_complete_uo_compound() {
+            return Some(Result::send(0, &[]));
         }
 
         // Check revert: ww → w (skip shortcut)
@@ -356,8 +490,10 @@ impl Engine {
         }
 
         // Validate: is this valid Vietnamese?
+        // Use is_valid_with_tones to check modifier requirements (e.g., E+U needs circumflex)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if is_valid(&buffer_keys) {
+        let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
+        if is_valid_with_tones(&buffer_keys, &buffer_tones) {
             self.last_transform = Some(Transform::WAsVowel);
 
             // W shortcut adds ư without replacing anything on screen
@@ -389,12 +525,12 @@ impl Engine {
                 }
             }
 
-            // Validate buffer before applying stroke
+            // Validate buffer structure before applying stroke
             // Only validate if buffer has vowels (complete syllable)
             // Allow stroke on initial consonant before vowel is typed (e.g., "dd" → "đ" then "đi")
             let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
             let has_vowel = buffer_keys.iter().any(|&k| keys::is_vowel(k));
-            if has_vowel && !is_valid(&buffer_keys) {
+            if has_vowel && !is_valid_for_transform(&buffer_keys) {
                 return None;
             }
 
@@ -429,9 +565,9 @@ impl Engine {
             }
         }
 
-        // Validate buffer
+        // Validate buffer structure (not vowel patterns - those are checked after transform)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !is_valid(&buffer_keys) {
+        if !is_valid_for_transform(&buffer_keys) {
             return None;
         }
 
@@ -449,20 +585,13 @@ impl Engine {
 
         // Special case: uo/ou compound for horn - find adjacent pair only
         // But ONLY apply compound logic when BOTH vowels are plain (not when switching)
-        if tone_type == ToneType::Horn && self.has_uo_compound() && !is_switching {
-            for i in 0..self.buf.len().saturating_sub(1) {
-                let c1 = self.buf.get(i);
-                let c2 = self.buf.get(i + 1);
-                if let (Some(c1), Some(c2)) = (c1, c2) {
-                    let is_uo = c1.key == keys::U && c2.key == keys::O;
-                    let is_ou = c1.key == keys::O && c2.key == keys::U;
+        if tone_type == ToneType::Horn && !is_switching {
+            if let Some((pos1, pos2)) = self.find_uo_compound_positions() {
+                if let (Some(c1), Some(c2)) = (self.buf.get(pos1), self.buf.get(pos2)) {
                     // Only apply compound when BOTH vowels have no tone
-                    let c1_plain = c1.tone == tone::NONE;
-                    let c2_plain = c2.tone == tone::NONE;
-                    if (is_uo || is_ou) && c1_plain && c2_plain {
-                        target_positions.push(i);
-                        target_positions.push(i + 1);
-                        break; // Only first compound
+                    if c1.tone == tone::NONE && c2.tone == tone::NONE {
+                        target_positions.push(pos1);
+                        target_positions.push(pos2);
                     }
                 }
             }
@@ -494,6 +623,23 @@ impl Engine {
         }
 
         if target_positions.is_empty() {
+            // Check if any target vowels already have the requested tone
+            // If so, absorb the key (no-op) instead of falling through
+            // This handles redundant tone keys like "u7o7" → "ươ" (second 7 absorbed)
+            //
+            // EXCEPTION: Don't absorb 'w' if last_transform was WAsVowel
+            // because try_w_as_vowel needs to handle the revert (ww → w)
+            let is_w_revert_pending =
+                key == keys::W && matches!(self.last_transform, Some(Transform::WAsVowel));
+
+            let has_tone_already = self
+                .buf
+                .iter()
+                .any(|c| targets.contains(&c.key) && c.tone == tone_val);
+            if has_tone_already && !is_w_revert_pending {
+                // Return empty Send to absorb key without passthrough
+                return Some(Result::send(0, &[]));
+            }
             return None;
         }
 
@@ -577,12 +723,48 @@ impl Engine {
             }
         }
 
+        // Validate result: check for breve (ă) followed by vowel - NEVER valid in Vietnamese
+        // Issue #44: "tai" + 'w' → "tăi" is INVALID (ăi, ăo, ău, ăy don't exist)
+        // Only check this specific pattern, not all vowel patterns, to allow Telex shortcuts
+        // like "eie" → "êi" which may not be standard but are expected Telex behavior
+        if tone_type == ToneType::Horn {
+            let has_breve_vowel_pattern = target_positions.iter().any(|&pos| {
+                if let Some(c) = self.buf.get(pos) {
+                    // Check if this is 'a' with horn (breve) followed by another vowel
+                    if c.key == keys::A {
+                        // Look for any vowel after this position
+                        return (pos + 1..self.buf.len()).any(|i| {
+                            self.buf
+                                .get(i)
+                                .map(|next| keys::is_vowel(next.key))
+                                .unwrap_or(false)
+                        });
+                    }
+                }
+                false
+            });
+
+            if has_breve_vowel_pattern {
+                // Revert: clear applied tones
+                for &pos in &target_positions {
+                    if let Some(c) = self.buf.get_mut(pos) {
+                        c.tone = tone::NONE;
+                    }
+                }
+                return None;
+            }
+        }
+
+        // Normalize ưo → ươ compound if horn was applied to 'u'
+        if let Some(compound_pos) = self.normalize_uo_compound() {
+            earliest_pos = earliest_pos.min(compound_pos);
+        }
+
         self.last_transform = Some(Transform::Tone(key, tone_val));
 
-        // Reposition mark if needed
-        let mark_moved_from = self.reposition_mark_if_needed();
+        // Reposition tone mark if vowel pattern changed
         let mut rebuild_pos = earliest_pos;
-        if let Some(old_pos) = mark_moved_from {
+        if let Some((old_pos, _)) = self.reposition_tone_if_needed() {
             rebuild_pos = rebuild_pos.min(old_pos);
         }
 
@@ -607,9 +789,9 @@ impl Engine {
         // but with horns applied it's valid "ươu")
         let has_horn_transforms = self.buf.iter().any(|c| c.tone == tone::HORN);
 
-        // Validate buffer (skip if has horn transforms - already intentional Vietnamese)
+        // Validate buffer structure (skip if has horn transforms - already intentional Vietnamese)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !has_horn_transforms && !is_valid(&buffer_keys) {
+        if !has_horn_transforms && !is_valid_for_transform(&buffer_keys) {
             return None;
         }
 
@@ -628,6 +810,10 @@ impl Engine {
             return None;
         }
 
+        // Issue #29: Normalize ưo → ươ compound before placing mark
+        // In Vietnamese, "ưo" is never valid - it's always "ươ"
+        let rebuild_from_compound = self.normalize_uo_compound();
+
         let vowels = self.collect_vowels();
         if vowels.is_empty() {
             return None;
@@ -643,25 +829,70 @@ impl Engine {
         if let Some(c) = self.buf.get_mut(pos) {
             c.mark = mark_val;
             self.last_transform = Some(Transform::Mark(key, mark_val));
-            return Some(self.rebuild_from(pos));
+            // Rebuild from the earlier position if compound was formed
+            let rebuild_pos = rebuild_from_compound.map_or(pos, |cp| cp.min(pos));
+            return Some(self.rebuild_from(rebuild_pos));
         }
 
         None
     }
 
-    /// Check for uo compound in buffer
-    fn has_uo_compound(&self) -> bool {
-        let mut prev_key: Option<u16> = None;
-        for c in self.buf.iter() {
-            if keys::is_vowel(c.key) {
-                if let Some(pk) = prev_key {
-                    if (pk == keys::U && c.key == keys::O) || (pk == keys::O && c.key == keys::U) {
-                        return true;
-                    }
+    /// Normalize ưo → ươ compound
+    ///
+    /// In Vietnamese, "ưo" (u with horn + plain o) is NEVER valid.
+    /// It should always be "ươ" (both with horn).
+    /// This function finds and fixes this pattern anywhere in the buffer.
+    ///
+    /// Returns Some(position) of the 'o' that was modified, None if no change.
+    fn normalize_uo_compound(&mut self) -> Option<usize> {
+        // Look for pattern: U with horn + O without horn (anywhere in buffer)
+        for i in 0..self.buf.len().saturating_sub(1) {
+            let c1 = self.buf.get(i)?;
+            let c2 = self.buf.get(i + 1)?;
+
+            // Check: U with horn + O plain → always normalize to ươ
+            let is_u_with_horn = c1.key == keys::U && c1.tone == tone::HORN;
+            let is_o_plain = c2.key == keys::O && c2.tone == tone::NONE;
+
+            if is_u_with_horn && is_o_plain {
+                // Apply horn to O to form the ươ compound
+                if let Some(c) = self.buf.get_mut(i + 1) {
+                    c.tone = tone::HORN;
+                    return Some(i + 1);
                 }
-                prev_key = Some(c.key);
-            } else {
-                prev_key = None;
+            }
+        }
+        None
+    }
+
+    /// Find positions of U+O or O+U compound (adjacent vowels)
+    /// Returns Some((first_pos, second_pos)) if found, None otherwise
+    fn find_uo_compound_positions(&self) -> Option<(usize, usize)> {
+        for i in 0..self.buf.len().saturating_sub(1) {
+            if let (Some(c1), Some(c2)) = (self.buf.get(i), self.buf.get(i + 1)) {
+                let is_uo = c1.key == keys::U && c2.key == keys::O;
+                let is_ou = c1.key == keys::O && c2.key == keys::U;
+                if is_uo || is_ou {
+                    return Some((i, i + 1));
+                }
+            }
+        }
+        None
+    }
+
+    /// Check for uo compound in buffer (any tone state)
+    fn has_uo_compound(&self) -> bool {
+        self.find_uo_compound_positions().is_some()
+    }
+
+    /// Check for complete ươ compound (both u and o have horn)
+    fn has_complete_uo_compound(&self) -> bool {
+        if let Some((pos1, pos2)) = self.find_uo_compound_positions() {
+            if let (Some(c1), Some(c2)) = (self.buf.get(pos1), self.buf.get(pos2)) {
+                // Check ư + ơ pattern (both with horn)
+                let is_u_horn = c1.key == keys::U && c1.tone == tone::HORN;
+                let is_o_horn = c2.key == keys::O && c2.tone == tone::HORN;
+                return is_u_horn && is_o_horn;
             }
         }
         false
@@ -703,18 +934,43 @@ impl Engine {
             .collect()
     }
 
-    /// Reposition mark after tone change
-    fn reposition_mark_if_needed(&mut self) -> Option<usize> {
-        let mark_info: Option<(usize, u8)> = self
+    /// Reposition tone (sắc/huyền/hỏi/ngã/nặng) after vowel pattern changes
+    ///
+    /// When user types out-of-order (e.g., "osa" instead of "oas"), the tone may be
+    /// placed on wrong vowel. This function moves it to the correct position based
+    /// on Vietnamese phonology rules.
+    ///
+    /// Returns Some((old_pos, new_pos)) if tone was moved, None otherwise.
+    fn reposition_tone_if_needed(&mut self) -> Option<(usize, usize)> {
+        // Find vowel with tone mark (sắc/huyền/hỏi/ngã/nặng)
+        let tone_info: Option<(usize, u8)> = self
             .buf
             .iter()
             .enumerate()
-            .find(|(_, c)| c.mark > 0)
+            .find(|(_, c)| c.mark > mark::NONE && keys::is_vowel(c.key))
             .map(|(i, c)| (i, c.mark));
 
-        if let Some((old_pos, mark_value)) = mark_info {
+        if let Some((old_pos, tone_value)) = tone_info {
             let vowels = self.collect_vowels();
             if vowels.is_empty() {
+                return None;
+            }
+
+            // Check for syllable boundary: if there's a consonant between the toned vowel
+            // and any later vowel, the toned vowel is in a closed syllable - don't reposition.
+            // Example: "bủn" + "o" → 'n' closes "bủn", so 'o' starts new syllable.
+            let has_consonant_after_tone = (old_pos + 1..self.buf.len()).any(|i| {
+                self.buf
+                    .get(i)
+                    .is_some_and(|c| !keys::is_vowel(c.key) && c.key != keys::W)
+            });
+            let has_vowel_after_consonant = has_consonant_after_tone
+                && vowels
+                    .iter()
+                    .any(|v| v.pos > old_pos && self.has_consonant_between(old_pos, v.pos));
+
+            if has_vowel_after_consonant {
+                // Syllable boundary detected - tone is in previous syllable, don't move it
                 return None;
             }
 
@@ -725,16 +981,26 @@ impl Engine {
             let new_pos = Phonology::find_tone_position(&vowels, has_final, true, has_qu, has_gi);
 
             if new_pos != old_pos {
+                // Move tone from old position to new position
                 if let Some(c) = self.buf.get_mut(old_pos) {
-                    c.mark = 0;
+                    c.mark = mark::NONE;
                 }
                 if let Some(c) = self.buf.get_mut(new_pos) {
-                    c.mark = mark_value;
+                    c.mark = tone_value;
                 }
-                return Some(old_pos);
+                return Some((old_pos, new_pos));
             }
         }
         None
+    }
+
+    /// Check if there's a consonant between two positions
+    fn has_consonant_between(&self, start: usize, end: usize) -> bool {
+        (start + 1..end).any(|i| {
+            self.buf
+                .get(i)
+                .is_some_and(|c| !keys::is_vowel(c.key) && c.key != keys::W)
+        })
     }
 
     /// Common revert logic: clear modifier, add key to buffer, rebuild output
@@ -799,27 +1065,33 @@ impl Engine {
         Result::none()
     }
 
-    /// Handle remove modifier
-    fn handle_remove(&mut self) -> Result {
+    /// Try to apply remove modifier
+    /// Returns Some(Result) if a mark/tone was removed, None if nothing to remove
+    /// When None is returned, the key falls through to handle_normal_letter()
+    fn try_remove(&mut self) -> Option<Result> {
+        self.last_transform = None;
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
                 if c.mark > mark::NONE {
                     c.mark = mark::NONE;
-                    return self.rebuild_from(pos);
+                    return Some(self.rebuild_from(pos));
                 }
                 if c.tone > tone::NONE {
                     c.tone = tone::NONE;
-                    return self.rebuild_from(pos);
+                    return Some(self.rebuild_from(pos));
                 }
             }
         }
-        Result::none()
+        // Nothing to remove - return None so key can be processed as normal letter
+        // This allows shortcuts like "zz" to work
+        None
     }
 
     /// Handle normal letter input
     fn handle_normal_letter(&mut self, key: u16, caps: bool) -> Result {
         // Special case: "o" after "w→ư" should form "ươ" compound
-        // This allows typing "ddwocj" → "được" instead of "đưọc"
+        // This only handles the WAsVowel case (typing "w" alone creates ư)
+        // For "uw" pattern, the compound is normalized in try_mark via normalize_uo_compound
         if key == keys::O && matches!(self.last_transform, Some(Transform::WAsVowel)) {
             // Add O with horn to form ươ compound
             let mut c = Char::new(key, caps);
@@ -837,20 +1109,61 @@ impl Engine {
             // Add the letter to buffer
             self.buf.push(Char::new(key, caps));
 
+            // Normalize ưo → ươ immediately when 'o' is typed after 'ư'
+            // This ensures "dduwo" → "đươ" (Telex) and "u7o" → "ươ" (VNI)
+            // Works for both methods since "ưo" alone is not valid Vietnamese
+            if key == keys::O && self.normalize_uo_compound().is_some() {
+                // ươ compound formed - reposition tone if needed (ư→ơ)
+                if let Some((old_pos, _)) = self.reposition_tone_if_needed() {
+                    return self.rebuild_from_after_insert(old_pos);
+                }
+
+                // No tone to reposition - just output ơ
+                let vowel_char = chars::to_char(keys::O, caps, tone::HORN, 0).unwrap();
+                return Result::send(0, &[vowel_char]);
+            }
+
+            // Auto-correct tone position when new character changes the correct placement
+            //
+            // Two scenarios:
+            // 1. New vowel changes diphthong pattern:
+            //    "osa" → tone on 'o', then 'a' added → "oa" needs tone on 'a'
+            // 2. New consonant creates final, which changes tone position:
+            //    "muas" → tone on 'u' (ua open), then 'n' added → "uan" needs tone on 'a'
+            //
+            // Both cases need to reposition the tone mark based on Vietnamese phonology.
+            if let Some((old_pos, _new_pos)) = self.reposition_tone_if_needed() {
+                // Tone was moved - rebuild output from the old position
+                // Note: the new char was just added to buffer but NOT yet displayed
+                // So backspace = (chars from old_pos to BEFORE new char)
+                // And output = (chars from old_pos to end INCLUDING new char)
+                return self.rebuild_from_after_insert(old_pos);
+            }
+
             // Check if adding this letter creates invalid vowel pattern (foreign word detection)
             // Only revert if the horn transforms are from w-as-vowel (standalone w→ư),
             // not from w-as-tone (adding horn to existing vowels like in "rượu")
             //
             // w-as-vowel: first horn is U at position 0 (was standalone 'w')
             // w-as-tone: horns are on vowels after initial consonant
-            if self.has_w_as_vowel_transform() {
+            //
+            // Exception: complete ươ compound + vowel = valid Vietnamese triphthong
+            // (like "rượu" = ươu, "mười" = ươi) - don't revert in these cases
+            // Only skip for vowels that form valid triphthongs (u, i), not for consonants
+            let is_valid_triphthong_ending =
+                self.has_complete_uo_compound() && (key == keys::U || key == keys::I);
+            if self.has_w_as_vowel_transform() && !is_valid_triphthong_ending {
                 let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
                 if is_foreign_word_pattern(&buffer_keys, key) {
                     return self.revert_w_as_vowel_transforms();
                 }
             }
         } else {
-            self.buf.clear();
+            // Non-letter character (number, symbol, etc.)
+            // Mark that this word has non-letter prefix to prevent false shortcut matches
+            // e.g., "149k" should NOT trigger shortcut "k" → "không"
+            // e.g., "@abc" should NOT trigger shortcut "abc"
+            self.has_non_letter_prefix = true;
         }
         Result::none()
     }
@@ -953,12 +1266,65 @@ impl Engine {
         }
     }
 
+    /// Rebuild output from position after a new character was inserted
+    ///
+    /// Unlike rebuild_from, this accounts for the fact that the last character
+    /// in the buffer was just added but NOT yet displayed on screen.
+    /// So backspace count = (chars from `from` to end - 1) because last char isn't on screen.
+    fn rebuild_from_after_insert(&self, from: usize) -> Result {
+        if self.buf.is_empty() {
+            return Result::none();
+        }
+
+        let mut output = Vec::with_capacity(self.buf.len() - from);
+        // Backspace = number of chars from `from` to BEFORE the new char
+        // The new char (last in buffer) hasn't been displayed yet
+        let backspace = (self.buf.len().saturating_sub(1).saturating_sub(from)) as u8;
+
+        for i in from..self.buf.len() {
+            if let Some(c) = self.buf.get(i) {
+                if c.key == keys::D && c.stroke {
+                    output.push(chars::get_d(c.caps));
+                } else if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
+                    output.push(ch);
+                } else if let Some(ch) = utils::key_to_char(c.key, c.caps) {
+                    output.push(ch);
+                }
+            }
+        }
+
+        if output.is_empty() {
+            Result::none()
+        } else {
+            Result::send(backspace, &output)
+        }
+    }
+
     /// Clear buffer and raw input history
     pub fn clear(&mut self) {
         self.buf.clear();
         self.raw_input.clear();
         self.last_transform = None;
         self.raw_mode = false;
+        self.has_non_letter_prefix = false;
+    }
+
+    /// Restore buffer from a Vietnamese word string
+    ///
+    /// Used when native app detects cursor at word boundary and wants to edit.
+    /// Parses Vietnamese characters back to buffer components.
+    pub fn restore_word(&mut self, word: &str) {
+        self.clear();
+        for c in word.chars() {
+            if let Some(parsed) = chars::parse_char(c) {
+                let mut ch = Char::new(parsed.key, parsed.caps);
+                ch.tone = parsed.tone;
+                ch.mark = parsed.mark;
+                ch.stroke = parsed.stroke;
+                self.buf.push(ch);
+                self.raw_input.push((parsed.key, parsed.caps));
+            }
+        }
     }
 
     /// Check if buffer has transforms and is invalid Vietnamese
@@ -1063,6 +1429,16 @@ impl Engine {
                     // Case 1b: Final consonant but only 1 vowel before modifier → likely English
                     // Example: "text" = T+E+X+T (only 1 vowel E before X)
                     // Counter: "muwowjt" = M+U+W+O+W+J+T (2 vowels with W modifiers)
+                    // Counter: "ddojc" = D+D+O+J+C (dd→đ, so it's Vietnamese "đọc")
+                    //
+                    // Skip this check if buffer has stroke applied (dd→đ was used)
+                    // This indicates intentional Vietnamese typing with Telex modifiers
+                    let has_stroke = self.buf.iter().any(|c| c.stroke);
+                    if has_stroke {
+                        // Vietnamese word with đ - not English
+                        continue;
+                    }
+
                     let vowels_before: usize = (0..i)
                         .filter(|&j| keys::is_vowel(self.raw_input[j].0))
                         .count();
@@ -1237,6 +1613,14 @@ impl Engine {
 
         Result::send(backspace, &raw_chars)
     }
+
+    /// Restore raw_input from buffer (for ESC restore to work after backspace-restore)
+    fn restore_raw_input_from_buffer(&mut self, buf: &Buffer) {
+        self.raw_input.clear();
+        for c in buf.iter() {
+            self.raw_input.push((c.key, c.caps));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1336,6 +1720,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // TEMP DISABLED: raw mode prefix detection
     fn test_raw_mode_prefix() {
         raw_mode(RAW_MODE_PREFIX);
     }

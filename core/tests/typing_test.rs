@@ -27,6 +27,337 @@ const TELEX_TYPOS: &[(&str, &str)] = &[
     // Wrong order - mark before vowel
     ("sa", "sa"),
     ("as", "á"),
+    // ============================================================
+    // OUT-OF-ORDER TONE PLACEMENT - COMPREHENSIVE TEST SUITE
+    // Covers ALL vowel patterns from Vietnamese phonology rules
+    // Engine should AUTO-CORRECT tone position based on rules
+    // ============================================================
+    //
+    // ============================================================
+    // GROUP 1: TONE MOVES TO 2ND VOWEL (Medial + Main patterns)
+    // When typing tone on 1st vowel then adding 2nd → tone moves to 2nd
+    // ============================================================
+    //
+    // --- Pattern: oa (medial o + main a) ---
+    ("osa", "oá"),   // o + s + a → oá
+    ("ofa", "oà"),   // o + f + a → oà
+    ("ora", "oả"),   // o + r + a → oả
+    ("oxa", "oã"),   // o + x + a → oã
+    ("oja", "oạ"),   // o + j + a → oạ
+    ("hosa", "hoá"), // with initial: h + o + s + a → hoá
+    ("hofa", "hoà"), // with initial: h + o + f + a → hoà
+    ("tosa", "toá"), // with initial: t + o + s + a → toá
+    ("losa", "loá"), // with initial: l + o + s + a → loá
+    //
+    // --- Pattern: oă (medial o + main ă) ---
+    ("osaw", "oắ"),   // o + s + a + w → oắ (aw = ă)
+    ("hosaw", "hoắ"), // h + o + s + a + w → hoắ
+    ("xosaw", "xoắ"), // x + o + s + a + w → xoắ
+    //
+    // --- Pattern: oe (medial o + main e) ---
+    ("ose", "oé"),     // o + s + e → oé
+    ("ofe", "oè"),     // o + f + e → oè
+    ("khose", "khoé"), // kh + o + s + e → khoé
+    ("xose", "xoé"),   // x + o + s + e → xoé
+    //
+    // --- Pattern: uê (medial u + main ê) ---
+    ("usee", "uế"),   // u + s + ee → uế
+    ("husee", "huế"), // h + u + s + ee → huế
+    ("tusee", "tuế"), // t + u + s + ee → tuế
+    //
+    // --- Pattern: uy (medial u + main y) ---
+    ("usy", "uý"),     // u + s + y → uý
+    ("qusy", "quý"),   // qu + s + y → quý
+    ("husy", "huý"),   // h + u + s + y → huý
+    ("tusy", "tuý"),   // t + u + s + y → tuý
+    ("thusy", "thuý"), // th + u + s + y → thuý
+    //
+    // --- Pattern: ua (after q) → qua ---
+    ("qusa", "quá"), // q + u + s + a → quá
+    ("qufa", "quà"), // q + u + f + a → quà
+    ("qura", "quả"), // q + u + r + a → quả
+    ("quxa", "quã"), // q + u + x + a → quã
+    ("quja", "quạ"), // q + u + j + a → quạ
+    //
+    // --- Pattern: iê (compound vowel) ---
+    ("isee", "iế"),   // i + s + ee → iế
+    ("tisee", "tiế"), // t + i + s + ee → tiế
+    ("kisee", "kiế"), // k + i + s + ee → kiế
+    ("lisee", "liế"), // l + i + s + ee → liế
+    //
+    // --- Pattern: uô (compound vowel) ---
+    ("usoo", "uố"),   // u + s + oo → uố
+    ("musoo", "muố"), // m + u + s + oo → muố
+    ("cusoo", "cuố"), // c + u + s + oo → cuố
+    ("lusoo", "luố"), // l + u + s + oo → luố
+    //
+    // --- Pattern: ươ (compound vowel) ---
+    ("uwsow", "ướ"),   // uw + s + ow → ướ
+    ("muwsow", "mướ"), // m + uw + s + ow → mướ
+    ("luwsow", "lướ"), // l + uw + s + ow → lướ
+    ("suwsow", "sướ"), // s + uw + s + ow → sướ
+    //
+    // ============================================================
+    // GROUP 2: TONE STAYS ON 1ST VOWEL (Main + Glide patterns)
+    // When typing tone on 1st vowel then adding glide → tone stays
+    // ============================================================
+    //
+    // --- Pattern: ai (a + glide i) ---
+    ("asi", "ái"),   // a + s + i → ái
+    ("afi", "ài"),   // a + f + i → ài
+    ("ari", "ải"),   // a + r + i → ải
+    ("axi", "ãi"),   // a + x + i → ãi
+    ("aji", "ại"),   // a + j + i → ại
+    ("masi", "mái"), // m + a + s + i → mái
+    ("basi", "bái"), // b + a + s + i → bái
+    ("tasi", "tái"), // t + a + s + i → tái
+    //
+    // --- Pattern: ao (a + glide o) ---
+    ("aso", "áo"),   // a + s + o → áo
+    ("afo", "ào"),   // a + f + o → ào
+    ("aro", "ảo"),   // a + r + o → ảo
+    ("axo", "ão"),   // a + x + o → ão
+    ("ajo", "ạo"),   // a + j + o → ạo
+    ("caso", "cáo"), // c + a + s + o → cáo
+    ("baso", "báo"), // b + a + s + o → báo
+    ("saso", "sáo"), // s + a + s + o → sáo
+    //
+    // --- Pattern: au (a + glide u) ---
+    ("asu", "áu"),   // a + s + u → áu
+    ("afu", "àu"),   // a + f + u → àu
+    ("aru", "ảu"),   // a + r + u → ảu
+    ("axu", "ãu"),   // a + x + u → ãu
+    ("aju", "ạu"),   // a + j + u → ạu
+    ("sasu", "sáu"), // s + a + s + u → sáu
+    ("masu", "máu"), // m + a + s + u → máu
+    //
+    // --- Pattern: ay (a + glide y) ---
+    ("asy", "áy"),   // a + s + y → áy
+    ("afy", "ày"),   // a + f + y → ày
+    ("ary", "ảy"),   // a + r + y → ảy
+    ("axy", "ãy"),   // a + x + y → ãy
+    ("ajy", "ạy"),   // a + j + y → ạy
+    ("masy", "máy"), // m + a + s + y → máy
+    ("hasy", "háy"), // h + a + s + y → háy
+    //
+    // --- Pattern: âu (â + glide u) ---
+    ("aasu", "ấu"),   // aa + s + u → ấu (aa = â)
+    ("aafu", "ầu"),   // aa + f + u → ầu
+    ("aaru", "ẩu"),   // aa + r + u → ẩu
+    ("aaxu", "ẫu"),   // aa + x + u → ẫu
+    ("aaju", "ậu"),   // aa + j + u → ậu
+    ("daasu", "dấu"), // d + aa + s + u → dấu
+    ("caasu", "cấu"), // c + aa + s + u → cấu
+    //
+    // --- Pattern: ây (â + glide y) ---
+    ("aasy", "ấy"),   // aa + s + y → ấy (aa = â)
+    ("aafy", "ầy"),   // aa + f + y → ầy
+    ("aary", "ẩy"),   // aa + r + y → ẩy
+    ("aaxy", "ẫy"),   // aa + x + y → ẫy
+    ("aajy", "ậy"),   // aa + j + y → ậy
+    ("daasy", "dấy"), // d + aa + s + y → dấy
+    ("maasy", "mấy"), // m + aa + s + y → mấy
+    //
+    // --- Pattern: eo (e + glide o) ---
+    ("eso", "éo"),     // e + s + o → éo
+    ("efo", "èo"),     // e + f + o → èo
+    ("ero", "ẻo"),     // e + r + o → ẻo
+    ("exo", "ẽo"),     // e + x + o → ẽo
+    ("ejo", "ẹo"),     // e + j + o → ẹo
+    ("keso", "kéo"),   // k + e + s + o → kéo
+    ("treso", "tréo"), // tr + e + s + o → tréo
+    //
+    // --- Pattern: êu (ê + glide u) ---
+    ("eesu", "ếu"),   // ee + s + u → ếu (ee = ê)
+    ("eefu", "ều"),   // ee + f + u → ều
+    ("eeru", "ểu"),   // ee + r + u → ểu
+    ("eexu", "ễu"),   // ee + x + u → ễu
+    ("eeju", "ệu"),   // ee + j + u → ệu
+    ("keesu", "kếu"), // k + ee + s + u → kếu
+    ("reesu", "rếu"), // r + ee + s + u → rếu
+    //
+    // --- Pattern: ia (i + glide a) - descending diphthong ---
+    ("isa", "ía"),   // i + s + a → ía
+    ("ifa", "ìa"),   // i + f + a → ìa
+    ("ira", "ỉa"),   // i + r + a → ỉa
+    ("ixa", "ĩa"),   // i + x + a → ĩa
+    ("ija", "ịa"),   // i + j + a → ịa
+    ("kisa", "kía"), // k + i + s + a → kía
+    ("misa", "mía"), // m + i + s + a → mía
+    ("tisa", "tía"), // t + i + s + a → tía
+    //
+    // --- Pattern: iu (i + glide u) ---
+    ("isu", "íu"),   // i + s + u → íu
+    ("ifu", "ìu"),   // i + f + u → ìu
+    ("iru", "ỉu"),   // i + r + u → ỉu
+    ("ixu", "ĩu"),   // i + x + u → ĩu
+    ("iju", "ịu"),   // i + j + u → ịu
+    ("disu", "díu"), // d + i + s + u → díu
+    ("kisu", "kíu"), // k + i + s + u → kíu
+    //
+    // --- Pattern: oi (o + glide i) ---
+    ("osi", "ói"),   // o + s + i → ói
+    ("ofi", "òi"),   // o + f + i → òi
+    ("ori", "ỏi"),   // o + r + i → ỏi
+    ("oxi", "õi"),   // o + x + i → õi
+    ("oji", "ọi"),   // o + j + i → ọi
+    ("dosi", "dói"), // d + o + s + i → dói
+    ("nosi", "nói"), // n + o + s + i → nói
+    //
+    // --- Pattern: ôi (ô + glide i) ---
+    ("oosi", "ối"),   // oo + s + i → ối (oo = ô)
+    ("oofi", "ồi"),   // oo + f + i → ồi
+    ("oori", "ổi"),   // oo + r + i → ổi
+    ("ooxi", "ỗi"),   // oo + x + i → ỗi
+    ("ooji", "ội"),   // oo + j + i → ội
+    ("doosi", "dối"), // d + oo + s + i → dối
+    ("toosi", "tối"), // t + oo + s + i → tối
+    //
+    // --- Pattern: ơi (ơ + glide i) ---
+    ("owsi", "ới"),   // ow + s + i → ới (ow = ơ)
+    ("owfi", "ời"),   // ow + f + i → ời
+    ("owri", "ởi"),   // ow + r + i → ởi
+    ("owxi", "ỡi"),   // ow + x + i → ỡi
+    ("owji", "ợi"),   // ow + j + i → ợi
+    ("bowsi", "bới"), // b + ow + s + i → bới
+    ("dowsi", "dới"), // d + ow + s + i → dới
+    //
+    // --- Pattern: ui (u + glide i) ---
+    ("usi", "úi"),   // u + s + i → úi
+    ("ufi", "ùi"),   // u + f + i → ùi
+    ("uri", "ủi"),   // u + r + i → ủi
+    ("uxi", "ũi"),   // u + x + i → ũi
+    ("uji", "ụi"),   // u + j + i → ụi
+    ("tusi", "túi"), // t + u + s + i → túi
+    ("musi", "múi"), // m + u + s + i → múi
+    //
+    // --- Pattern: ưi (ư + glide i) ---
+    ("uwsi", "ứi"),   // uw + s + i → ứi (uw = ư)
+    ("uwfi", "ừi"),   // uw + f + i → ừi
+    ("uwri", "ửi"),   // uw + r + i → ửi
+    ("uwxi", "ữi"),   // uw + x + i → ữi
+    ("uwji", "ựi"),   // uw + j + i → ựi
+    ("guwsi", "gứi"), // g + uw + s + i → gứi
+    //
+    // --- Pattern: ưu (ư + glide u) ---
+    ("uwsu", "ứu"),   // uw + s + u → ứu (uw = ư)
+    ("uwfu", "ừu"),   // uw + f + u → ừu
+    ("uwru", "ửu"),   // uw + r + u → ửu
+    ("uwxu", "ữu"),   // uw + x + u → ữu
+    ("uwju", "ựu"),   // uw + j + u → ựu
+    ("luwsu", "lứu"), // l + uw + s + u → lứu
+    ("huwsu", "hứu"), // h + uw + s + u → hứu
+    //
+    // --- Pattern: ua (NOT after q) → u is main ---
+    ("musa", "múa"), // m + u + s + a → múa
+    ("cusa", "cúa"), // c + u + s + a → cúa
+    ("mufa", "mùa"), // m + u + f + a → mùa
+    ("mura", "mủa"), // m + u + r + a → mủa
+    ("muxa", "mũa"), // m + u + x + a → mũa
+    ("muja", "mụa"), // m + u + j + a → mụa
+    //
+    // --- Pattern: ưa (ư is main, a is glide) ---
+    ("uwsa", "ứa"),   // uw + s + a → ứa
+    ("uwfa", "ừa"),   // uw + f + a → ừa
+    ("uwra", "ửa"),   // uw + r + a → ửa
+    ("uwxa", "ữa"),   // uw + x + a → ữa
+    ("uwja", "ựa"),   // uw + j + a → ựa
+    ("muwsa", "mứa"), // m + uw + s + a → mứa
+    ("cuwsa", "cứa"), // c + uw + s + a → cứa
+    //
+    // ============================================================
+    // GROUP 3: TRIPLE VOWELS - TONE ON MIDDLE VOWEL
+    // ============================================================
+    //
+    // --- Pattern: oai (o + a + i) → tone on a ---
+    ("osai", "oái"),      // o + s + a + i → oái
+    ("hosai", "hoái"),    // h + o + s + a + i → hoái
+    ("ngoafif", "ngoài"), // correct existing test
+    //
+    // --- Pattern: oay (o + a + y) → tone on a ---
+    ("osay", "oáy"),   // o + s + a + y → oáy
+    ("xosay", "xoáy"), // x + o + s + a + y → xoáy
+    //
+    // --- Pattern: uôi (u + ô + i) → tone on ô ---
+    ("uoosi", "uối"),   // u + oo + s + i → uối
+    ("cuoosi", "cuối"), // c + u + oo + s + i → cuối
+    ("tuoosi", "tuối"), // t + u + oo + s + i → tuối
+    //
+    // --- Pattern: ươi (ư + ơ + i) → tone on ơ ---
+    ("uwowsi", "ưới"),   // uw + ow + s + i → ưới
+    ("muwowsi", "mưới"), // m + uw + ow + s + i → mưới
+    ("tuwowsi", "tưới"), // t + uw + ow + s + i → tưới
+    //
+    // --- Pattern: ươu (ư + ơ + u) → tone on ơ ---
+    ("uwowsu", "ướu"),   // uw + ow + s + u → ướu
+    ("ruwowsu", "rướu"), // r + uw + ow + s + u → rướu
+    ("huwowsu", "hướu"), // h + uw + ow + s + u → hướu
+    //
+    // --- Pattern: iêu (i + ê + u) → tone on ê ---
+    ("ieesu", "iếu"),   // i + ee + s + u → iếu
+    ("tieesu", "tiếu"), // t + i + ee + s + u → tiếu
+    ("kieesu", "kiếu"), // k + i + ee + s + u → kiếu
+    //
+    // --- Pattern: yêu (y + ê + u) → tone on ê ---
+    ("yeesu", "yếu"), // y + ee + s + u → yếu
+    ("yeefu", "yều"), // y + ee + f + u → yều
+    //
+    // --- Pattern: uây (u + â + y) → tone on â ---
+    ("uaasy", "uấy"),     // u + aa + s + y → uấy
+    ("khuaasy", "khuấy"), // kh + u + aa + s + y → khuấy
+    //
+    // Note: oeo triple vowel (khoèo, ngoẹo) has a fundamental conflict with
+    // Telex's oo→ô transformation. When typing o-e-o, the second 'o' triggers
+    // circumflex on the first 'o'. This is a rare pattern and a known Telex limitation.
+    // For oeo words, users typically type the tone AFTER all vowels: "oeos" → but
+    // this also conflicts with oo→ô. VNI handles this better with numeric tones.
+    //
+    // --- Pattern: uyê (u + y + ê) → tone on ê (LAST vowel) ---
+    ("uysee", "uyế"),     // u + y + s + ee → uyế
+    ("quysee", "quyế"),   // qu + y + s + ee → quyế
+    ("khuysee", "khuyế"), // kh + u + y + s + ee → khuyế
+    //
+    // ============================================================
+    // GROUP 4: VV + C (Two vowels + final consonant)
+    // Tone always on 2nd vowel when closed syllable
+    // ============================================================
+    //
+    // --- oa + C → tone on a ---
+    ("toasn", "toán"),   // t + o + a + s + n → toán
+    ("hoasm", "hoám"),   // h + o + a + s + m → hoám
+    ("loangs", "loáng"), // l + o + a + n + g + s → loáng? (complex)
+    //
+    // --- ua + C (with q) → tone on a ---
+    ("quasn", "quán"),   // qu + a + s + n → quán
+    ("quasng", "quáng"), // qu + a + s + ng → quáng
+    //
+    // --- ua + C (without q) → tone on a (closed changes rule) ---
+    ("muasn", "muán"), // m + u + a + s + n → muán (final changes rule)
+    //
+    // --- iê + C → tone on ê ---
+    ("tieesn", "tiến"), // t + i + ee + s + n → tiến
+    ("bieesp", "biếp"), // b + i + ee + s + p → biếp? (invalid?)
+    //
+    // --- uô + C → tone on ô ---
+    ("muoosn", "muốn"), // m + u + oo + s + n → muốn
+    ("cuoosc", "cuốc"), // c + u + oo + s + c → cuốc
+    //
+    // --- ươ + C → tone on ơ ---
+    ("muwowsn", "mướn"),   // m + uw + ow + s + n → mướn
+    ("luwowsng", "lướng"), // l + uw + ow + s + ng → lướng
+    //
+    // ============================================================
+    // GROUP 5: gi- INITIAL (special handling)
+    // ============================================================
+    //
+    ("gisa", "giá"),      // gi + s + a → giá (gi is initial, a is vowel)
+    ("giaf", "già"),      // gi + a + f → già
+    ("gioosng", "giống"), // gi + oo + s + ng → giống
+    //
+    // ============================================================
+    // EXISTING TEST CASES (preserved)
+    // ============================================================
+    //
     // Double mark → revert
     ("ass", "as"),
     ("aff", "af"),
@@ -302,10 +633,23 @@ const TELEX_COMMON_ISSUES: &[(&str, &str)] = &[
     ("dduwowcj", "được"),
     // Issue #14: Alternative typing with wo → ươ compound
     ("ddwocj", "được"),
+    // Issue #29: uw + o should form ươ compound (u with horn + o → ươ)
+    // Pattern: ư + o + consonant
+    ("dduwocj", "được"),
+    ("nuwocs", "nước"),
+    ("suwongs", "sướng"),
+    ("truwongf", "trường"),
+    // Pattern: ư + o + i (triphthong ươi)
+    ("nguwoif", "người"),
+    ("muwoif", "mười"),
+    ("tuwoir", "tưởi"),
+    // Pattern: w alone creates ư, then o forms ươ
     ("nwocj", "nược"),
     ("swongs", "sướng"),
     ("bwomf", "bườm"),
     ("twoir", "tưởi"),
+    // Edge case: ươ without final consonant (open syllable)
+    ("ruwouj", "rượu"),
     ("ddif", "đì"),
     ("ddi", "đi"),
     ("ddang", "đang"),
@@ -774,4 +1118,239 @@ fn telex_switch_diacritics() {
 #[test]
 fn vni_switch_diacritics() {
     vni(VNI_SWITCH_DIACRITICS);
+}
+
+// ============================================================
+// INVALID BREVE PATTERNS - Issue #44
+// ============================================================
+//
+// Vietnamese phonology: 'ă' (breve) requires final consonant
+// Valid: trăm, năm, răng, xăng, bắt, căn, ...
+// Invalid: ră, să, lă, dă (no final consonant)
+//
+// These patterns should NOT be transformed because they result
+// in invalid Vietnamese syllables.
+
+const TELEX_INVALID_BREVE_OPEN: &[(&str, &str)] = &[
+    // Single consonant + aw → should NOT become C+ă
+    // Because "Că" (open syllable with breve) is invalid Vietnamese
+    ("raw", "raw"), // r + aw → should stay "raw", not "ră"
+    ("saw", "saw"), // s + aw → should stay "saw", not "să"
+    ("law", "law"), // l + aw → should stay "law", not "lă"
+    ("daw", "daw"), // d + aw → should stay "daw", not "dă"
+    ("taw", "taw"), // t + aw → should stay "taw", not "tă"
+    ("naw", "naw"), // n + aw → should stay "naw", not "nă"
+    ("maw", "maw"), // m + aw → should stay "maw", not "mă"
+    ("caw", "caw"), // c + aw → should stay "caw", not "că"
+    ("baw", "baw"), // b + aw → should stay "baw", not "bă"
+    ("haw", "haw"), // h + aw → should stay "haw", not "hă"
+    ("kaw", "kaw"), // k + aw → should stay "kaw", not "kă"
+    ("gaw", "gaw"), // g + aw → should stay "gaw", not "gă"
+    ("vaw", "vaw"), // v + aw → should stay "vaw", not "vă"
+    ("xaw", "xaw"), // x + aw → should stay "xaw", not "xă"
+    // Two consonant initials + aw
+    ("thaw", "thaw"), // th + aw → should stay "thaw", not "thă"
+    ("chaw", "chaw"), // ch + aw → should stay "chaw", not "chă"
+    ("nhaw", "nhaw"), // nh + aw → should stay "nhaw", not "nhă"
+    ("khaw", "khaw"), // kh + aw → should stay "khaw", not "khă"
+    ("phaw", "phaw"), // ph + aw → should stay "phaw", not "phă"
+    ("traw", "traw"), // tr + aw → should stay "traw", not "tră"
+    ("ngaw", "ngaw"), // ng + aw → should stay "ngaw", not "ngă"
+    // Just "aw" alone
+    ("aw", "aw"), // should stay "aw", not "ă"
+];
+
+const VNI_INVALID_BREVE_OPEN: &[(&str, &str)] = &[
+    // Single consonant + a8 → should NOT become C+ă
+    ("ra8", "ra8"), // r + a8 → should stay "ra8", not "ră"
+    ("sa8", "sa8"), // s + a8 → should stay "sa8", not "să"
+    ("la8", "la8"), // l + a8 → should stay "la8", not "lă"
+    ("ta8", "ta8"), // t + a8 → should stay "ta8", not "tă"
+    ("na8", "na8"), // n + a8 → should stay "na8", not "nă"
+    ("ma8", "ma8"), // m + a8 → should stay "ma8", not "mă"
+    ("ca8", "ca8"), // c + a8 → should stay "ca8", not "că"
+    ("ba8", "ba8"), // b + a8 → should stay "ba8", not "bă"
+    ("da8", "da8"), // d + a8 → should stay "da8", not "dă"
+    // Two consonant initials
+    ("tha8", "tha8"), // th + a8 → should stay "tha8", not "thă"
+    ("tra8", "tra8"), // tr + a8 → should stay "tra8", not "tră"
+    ("nga8", "nga8"), // ng + a8 → should stay "nga8", not "ngă"
+    // Just "a8" alone
+    ("a8", "a8"), // should stay "a8", not "ă"
+];
+
+// Valid breve patterns - with final consonant (should transform)
+const TELEX_VALID_BREVE: &[(&str, &str)] = &[
+    // These ARE valid because they have final consonants
+    ("trawm", "trăm"),    // trăm - hundred (no tone)
+    ("nawm", "năm"),      // năm - year/five (no tone)
+    ("rawng", "răng"),    // răng - tooth (no tone)
+    ("xawng", "xăng"),    // xăng - gasoline (no tone)
+    ("bawts", "bắt"),     // bắt - catch (s = sắc tone)
+    ("cawn", "căn"),      // căn - room (no tone)
+    ("dawngr", "dẳng"),   // dẳng - (r = hỏi tone)
+    ("hawng", "hăng"),    // hăng - eager (no tone)
+    ("lawng", "lăng"),    // lăng - mausoleum (no tone)
+    ("sawcs", "sắc"),     // sắc - sharp (s = sắc tone)
+    ("tawngs", "tắng"),   // tắng - (s = sắc tone)
+    ("nawngs", "nắng"),   // nắng - sunny (s = sắc tone)
+    ("vawngs", "vắng"),   // vắng - absent (s = sắc tone)
+    ("mawts", "mắt"),     // mắt - eye (s = sắc tone)
+    ("thawngs", "thắng"), // thắng - win (s = sắc tone)
+    ("khawcs", "khắc"),   // khắc - to carve (s = sắc tone)
+    // Multi-syllable words
+    ("trawm nawm", "trăm năm"),    // trăm năm (no tones)
+    ("sawngx sangf", "sẵng sàng"), // sẵng sàng (sawngx = sẵng, sangf = sàng)
+];
+
+const VNI_VALID_BREVE: &[(&str, &str)] = &[
+    // These ARE valid because they have final consonants
+    ("tra8m", "trăm"),  // trăm - hundred
+    ("na8m", "năm"),    // năm - year/five
+    ("ra8ng", "răng"),  // răng - tooth
+    ("xa8ng", "xăng"),  // xăng - gasoline
+    ("ba81t", "bắt"),   // bắt - catch
+    ("ca8n", "căn"),    // căn - room
+    ("na81ng", "nắng"), // nắng - sunny
+    ("ma81t", "mắt"),   // mắt - eye
+];
+
+// ============================================================
+// INVALID BREVE + VOWEL PATTERNS (ăi, ăo, ău, ăy)
+// ============================================================
+//
+// In Vietnamese, breve 'ă' CANNOT be followed by another vowel.
+// Valid: ăn, ăm, ăng, ăp, ăt, ăc (consonant endings)
+// Invalid: ăi, ăo, ău, ăy (vowel endings)
+
+const TELEX_INVALID_BREVE_DIPHTHONG: &[(&str, &str)] = &[
+    // aw + vowel → should NOT transform
+    ("awi", "awi"),   // ăi is invalid
+    ("awo", "awo"),   // ăo is invalid
+    ("awu", "awu"),   // ău is invalid
+    ("awy", "awy"),   // ăy is invalid
+    ("tawi", "tawi"), // tăi is invalid
+    ("tawo", "tawo"), // tăo is invalid
+    ("tawu", "tawu"), // tău is invalid
+    ("tawy", "tawy"), // tăy is invalid
+    ("mawi", "mawi"), // măi is invalid
+    ("mawo", "mawo"), // măo is invalid
+    ("lawi", "lawi"), // lăi is invalid
+    ("lawo", "lawo"), // lăo is invalid
+    // With tone marks - still invalid
+    ("tawis", "tawis"), // tắi is invalid
+    ("tawof", "tawof"), // tào with breve is invalid
+];
+
+const VNI_INVALID_BREVE_DIPHTHONG: &[(&str, &str)] = &[
+    // a8 + vowel → should NOT transform
+    ("a8i", "a8i"),   // ăi is invalid
+    ("a8o", "a8o"),   // ăo is invalid
+    ("a8u", "a8u"),   // ău is invalid
+    ("a8y", "a8y"),   // ăy is invalid
+    ("ta8i", "ta8i"), // tăi is invalid
+    ("ta8o", "ta8o"), // tăo is invalid
+    ("ma8i", "ma8i"), // măi is invalid
+    ("la8i", "la8i"), // lăi is invalid
+];
+
+// ============================================================
+// ENGLISH WORDS WITH AW PATTERN (should NOT transform)
+// ============================================================
+//
+// Common English words containing "aw" should stay as-is
+// because they don't form valid Vietnamese syllables.
+
+const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
+    // Common English words with "aw"
+    ("raw", "raw"),           // raw data
+    ("saw", "saw"),           // I saw
+    ("law", "law"),           // law firm
+    ("draw", "draw"),         // draw a picture
+    ("straw", "straw"),       // drinking straw
+    ("claw", "claw"),         // cat's claw
+    ("flaw", "flaw"),         // design flaw
+    ("jaw", "jaw"),           // jaw bone
+    ("paw", "paw"),           // dog's paw
+    ("craw", "craw"),         // in my craw
+    ("gnaw", "gnaw"),         // gnaw at
+    ("thaw", "thaw"),         // thaw frozen
+    ("outlaw", "outlaw"),     // outlaw
+    ("jigsaw", "jigsaw"),     // jigsaw puzzle
+    ("seesaw", "seesaw"),     // seesaw
+    ("coleslaw", "coleslaw"), // coleslaw
+    // Capital letters
+    ("Raw", "Raw"),
+    ("LAW", "LAW"),
+    ("Draw", "Draw"),
+    ("DRAW", "DRAW"),
+    // Mixed with Vietnamese - space separates words
+    ("raw data", "raw data"),
+    ("raw vieetj", "raw việt"), // "raw" stays, "việt" transforms
+];
+
+// ============================================================
+// EDGE CASES: PARTIAL WORDS / INTERMEDIATE STATES
+// ============================================================
+//
+// When typing incrementally, intermediate states should behave correctly.
+
+const TELEX_BREVE_EDGE_CASES: &[(&str, &str)] = &[
+    // When user types "tram" then "w" to make "trawm" → "trăm"
+    // But "traw" alone should stay as "traw" until final consonant added
+    ("traw", "traw"),  // Intermediate: no final consonant yet
+    ("trawm", "trăm"), // Complete: has final consonant → valid
+    ("naw", "naw"),    // Intermediate: no final consonant
+    ("nawm", "năm"),   // Complete: has final consonant → valid
+    ("raw", "raw"),    // No valid completion possible with just vowel
+    ("rawng", "răng"), // Complete: răng is valid
+    // OA patterns (for contrast - these should transform)
+    ("hoa", "hoa"),  // valid open syllable
+    ("hoaf", "hoà"), // valid with tone
+    // Edge: aw after ou (invalid pattern remains)
+    ("awng", "ăng"), // ăng is valid (final consonant)
+];
+
+// ============================================================
+// TEST FUNCTIONS
+// ============================================================
+
+#[test]
+fn telex_invalid_breve_open_syllable() {
+    telex(TELEX_INVALID_BREVE_OPEN);
+}
+
+#[test]
+fn vni_invalid_breve_open_syllable() {
+    vni(VNI_INVALID_BREVE_OPEN);
+}
+
+#[test]
+fn telex_valid_breve_with_final() {
+    telex(TELEX_VALID_BREVE);
+}
+
+#[test]
+fn vni_valid_breve_with_final() {
+    vni(VNI_VALID_BREVE);
+}
+
+#[test]
+fn telex_invalid_breve_diphthong() {
+    telex(TELEX_INVALID_BREVE_DIPHTHONG);
+}
+
+#[test]
+fn vni_invalid_breve_diphthong() {
+    vni(VNI_INVALID_BREVE_DIPHTHONG);
+}
+
+#[test]
+fn telex_english_aw_words() {
+    telex(TELEX_ENGLISH_AW_WORDS);
+}
+
+#[test]
+fn telex_breve_edge_cases() {
+    telex(TELEX_BREVE_EDGE_CASES);
 }

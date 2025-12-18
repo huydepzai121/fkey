@@ -1,10 +1,15 @@
 //! Vietnamese Phonological Constants
 //!
-//! Centralized constants for valid initials, finals, and spelling rules.
+//! Centralized constants for valid initials, finals, vowel patterns, and spelling rules.
+//! Vowel patterns based on docs/vietnamese-language-system.md Section 7.6.1
 
 use crate::data::keys;
 
-/// Valid single initial consonants
+// =============================================================================
+// INITIAL CONSONANTS
+// =============================================================================
+
+/// Valid single initial consonants (16 consonants)
 pub const VALID_INITIALS_1: &[u16] = &[
     keys::B,
     keys::C,
@@ -24,7 +29,7 @@ pub const VALID_INITIALS_1: &[u16] = &[
     keys::X,
 ];
 
-/// Valid double initial consonants
+/// Valid double initial consonants (10 digraphs)
 pub const VALID_INITIALS_2: &[[u16; 2]] = &[
     [keys::C, keys::H], // ch
     [keys::G, keys::H], // gh
@@ -37,6 +42,10 @@ pub const VALID_INITIALS_2: &[[u16; 2]] = &[
     [keys::T, keys::H], // th
     [keys::T, keys::R], // tr
 ];
+
+// =============================================================================
+// FINAL CONSONANTS
+// =============================================================================
 
 /// Valid single final consonants
 pub const VALID_FINALS_1: &[u16] = &[
@@ -58,74 +67,82 @@ pub const VALID_FINALS_2: &[[u16; 2]] = &[
     [keys::N, keys::H], // nh
 ];
 
-/// Valid vowel pairs in Vietnamese (V1 → V2)
-/// Based on Vietnamese phonology matrix - any pair NOT in this list is invalid.
-/// This is more comprehensive than listing invalid patterns individually.
+// =============================================================================
+// VALID VOWEL PATTERNS (Whitelist from docs 7.6.1)
+// =============================================================================
+
+/// Valid diphthong base key patterns (29 patterns from docs 7.6.1-A)
 ///
-/// Matrix source: docs/vietnamese-language-system.md section 3.4.2
+/// These are BASE KEYS only. Some patterns require specific modifiers:
+/// - E+U requires circumflex on E (êu), NOT valid as plain eu or eư
+/// - I+E requires circumflex on E (iê)
+/// - Y+E requires circumflex on E (yê)
+/// - etc.
 ///
-/// NOTE: Includes Telex intermediate states (same-vowel pairs, e→i) to support
-/// delayed transformations like "eie" → "êi" and "aaaa" → "aâ".
-pub const VALID_VOWEL_PAIRS: &[[u16; 2]] = &[
-    // === Standard Vietnamese diphthongs ===
-    // a → i, o, u, y
-    [keys::A, keys::I],
-    [keys::A, keys::O],
-    [keys::A, keys::U],
-    [keys::A, keys::Y],
-    // â → u, y
-    [keys::A, keys::U], // Note: 'â' uses same key as 'a' in raw input
-    [keys::A, keys::Y],
-    // e → i, o
-    [keys::E, keys::I], // Telex: "eie" → "êi" (delayed circumflex)
-    [keys::E, keys::O],
-    // ê → u
-    [keys::E, keys::U], // Note: 'ê' uses same key as 'e' in raw input
-    // i → a, ê, u
-    [keys::I, keys::A],
-    [keys::I, keys::E], // iê (tiên, kiên)
-    [keys::I, keys::U],
-    // o → a, ă, e, i
-    [keys::O, keys::A],
-    [keys::O, keys::A], // oă uses same key
-    [keys::O, keys::E],
-    [keys::O, keys::I],
-    // ô → i
-    [keys::O, keys::I], // ôi
-    // ơ → i
-    [keys::O, keys::I], // ơi
-    // u → a, â, ê, i, o, ô, y
-    [keys::U, keys::A],
-    [keys::U, keys::A], // uâ
-    [keys::U, keys::E], // uê
-    [keys::U, keys::I],
-    [keys::U, keys::O],
-    [keys::U, keys::O], // uô
-    [keys::U, keys::Y],
-    // ư → a, i, ơ, u
-    [keys::U, keys::A], // ưa - Note: 'ư' uses same key as 'u' in raw input
-    [keys::U, keys::I], // ưi
-    [keys::U, keys::O], // ươ
-    [keys::U, keys::U], // ưu
-    // y → ê, u
-    [keys::Y, keys::E], // yê (yêu, yến)
-    [keys::Y, keys::U], // ỷu (khuỷu - elbow)
-    // === Telex intermediate states (same-vowel pairs for doubling) ===
-    // These support Telex sequences like "aaaa" → "aâ" where buffer
-    // temporarily holds consecutive same vowels during transformation.
-    [keys::A, keys::A], // aa → â toggle
-    [keys::E, keys::E], // ee → ê toggle
-    [keys::O, keys::O], // oo → ô toggle
+/// Modifier requirements are checked separately via MODIFIER_REQUIRED_PATTERNS.
+pub const VALID_DIPHTHONGS: &[[u16; 2]] = &[
+    // A combinations: ai, ao, au, ay (also âu, ây with circumflex)
+    [keys::A, keys::I], // #1 ai
+    [keys::A, keys::O], // #2 ao
+    [keys::A, keys::U], // #3 au, #5 âu (modifier differentiates)
+    [keys::A, keys::Y], // #4 ay, #6 ây (modifier differentiates)
+    // E combinations: eo, êu
+    [keys::E, keys::O], // #7 eo
+    [keys::E, keys::U], // #8 êu (REQUIRES circumflex on E)
+    // I combinations: ia, iê, iu
+    [keys::I, keys::A], // #9 ia
+    [keys::I, keys::E], // #10 iê (requires circumflex on E)
+    [keys::I, keys::U], // #11 iu
+    // O combinations: oa, oă, oe, oi (also ôi, ơi with modifier)
+    [keys::O, keys::A], // #12 oa, #13 oă (modifier differentiates)
+    [keys::O, keys::E], // #14 oe
+    [keys::O, keys::I], // #15 oi, #16 ôi, #17 ơi (modifier differentiates)
+    // U combinations: ua, uâ, uê, ui, uô, uy (also ưa, ưi, ươ, ưu with horn)
+    [keys::U, keys::A], // #18 ua, #20 uâ, #25 ưa (modifier differentiates)
+    [keys::U, keys::E], // #21 uê (requires circumflex on E)
+    [keys::U, keys::I], // #22 ui, #26 ưi (modifier differentiates)
+    [keys::U, keys::O], // #23 uô, #27 ươ (modifier differentiates)
+    [keys::U, keys::Y], // #24 uy
+    [keys::U, keys::U], // #28 ưu (requires horn on first U)
+    // Y combinations: yê
+    [keys::Y, keys::E], // #29 yê (requires circumflex on E)
 ];
 
-/// Legacy: Invalid vowel patterns (for reference/backward compatibility)
-/// Use VALID_VOWEL_PAIRS for comprehensive checking instead.
-#[allow(dead_code)]
-pub const INVALID_VOWEL_PATTERNS: &[[u16; 2]] = &[
-    [keys::E, keys::A], // ea - English: sea, beach, teacher, search
-    [keys::O, keys::U], // ou - English: you, our, out, house
-    [keys::Y, keys::O], // yo - English: yoke, York, your
+/// Valid triphthong base key patterns (11 patterns from docs 7.6.1-B)
+pub const VALID_TRIPHTHONGS: &[[u16; 3]] = &[
+    [keys::I, keys::E, keys::U], // #30 iêu
+    [keys::Y, keys::E, keys::U], // #31 yêu
+    [keys::O, keys::A, keys::I], // #32 oai
+    [keys::O, keys::A, keys::Y], // #33 oay
+    [keys::O, keys::E, keys::O], // #34 oeo
+    [keys::U, keys::A, keys::Y], // #35 uây
+    [keys::U, keys::O, keys::I], // #36 uôi, #38 ươi (modifier differentiates)
+    [keys::U, keys::Y, keys::A], // #37 uya (khuya)
+    [keys::U, keys::O, keys::U], // #39 ươu
+    [keys::U, keys::Y, keys::E], // #40 uyê
 ];
+
+// =============================================================================
+// MODIFIER REQUIREMENTS FOR VOWEL PATTERNS
+// =============================================================================
+
+/// Patterns requiring CIRCUMFLEX on V1 (first vowel)
+/// E+U is only valid as êu (E has circumflex), not eu or eư
+pub const V1_CIRCUMFLEX_REQUIRED: &[[u16; 2]] = &[
+    [keys::E, keys::U], // êu: E (V1) must have circumflex
+];
+
+/// Patterns requiring CIRCUMFLEX on V2 (second vowel)
+/// These patterns have E as second vowel which needs circumflex
+pub const V2_CIRCUMFLEX_REQUIRED: &[[u16; 2]] = &[
+    [keys::I, keys::E], // iê: E (V2) must have circumflex
+    [keys::U, keys::E], // uê: E (V2) must have circumflex
+    [keys::Y, keys::E], // yê: E (V2) must have circumflex
+];
+
+// =============================================================================
+// SPELLING RULES
+// =============================================================================
 
 /// Spelling rules: (consonant, invalid_vowels, description)
 /// If consonant + vowel matches, it's INVALID
