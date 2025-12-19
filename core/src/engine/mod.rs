@@ -693,51 +693,88 @@ impl Engine {
                                 .collect();
 
                             if !consonants_after.is_empty() {
-                                // Check if ALL consonants are valid Vietnamese finals
-                                // AND the target vowel is part of a diphthong (has adjacent vowel)
-                                // This allows "rieneg" → "riêng" (ie + n + e, ie is diphthong)
-                                // but blocks "data" → "dât" (a + t + a, no diphthong)
-                                let all_are_valid_finals = consonants_after
-                                    .iter()
-                                    .all(|&k| constants::VALID_FINALS_1.contains(&k));
+                                // Check if there's a vowel between target and final consonants
+                                // "teacher": e-a-ch has 'a' between first 'e' and 'ch' → block
+                                // "hongo": o-ng has no vowel between 'o' and 'ng' → allow
+                                let has_vowel_between = (i + 1..self.buf.len())
+                                    .any(|j| {
+                                        self.buf
+                                            .get(j)
+                                            .is_some_and(|ch| keys::is_vowel(ch.key))
+                                    });
 
-                                // Check if there's another vowel adjacent to target (diphthong)
-                                let has_adjacent_vowel = (i > 0
-                                    && self
-                                        .buf
-                                        .get(i - 1)
-                                        .is_some_and(|ch| keys::is_vowel(ch.key)))
-                                    || (i + 1 < self.buf.len()
+                                if has_vowel_between {
+                                    // Another vowel between target and end → different syllable
+                                    // Skip this target (e.g., "teacher" → don't make "têacher")
+                                    continue;
+                                }
+
+                                // Check if consonants form valid Vietnamese finals
+                                // Valid finals: single (c,m,n,p,t) or pairs (ch,ng,nh)
+                                // Double consonant finals (ng,nh,ch) are distinctly Vietnamese
+                                // - "hongo" → "hông" (ng final, allow circumflex)
+                                // - "khongo" → "không" (ng final, allow circumflex)
+                                // Single consonant finals need additional context
+                                // - "data" → should NOT become "dât" (t final, but English)
+                                // - "nhana" → "nhân" (n final, but has nh initial)
+                                let (all_are_valid_finals, is_double_final) =
+                                    match consonants_after.len() {
+                                        1 => (
+                                            constants::VALID_FINALS_1.contains(&consonants_after[0]),
+                                            false,
+                                        ),
+                                        2 => {
+                                            let pair = [consonants_after[0], consonants_after[1]];
+                                            (constants::VALID_FINALS_2.contains(&pair), true)
+                                        }
+                                        _ => (false, false), // More than 2 consonants is invalid
+                                    };
+
+                                // Double consonant finals (ng,nh,ch) are distinctly Vietnamese
+                                // Always allow circumflex for these patterns
+                                if is_double_final && all_are_valid_finals {
+                                    // Valid double final like "ng" - allow circumflex
+                                    // This handles "hongo" → "hông", "khongo" → "không"
+                                } else if !all_are_valid_finals {
+                                    // Invalid final consonants → skip
+                                    continue;
+                                } else {
+                                    // Single consonant final - need diphthong or double initial
+                                    // Check if there's another vowel adjacent to target (diphthong)
+                                    let has_adjacent_vowel = (i > 0
                                         && self
                                             .buf
-                                            .get(i + 1)
-                                            .is_some_and(|ch| keys::is_vowel(ch.key)));
+                                            .get(i - 1)
+                                            .is_some_and(|ch| keys::is_vowel(ch.key)))
+                                        || (i + 1 < self.buf.len()
+                                            && self
+                                                .buf
+                                                .get(i + 1)
+                                                .is_some_and(|ch| keys::is_vowel(ch.key)));
 
-                                // Check for Vietnamese-specific double initial (nh, ch, th, ph, etc.)
-                                // This allows "nhana" → "nhân" (nh + a + n + a)
-                                // but still blocks "data" → "dât" (d is not a Vietnamese digraph)
-                                let has_vietnamese_double_initial = if i >= 2 {
-                                    // Get first two consonants before the target vowel
-                                    let initial_keys: Vec<u16> = (0..i)
-                                        .filter_map(|j| self.buf.get(j).map(|ch| ch.key))
-                                        .take_while(|k| !keys::is_vowel(*k))
-                                        .collect();
-                                    if initial_keys.len() >= 2 {
-                                        let pair = [initial_keys[0], initial_keys[1]];
-                                        constants::VALID_INITIALS_2.contains(&pair)
+                                    // Check for Vietnamese-specific double initial (nh, ch, th, ph, etc.)
+                                    // This allows "nhana" → "nhân" (nh + a + n + a)
+                                    // but still blocks "data" → "dât" (d is not a Vietnamese digraph)
+                                    let has_vietnamese_double_initial = if i >= 2 {
+                                        // Get first two consonants before the target vowel
+                                        let initial_keys: Vec<u16> = (0..i)
+                                            .filter_map(|j| self.buf.get(j).map(|ch| ch.key))
+                                            .take_while(|k| !keys::is_vowel(*k))
+                                            .collect();
+                                        if initial_keys.len() >= 2 {
+                                            let pair = [initial_keys[0], initial_keys[1]];
+                                            constants::VALID_INITIALS_2.contains(&pair)
+                                        } else {
+                                            false
+                                        }
                                     } else {
                                         false
-                                    }
-                                } else {
-                                    false
-                                };
+                                    };
 
-                                if !all_are_valid_finals
-                                    || (!has_adjacent_vowel && !has_vietnamese_double_initial)
-                                {
-                                    // Not a diphthong pattern AND no Vietnamese double initial
-                                    // AND non-final consonants → likely English
-                                    continue;
+                                    if !has_adjacent_vowel && !has_vietnamese_double_initial {
+                                        // Single final, no diphthong, no double initial → likely English
+                                        continue;
+                                    }
                                 }
                             }
                         }
