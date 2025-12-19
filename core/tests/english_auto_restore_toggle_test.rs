@@ -65,10 +65,7 @@ fn pattern1_aw_ending_off() {
 fn pattern1_aw_ending_on() {
     let mut e = engine_on();
     let result = type_word(&mut e, "seesaw ");
-    assert_eq!(
-        result, "seesaw ",
-        "ON: 'seesaw ' should restore to English"
-    );
+    assert_eq!(result, "seesaw ", "ON: 'seesaw ' should restore to English");
 }
 
 // =============================================================================
@@ -137,10 +134,7 @@ fn pattern3_expect_off() {
 fn pattern3_expect_on() {
     let mut e = engine_on();
     let result = type_word(&mut e, "expect ");
-    assert_eq!(
-        result, "expect ",
-        "ON: 'expect ' should restore to English"
-    );
+    assert_eq!(result, "expect ", "ON: 'expect ' should restore to English");
 }
 
 // =============================================================================
@@ -176,25 +170,49 @@ fn pattern4_space_restore_on() {
 #[test]
 fn vietnamese_preserved_off() {
     let mut e = engine_off();
-    assert_eq!(type_word(&mut e, "vieets "), "viết ", "OFF: Vietnamese 'viết' preserved");
+    assert_eq!(
+        type_word(&mut e, "vieets "),
+        "viết ",
+        "OFF: Vietnamese 'viết' preserved"
+    );
 
     let mut e = engine_off();
-    assert_eq!(type_word(&mut e, "xin "), "xin ", "OFF: Vietnamese 'xin' preserved");
+    assert_eq!(
+        type_word(&mut e, "xin "),
+        "xin ",
+        "OFF: Vietnamese 'xin' preserved"
+    );
 
     let mut e = engine_off();
-    assert_eq!(type_word(&mut e, "chaof "), "chào ", "OFF: Vietnamese 'chào' preserved");
+    assert_eq!(
+        type_word(&mut e, "chaof "),
+        "chào ",
+        "OFF: Vietnamese 'chào' preserved"
+    );
 }
 
 #[test]
 fn vietnamese_preserved_on() {
     let mut e = engine_on();
-    assert_eq!(type_word(&mut e, "vieets "), "viết ", "ON: Vietnamese 'viết' preserved");
+    assert_eq!(
+        type_word(&mut e, "vieets "),
+        "viết ",
+        "ON: Vietnamese 'viết' preserved"
+    );
 
     let mut e = engine_on();
-    assert_eq!(type_word(&mut e, "xin "), "xin ", "ON: Vietnamese 'xin' preserved");
+    assert_eq!(
+        type_word(&mut e, "xin "),
+        "xin ",
+        "ON: Vietnamese 'xin' preserved"
+    );
 
     let mut e = engine_on();
-    assert_eq!(type_word(&mut e, "chaof "), "chào ", "ON: Vietnamese 'chào' preserved");
+    assert_eq!(
+        type_word(&mut e, "chaof "),
+        "chào ",
+        "ON: Vietnamese 'chào' preserved"
+    );
 }
 
 // =============================================================================

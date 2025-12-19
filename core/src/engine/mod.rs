@@ -612,11 +612,7 @@ impl Engine {
         if let Some(Transform::Stroke(last_key)) = self.last_transform {
             if last_key == key {
                 // Find the stroked 'd' to revert
-                if let Some(pos) = self
-                    .buf
-                    .iter()
-                    .position(|c| c.key == keys::D && c.stroke)
-                {
+                if let Some(pos) = self.buf.iter().position(|c| c.key == keys::D && c.stroke) {
                     // Revert: un-stroke the 'd'
                     if let Some(c) = self.buf.get_mut(pos) {
                         c.stroke = false;

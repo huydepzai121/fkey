@@ -447,8 +447,8 @@ impl Phonology {
                 // - "ua" standalone → target U for horn → "ưa"
                 // - "mua", "chua" → target U for horn → "mưa", "chưa"
                 if k1 == keys::U && k2 == keys::A {
-                    let preceded_by_q = pos1 > 0
-                        && buffer_keys.get(pos1 - 1).copied() == Some(keys::Q);
+                    let preceded_by_q =
+                        pos1 > 0 && buffer_keys.get(pos1 - 1).copied() == Some(keys::Q);
 
                     // Only apply breve to A when preceded by Q (qu-initial)
                     // Otherwise apply horn to U
