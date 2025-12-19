@@ -18,7 +18,7 @@ pub mod validation;
 
 use crate::data::{
     chars::{self, mark, tone},
-    keys,
+    constants, keys,
     vowel::{Phonology, Vowel},
 };
 use crate::input::{self, ToneType};
@@ -669,11 +669,43 @@ impl Engine {
                         // For Telex circumflex, check if there are consonants after target
                         if is_telex_circumflex && i != self.buf.len() - 1 {
                             // Check for consonants between target position and end of buffer
-                            let has_consonant_after = (i + 1..self.buf.len())
-                                .any(|j| self.buf.get(j).is_some_and(|ch| !keys::is_vowel(ch.key)));
-                            if has_consonant_after {
-                                // Consonants between target and current → likely English
-                                continue;
+                            let consonants_after: Vec<u16> = (i + 1..self.buf.len())
+                                .filter_map(|j| {
+                                    self.buf.get(j).and_then(|ch| {
+                                        if !keys::is_vowel(ch.key) {
+                                            Some(ch.key)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                })
+                                .collect();
+
+                            if !consonants_after.is_empty() {
+                                // Check if ALL consonants are valid Vietnamese finals
+                                // AND the target vowel is part of a diphthong (has adjacent vowel)
+                                // This allows "rieneg" → "riêng" (ie + n + e, ie is diphthong)
+                                // but blocks "data" → "dât" (a + t + a, no diphthong)
+                                let all_are_valid_finals = consonants_after.iter().all(|&k| {
+                                    constants::VALID_FINALS_1.contains(&k)
+                                });
+
+                                // Check if there's another vowel adjacent to target (diphthong)
+                                let has_adjacent_vowel = (i > 0
+                                    && self
+                                        .buf
+                                        .get(i - 1)
+                                        .is_some_and(|ch| keys::is_vowel(ch.key)))
+                                    || (i + 1 < self.buf.len()
+                                        && self
+                                            .buf
+                                            .get(i + 1)
+                                            .is_some_and(|ch| keys::is_vowel(ch.key)));
+
+                                if !all_are_valid_finals || !has_adjacent_vowel {
+                                    // Not a diphthong pattern OR non-final consonants → likely English
+                                    continue;
+                                }
                             }
                         }
                         target_positions.push(i);
@@ -1871,18 +1903,21 @@ impl Engine {
                     // Pattern 4: vowel + modifier + DIFFERENT vowel → English
                     // EXCEPT for Vietnamese diphthong patterns with tone in middle:
                     // - U + modifier + A/O: ưa, ươ (của, được)
-                    // - A + modifier + I/Y: ai, ay (gái, máy)
-                    // - O + modifier + I: oi (bói, hói)
+                    // - A + modifier + I/Y/O: ai, ay, ao (gái, máy, nào)
+                    // - O + modifier + I/A: oi, oa (bói, hói, hoá)
                     // Example: "core" = c + o + r + e → o+r+e is NOT Vietnamese pattern
                     // Example: "cura" = c + u + r + a → u+r+a IS Vietnamese (cửa)
                     // Example: "gasi" = g + a + s + i → a+s+i IS Vietnamese (gái)
+                    // Example: "nafo" = n + a + f + o → a+f+o IS Vietnamese (nào)
                     if has_initial_consonant {
                         let (prev_vowel, _) = self.raw_input[i - 1];
                         // Vietnamese exceptions: diphthongs with tone modifier in middle
                         let is_vietnamese_pattern = match prev_vowel {
                             k if k == keys::U => next_key == keys::A || next_key == keys::O,
-                            k if k == keys::A => next_key == keys::I || next_key == keys::Y,
-                            k if k == keys::O => next_key == keys::I,
+                            k if k == keys::A => {
+                                next_key == keys::I || next_key == keys::Y || next_key == keys::O
+                            }
+                            k if k == keys::O => next_key == keys::I || next_key == keys::A,
                             _ => false,
                         };
                         if !is_vietnamese_pattern {
@@ -1893,9 +1928,10 @@ impl Engine {
             }
         }
 
-        // Pattern 5: W at end after vowel → English (like "raw", "law", "saw")
+        // Pattern 5: W at end after vowel → English (like "raw", "law", "saw", "view")
         // W as final is not valid Vietnamese, it's an English pattern
         // Exception: "uw" ending is Vietnamese (tuw → tư)
+        // Exception: W modified a diphthong (oiw → ơi where OI is diphthong, W adds horn to O)
         if self.raw_input.len() >= 2 {
             let (last, _) = self.raw_input[self.raw_input.len() - 1];
             if last == keys::W {
@@ -1903,7 +1939,24 @@ impl Engine {
                 // W after vowel (not U) at end is English: raw, law, saw
                 // W after U is Vietnamese: tuw → tư
                 if keys::is_vowel(second_last) && second_last != keys::U {
-                    return true;
+                    // Check if W was absorbed (modified existing vowel vs created new ư)
+                    // "oiw" → "ơi": 3 chars → 2 chars (absorbed)
+                    // "view" → "vieư": 4 chars → 4 chars (not absorbed)
+                    let w_was_absorbed = self.buf.len() < self.raw_input.len();
+
+                    // Count vowels before W in raw_input
+                    let vowel_count = self.raw_input[..self.raw_input.len() - 1]
+                        .iter()
+                        .filter(|(k, _)| keys::is_vowel(*k))
+                        .count();
+
+                    // Only skip restore if BOTH conditions are true:
+                    // 1. W was absorbed (actually modified an existing vowel)
+                    // 2. There are 2+ vowels before W (diphthong like OI in "oiw")
+                    // Otherwise, this is likely English (bow, view) - restore
+                    if !(w_was_absorbed && vowel_count >= 2) {
+                        return true;
+                    }
                 }
             }
         }

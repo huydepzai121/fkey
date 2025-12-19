@@ -2369,3 +2369,180 @@ fn restore_word_change_mark_then_extend() {
     let result = restore_and_type(&mut e, "chà", "so");
     assert_eq!(result, "cháo", "Should change mark and extend word");
 }
+
+// ============================================================
+// OIW VS OWI BUG FIX TEST
+// ============================================================
+
+/// Bug: "oiw" produces error but "owi" → "ơi" works
+/// Expected: Both should produce valid Vietnamese
+#[test]
+fn oiw_vs_owi_order() {
+    // "owi" = o + w → ơ, then + i → ơi (works)
+    // "oiw" = o + i → oi, then + w should → ơi (should work too)
+    telex(&[
+        ("owi ", "ơi "),
+        ("oiw ", "ơi "), // Bug: this was failing
+    ]);
+}
+
+// Debug test for oiw
+#[test]
+fn test_debug_oiw() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::validation::is_valid;
+    use gonhanh_core::engine::Engine;
+
+    // First check if "oi" is considered valid Vietnamese
+    let oi_keys = vec![keys::O, keys::I];
+    println!("is_valid([O, I]) = {}", is_valid(&oi_keys));
+
+    let mut e = Engine::new();
+
+    // Step by step - simulating what type_word does
+    let mut screen = String::new();
+
+    // Type 'o'
+    let r = e.on_key(keys::O, false, false);
+    if r.action == 1 {
+        for _ in 0..r.backspace {
+            screen.pop();
+        }
+        for i in 0..r.count as usize {
+            if let Some(ch) = char::from_u32(r.chars[i]) {
+                screen.push(ch);
+            }
+        }
+    } else {
+        screen.push('o');
+    }
+    println!("After O: screen='{}', action={}", screen, r.action);
+
+    // Type 'i'
+    let r = e.on_key(keys::I, false, false);
+    if r.action == 1 {
+        for _ in 0..r.backspace {
+            screen.pop();
+        }
+        for i in 0..r.count as usize {
+            if let Some(ch) = char::from_u32(r.chars[i]) {
+                screen.push(ch);
+            }
+        }
+    } else {
+        screen.push('i');
+    }
+    println!("After I: screen='{}', action={}", screen, r.action);
+
+    // Type 'w'
+    let r = e.on_key(keys::W, false, false);
+    println!(
+        "W result: action={}, backspace={}, count={}",
+        r.action, r.backspace, r.count
+    );
+    if r.action == 1 {
+        for _ in 0..r.backspace {
+            screen.pop();
+        }
+        for i in 0..r.count as usize {
+            if let Some(ch) = char::from_u32(r.chars[i]) {
+                screen.push(ch);
+            }
+        }
+    } else {
+        screen.push('w');
+    }
+    println!("After W: screen='{}'", screen);
+
+    // Type ' ' (space)
+    let r = e.on_key(keys::SPACE, false, false);
+    println!(
+        "SPACE result: action={}, backspace={}, count={}",
+        r.action, r.backspace, r.count
+    );
+    // Print the chars
+    if r.count > 0 {
+        let chars: String = r.chars[..r.count as usize]
+            .iter()
+            .filter_map(|&c| char::from_u32(c))
+            .collect();
+        println!("SPACE output chars: '{}'", chars);
+    }
+
+    if r.action == 1 {
+        for _ in 0..r.backspace {
+            screen.pop();
+        }
+        for i in 0..r.count as usize {
+            if let Some(ch) = char::from_u32(r.chars[i]) {
+                screen.push(ch);
+            }
+        }
+    } else {
+        screen.push(' ');
+    }
+    println!("After SPACE: screen='{}'", screen);
+
+    assert_eq!(screen, "ơi ", "oiw followed by space should become 'ơi '");
+}
+
+// Bug: "rieneg" produces error but "rieeng" → "riêng" works
+// Bug: "nafo" produces error but "naof" → "nào" works
+#[test]
+fn test_rieneg_vs_rieeng() {
+    telex(&[
+        ("rieeng ", "riêng "), // Should work (circumflex on e, n+g final)
+        ("rieneg ", "riêng "), // Bug: reported as error
+    ]);
+}
+
+#[test]
+fn test_nafo_vs_naof() {
+    telex(&[
+        ("naof ", "nào "), // Should work (huyền tone on a)
+        ("nafo ", "nào "), // Bug: reported as error
+    ]);
+}
+
+// Debug test for rieneg - circumflex modifier order
+#[test]
+fn test_debug_rieneg() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    let mut screen = String::new();
+
+    let keys_to_type = [
+        (keys::R, 'r'),
+        (keys::I, 'i'),
+        (keys::E, 'e'),
+        (keys::N, 'n'),
+        (keys::E, 'e'),
+        (keys::G, 'g'),
+        (keys::SPACE, ' '),
+    ];
+
+    for (key, default_char) in keys_to_type {
+        let r = e.on_key(key, false, false);
+        println!(
+            "After {:?}: action={}, backspace={}, count={}",
+            default_char, r.action, r.backspace, r.count
+        );
+        if r.action == 1 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+        } else {
+            screen.push(default_char);
+        }
+        println!("  screen='{}'", screen);
+    }
+
+    println!("Final: '{}'", screen);
+}
