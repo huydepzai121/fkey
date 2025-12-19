@@ -58,6 +58,20 @@ fn test(input: &str, expected: &str) -> Result<(), String> {
     }
 }
 
+fn test_auto_restore(input: &str, expected: &str) -> Result<(), String> {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, input);
+    if result == expected {
+        Ok(())
+    } else {
+        Err(format!(
+            "'{}' → '{}' (expected '{}')",
+            input, result, expected
+        ))
+    }
+}
+
 // =============================================================================
 // TEST 1: DIPHTHONG + TONE ORDER
 // "naof" and "nafo" → "nào"
@@ -271,7 +285,7 @@ fn dynamic_english_restore() {
     let mut errors = vec![];
     for word in english {
         let input = format!("{} ", word);
-        if let Err(e) = test(&input, &input) {
+        if let Err(e) = test_auto_restore(&input, &input) {
             errors.push(e);
         }
     }

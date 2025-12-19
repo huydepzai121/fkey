@@ -470,10 +470,12 @@ fn foreign_word_string_no_mark() {
 }
 
 /// Auto-restore now handles "express" - the "xp" pattern (x followed by consonant) is detected.
+/// NOTE: Requires english_auto_restore to be enabled (experimental feature).
 #[test]
 fn foreign_word_express_no_mark() {
     let mut e = Engine::new();
-    // "express" - 'r' after 'p' should not apply mark
+    e.set_english_auto_restore(true); // Enable experimental feature
+                                      // "express" - 'r' after 'p' should not apply mark
     let result = type_word(&mut e, "express");
     assert!(
         !result.contains('ẻ'),
@@ -541,7 +543,8 @@ fn foreign_word_could_no_mark() {
 #[test]
 fn foreign_word_would_no_mark() {
     let mut e = Engine::new();
-    // "ou" pattern doesn't exist in Vietnamese
+    e.set_english_auto_restore(true); // Enable experimental feature
+                                      // "ou" pattern doesn't exist in Vietnamese
     let result = type_word(&mut e, "woulds");
     assert_eq!(result, "woulds", "woulds should stay unchanged");
 }
@@ -1069,9 +1072,11 @@ fn foreign_word_beach_no_mark() {
 
 // Test that common English words with 'x' stay unchanged
 // The "consonant + e + x" pattern is detected as English (tex-, nex-, etc.)
+// NOTE: Requires english_auto_restore to be enabled (experimental feature).
 #[test]
 fn foreign_word_text_no_mark() {
     let mut e = Engine::new();
+    e.set_english_auto_restore(true); // Enable experimental feature
     let text_result = type_word(&mut e, "text");
 
     // "text" has consonant 't' before 'e', so Check 4 catches the "tex" pattern
@@ -1084,9 +1089,11 @@ fn foreign_word_text_no_mark() {
 }
 
 /// Auto-restore now handles "expect" - the "xp" pattern (x followed by consonant) is detected.
+/// NOTE: Requires english_auto_restore to be enabled (experimental feature).
 #[test]
 fn foreign_word_expect_no_mark() {
     let mut e = Engine::new();
+    e.set_english_auto_restore(true); // Enable experimental feature
     let expect_result = type_word(&mut e, "expect");
 
     // "expect" starts with 'e', no consonant before - can't distinguish from Vietnamese "ẽ"

@@ -18,7 +18,7 @@
 //! NOT auto-restored. Users should use ESC or raw mode for these.
 
 mod common;
-use common::telex;
+use common::telex_auto_restore;
 use rstest::rstest;
 
 // ============================================================
@@ -84,7 +84,7 @@ const F_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn f_initial_comprehensive() {
-    telex(F_WORDS);
+    telex_auto_restore(F_WORDS);
 }
 
 #[rstest]
@@ -103,7 +103,7 @@ fn f_initial_comprehensive() {
 fn f_initial_vowel_patterns(#[case] initial: &str, #[case] vowel: &str, #[case] expected: &str) {
     let input = format!("{}{} ", initial, vowel);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -127,7 +127,7 @@ const J_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn j_initial_comprehensive() {
-    telex(J_WORDS);
+    telex_auto_restore(J_WORDS);
 }
 
 #[rstest]
@@ -142,7 +142,7 @@ fn j_initial_comprehensive() {
 fn j_initial_vowel_patterns(#[case] initial: &str, #[case] vowel: &str, #[case] expected: &str) {
     let input = format!("{}{} ", initial, vowel);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -160,7 +160,7 @@ const Z_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn z_initial_comprehensive() {
-    telex(Z_WORDS);
+    telex_auto_restore(Z_WORDS);
 }
 
 #[rstest]
@@ -174,7 +174,7 @@ fn z_initial_comprehensive() {
 fn z_initial_vowel_patterns(#[case] initial: &str, #[case] vowel: &str, #[case] expected: &str) {
     let input = format!("{}{} ", initial, vowel);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -229,14 +229,14 @@ const W_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn w_initial_comprehensive() {
-    telex(W_WORDS);
+    telex_auto_restore(W_WORDS);
 }
 
 /// W + single vowel (wa, we, wo) produces valid Vietnamese (ưa, ưe, ươ)
 /// These are NOT auto-restored because they form valid syllables
 #[test]
 fn w_vowel_produces_valid_vietnamese() {
-    telex(&[
+    telex_auto_restore(&[
         ("wa ", "ưa "), // ưa is valid Vietnamese
         ("we ", "ưe "), // ưe is valid Vietnamese (though rare)
         ("wi ", "ưi "), // ưi is valid Vietnamese
@@ -248,7 +248,7 @@ fn w_vowel_produces_valid_vietnamese() {
 /// These are NOT auto-restored because they form valid syllables
 #[test]
 fn w_final_consonant_produces_valid_vietnamese() {
-    telex(&[
+    telex_auto_restore(&[
         ("wng ", "ưng "),  // ưng is valid Vietnamese (w→ư + ng final)
         ("uwng ", "ưng "), // uwng also produces ưng (redundant u)
         ("wn ", "ưn "),    // ưn is valid Vietnamese
@@ -271,7 +271,7 @@ fn w_final_consonant_produces_valid_vietnamese() {
 fn w_consonant_patterns(#[case] initial: &str, #[case] vowel: &str, #[case] expected: &str) {
     let input = format!("{}{} ", initial, vowel);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -438,7 +438,7 @@ const CLUSTER_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn consonant_clusters_comprehensive() {
-    telex(CLUSTER_WORDS);
+    telex_auto_restore(CLUSTER_WORDS);
 }
 
 #[rstest]
@@ -516,7 +516,7 @@ fn consonant_clusters_comprehensive() {
 fn cluster_vowel_patterns(#[case] cluster: &str, #[case] vowel: &str, #[case] expected: &str) {
     let input = format!("{}{} ", cluster, vowel);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -564,7 +564,7 @@ const MODIFIER_CONSONANT_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn modifier_consonant_comprehensive() {
-    telex(MODIFIER_CONSONANT_WORDS);
+    telex_auto_restore(MODIFIER_CONSONANT_WORDS);
 }
 
 #[rstest]
@@ -586,7 +586,7 @@ fn modifier_consonant_comprehensive() {
 fn modifier_consonant_patterns(#[case] prefix: &str, #[case] suffix: &str, #[case] expected: &str) {
     let input = format!("{}{} ", prefix, suffix);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -613,7 +613,7 @@ const EI_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn ei_pattern_comprehensive() {
-    telex(EI_WORDS);
+    telex_auto_restore(EI_WORDS);
 }
 
 // ============================================================
@@ -677,7 +677,7 @@ const ORE_ARE_URE_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn ore_are_ure_ire_comprehensive() {
-    telex(ORE_ARE_URE_WORDS);
+    telex_auto_restore(ORE_ARE_URE_WORDS);
 }
 
 #[rstest]
@@ -698,7 +698,7 @@ fn ore_are_ure_ire_comprehensive() {
 fn vowel_re_patterns(#[case] prefix: &str, #[case] suffix: &str, #[case] expected: &str) {
     let input = format!("{}{} ", prefix, suffix);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -754,7 +754,7 @@ const W_FINAL_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn w_final_comprehensive() {
-    telex(W_FINAL_WORDS);
+    telex_auto_restore(W_FINAL_WORDS);
 }
 
 #[rstest]
@@ -772,7 +772,7 @@ fn w_final_comprehensive() {
 fn w_final_patterns(#[case] prefix: &str, #[case] suffix: &str, #[case] expected: &str) {
     let input = format!("{}{} ", prefix, suffix);
     let output = format!("{} ", expected);
-    telex(&[(&input, &output)]);
+    telex_auto_restore(&[(&input, &output)]);
 }
 
 // ============================================================
@@ -811,7 +811,7 @@ const OU_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn ou_pattern_comprehensive() {
-    telex(OU_WORDS);
+    telex_auto_restore(OU_WORDS);
 }
 
 // ============================================================
@@ -855,7 +855,7 @@ const TECH_WORDS: &[(&str, &str)] = &[
 
 #[test]
 fn tech_terms_comprehensive() {
-    telex(TECH_WORDS);
+    telex_auto_restore(TECH_WORDS);
 }
 
 // ============================================================
@@ -868,7 +868,7 @@ fn tech_terms_comprehensive() {
 /// This test documents the expected behavior.
 #[test]
 fn valid_vietnamese_structure_not_restored() {
-    telex(&[
+    telex_auto_restore(&[
         // -est pattern produces valid Vietnamese with é + t final
         ("test ", "tét "), // tét is valid Vietnamese
         ("best ", "bét "), // bét is valid Vietnamese
@@ -889,7 +889,7 @@ fn valid_vietnamese_structure_not_restored() {
 /// In Vietnamese, W (horn/breve modifier) must follow a vowel, not a consonant
 #[test]
 fn sw_cluster_edge_case() {
-    telex(&[
+    telex_auto_restore(&[
         // "sw" → consonant + W → English pattern → restore
         ("sweet ", "sweet "),   // Restores (consonant+W is English)
         ("swim ", "swim "),     // Restores (consonant+W is English)
@@ -904,7 +904,7 @@ fn sw_cluster_edge_case() {
 /// space-backspace-space cycles without re-transforming
 #[test]
 fn restore_space_backspace_space_cycle() {
-    telex(&[
+    telex_auto_restore(&[
         // "restore" → "rếtore" during typing (s adds sắc to e)
         // space → auto-restore to "restore "
         // backspace → "restore" (delete space, word in buffer)
@@ -923,7 +923,7 @@ fn restore_space_backspace_space_cycle() {
 
 #[test]
 fn punctuation_triggers_restore() {
-    telex(&[
+    telex_auto_restore(&[
         // Comma trigger
         ("text, ", "text, "),
         ("expect, ", "expect, "),
@@ -941,7 +941,7 @@ fn punctuation_triggers_restore() {
 
 #[test]
 fn case_sensitivity_restore() {
-    telex(&[
+    telex_auto_restore(&[
         // Uppercase F initial
         ("Firefox ", "Firefox "),
         ("Facebook ", "Facebook "),
@@ -968,7 +968,7 @@ fn case_sensitivity_restore() {
 
 #[test]
 fn double_mark_english_words() {
-    telex(&[
+    telex_auto_restore(&[
         // Words with double 's' (sắc mark key)
         ("issue ", "issue "),
         ("bass ", "bass "),

@@ -10,7 +10,7 @@
 //! the same Vietnamese output.
 
 mod common;
-use common::telex;
+use common::{telex, telex_auto_restore};
 
 // =============================================================================
 // CORE CONCEPT: Modifier Position Permutations
@@ -344,7 +344,7 @@ fn valid_vietnamese_not_restored() {
 /// English words that should auto-restore
 #[test]
 fn english_words_restored() {
-    telex(&[
+    telex_auto_restore(&[
         ("view ", "view "), // should restore (not vieư)
         ("raw ", "raw "),   // should restore
         ("law ", "law "),   // should restore

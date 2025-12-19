@@ -285,6 +285,20 @@ mod test_utils {
         }
     }
 
+    /// Run Telex test cases with English auto-restore enabled
+    pub fn telex_auto_restore(cases: &[(&str, &str)]) {
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            e.set_english_auto_restore(true);
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[Telex AutoRestore] '{}' → '{}'",
+                input, result
+            );
+        }
+    }
+
     /// Run VNI test cases
     pub fn vni(cases: &[(&str, &str)]) {
         for (input, expected) in cases {

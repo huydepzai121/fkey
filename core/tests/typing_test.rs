@@ -1,7 +1,7 @@
 //! Typing Tests - Real-world typing scenarios, sentences, behaviors
 
 mod common;
-use common::{telex, telex_traditional, vni, vni_traditional};
+use common::{telex, telex_auto_restore, telex_traditional, vni, vni_traditional};
 
 // ============================================================
 // BACKSPACE & CORRECTIONS
@@ -1413,9 +1413,10 @@ fn vni_invalid_breve_diphthong() {
     vni(VNI_INVALID_BREVE_DIPHTHONG);
 }
 
+// NOTE: Requires english_auto_restore to be enabled (experimental feature).
 #[test]
 fn telex_english_aw_words() {
-    telex(TELEX_ENGLISH_AW_WORDS);
+    telex_auto_restore(TELEX_ENGLISH_AW_WORDS);
 }
 
 #[test]
@@ -1442,16 +1443,16 @@ const TELEX_TRADITIONAL_TONE: &[(&str, &str)] = &[
     // ============================================================
     //
     // --- Pattern: oa (traditional: tone on 'o') ---
-    ("osa", "óa"),     // o + s + a → óa (NOT oá)
-    ("ofa", "òa"),     // o + f + a → òa (NOT oà)
-    ("ora", "ỏa"),     // o + r + a → ỏa (NOT oả)
-    ("oxa", "õa"),     // o + x + a → õa (NOT oã)
-    ("oja", "ọa"),     // o + j + a → ọa (NOT oạ)
-    ("hosa", "hóa"),   // h + o + s + a → hóa (NOT hoá)
-    ("hofa", "hòa"),   // h + o + f + a → hòa (NOT hoà)
-    ("xosa", "xóa"),   // x + o + s + a → xóa (NOT xoá) - Issue #64 case
-    ("losa", "lóa"),   // l + o + s + a → lóa (NOT loá)
-    ("tosa", "tóa"),   // t + o + s + a → tóa (NOT toá)
+    ("osa", "óa"),   // o + s + a → óa (NOT oá)
+    ("ofa", "òa"),   // o + f + a → òa (NOT oà)
+    ("ora", "ỏa"),   // o + r + a → ỏa (NOT oả)
+    ("oxa", "õa"),   // o + x + a → õa (NOT oã)
+    ("oja", "ọa"),   // o + j + a → ọa (NOT oạ)
+    ("hosa", "hóa"), // h + o + s + a → hóa (NOT hoá)
+    ("hofa", "hòa"), // h + o + f + a → hòa (NOT hoà)
+    ("xosa", "xóa"), // x + o + s + a → xóa (NOT xoá) - Issue #64 case
+    ("losa", "lóa"), // l + o + s + a → lóa (NOT loá)
+    ("tosa", "tóa"), // t + o + s + a → tóa (NOT toá)
     //
     // --- Pattern: oe (traditional: tone on 'o') ---
     ("ose", "óe"),     // o + s + e → óe (NOT oé)
@@ -1479,9 +1480,9 @@ const TELEX_TRADITIONAL_TONE: &[(&str, &str)] = &[
     // ============================================================
     //
     // --- oa + delayed tone ---
-    ("hoas", "hóa"),   // h + o + a + s → hóa (traditional)
-    ("hoaf", "hòa"),   // h + o + a + f → hòa (traditional)
-    ("xoas", "xóa"),   // x + o + a + s → xóa (traditional)
+    ("hoas", "hóa"), // h + o + a + s → hóa (traditional)
+    ("hoaf", "hòa"), // h + o + a + f → hòa (traditional)
+    ("xoas", "xóa"), // x + o + a + s → xóa (traditional)
     //
     // --- oe + delayed tone ---
     ("khoes", "khóe"), // kh + o + e + s → khóe (traditional)

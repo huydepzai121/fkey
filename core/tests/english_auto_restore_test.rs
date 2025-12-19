@@ -28,7 +28,7 @@
 //! Users should use raw mode (\word) or Esc to restore these manually.
 
 mod common;
-use common::telex;
+use common::telex_auto_restore;
 
 // =============================================================================
 // PATTERN 1: MODIFIER FOLLOWED BY CONSONANT
@@ -37,7 +37,7 @@ use common::telex;
 
 #[test]
 fn pattern1_modifier_then_consonant() {
-    telex(&[
+    telex_auto_restore(&[
         // x + consonant
         ("text ", "text "),
         ("next ", "next "),
@@ -86,7 +86,7 @@ fn pattern1_modifier_then_consonant() {
 
 #[test]
 fn pattern2_ei_vowel_pair() {
-    telex(&[("their ", "their "), ("weird ", "weird ")]);
+    telex_auto_restore(&[("their ", "their "), ("weird ", "weird ")]);
 }
 
 // =============================================================================
@@ -96,7 +96,7 @@ fn pattern2_ei_vowel_pair() {
 
 #[test]
 fn pattern3_ai_with_p_initial() {
-    telex(&[("pair ", "pair ")]);
+    telex_auto_restore(&[("pair ", "pair ")]);
 }
 
 // =============================================================================
@@ -106,7 +106,7 @@ fn pattern3_ai_with_p_initial() {
 
 #[test]
 fn pattern4_vowel_modifier_vowel() {
-    telex(&[("use ", "use "), ("user ", "user ")]);
+    telex_auto_restore(&[("use ", "use "), ("user ", "user ")]);
 }
 
 // =============================================================================
@@ -116,7 +116,7 @@ fn pattern4_vowel_modifier_vowel() {
 
 #[test]
 fn pattern5_w_start_consonant() {
-    telex(&[
+    telex_auto_restore(&[
         // w + consonant
         ("water ", "water "),
         ("winter ", "winter "),
@@ -145,7 +145,7 @@ fn pattern5_w_start_consonant() {
 
 #[test]
 fn pattern5_w_vowel_w() {
-    telex(&[("wow ", "wow ")]);
+    telex_auto_restore(&[("wow ", "wow ")]);
 }
 
 // =============================================================================
@@ -155,7 +155,7 @@ fn pattern5_w_vowel_w() {
 
 #[test]
 fn pattern6_invalid_initial_f() {
-    telex(&[
+    telex_auto_restore(&[
         ("fair ", "fair "),
         ("fall ", "fall "),
         ("false ", "false "),
@@ -225,7 +225,7 @@ fn pattern6_invalid_initial_f() {
 
 #[test]
 fn tech_terms_restore() {
-    telex(&[
+    telex_auto_restore(&[
         // exp- pattern
         ("Express ", "Express "),
         // ext- pattern
@@ -251,7 +251,7 @@ fn tech_terms_restore() {
 #[test]
 fn punctuation_triggers_restore() {
     // Only certain punctuation triggers auto-restore (comma, period)
-    telex(&[("text, ", "text, "), ("expect. ", "expect. ")]);
+    telex_auto_restore(&[("text, ", "text, "), ("expect. ", "expect. ")]);
 }
 
 // =============================================================================
@@ -260,7 +260,7 @@ fn punctuation_triggers_restore() {
 
 #[test]
 fn vietnamese_single_syllable_preserved() {
-    telex(&[
+    telex_auto_restore(&[
         // Single syllable with tones
         ("mas ", "má "), // má (mother)
         ("maf ", "mà "), // mà (but)
@@ -280,7 +280,7 @@ fn vietnamese_single_syllable_preserved() {
 
 #[test]
 fn vietnamese_multi_syllable_preserved() {
-    telex(&[
+    telex_auto_restore(&[
         ("gox ", "gõ "),       // gõ (to type/knock)
         ("tooi ", "tôi "),     // tôi (I)
         ("Vieetj ", "Việt "),  // Việt
@@ -294,7 +294,7 @@ fn vietnamese_multi_syllable_preserved() {
 #[test]
 fn vietnamese_ai_pattern_preserved() {
     // AI pattern with common Vietnamese initials should NOT restore
-    telex(&[
+    telex_auto_restore(&[
         ("mais ", "mái "),     // mái (roof)
         ("cais ", "cái "),     // cái (classifier)
         ("xaif ", "xài "),     // xài (to use - Southern)
@@ -307,7 +307,7 @@ fn vietnamese_ai_pattern_preserved() {
 
 #[test]
 fn vietnamese_complex_words_preserved() {
-    telex(&[
+    telex_auto_restore(&[
         // Words with horn marks (ư, ơ)
         ("nuwowcs ", "nước "),     // nước (water)
         ("dduowngf ", "đường "),   // đường (road)
@@ -330,7 +330,7 @@ fn vietnamese_complex_words_preserved() {
 fn air_stays_vietnamese() {
     // "air" typed becomes "ải" - valid Vietnamese word
     // Should NOT restore because "ải" (border/pass) is a real word
-    telex(&[("air ", "ải ")]);
+    telex_auto_restore(&[("air ", "ải ")]);
 }
 
 // =============================================================================
@@ -344,7 +344,7 @@ fn air_stays_vietnamese() {
 #[test]
 fn words_that_stay_transformed() {
     // These produce valid Vietnamese structures - NOT auto-restored by design
-    telex(&[
+    telex_auto_restore(&[
         ("mix ", "mĩ "), // m + i + x(ngã) → mĩ (valid Vietnamese: "beautiful" in Sino-Vietnamese)
         ("box ", "bõ "), // b + o + x(ngã) → bõ (valid Vietnamese structure)
         ("six ", "sĩ "), // s + i + x(ngã) → sĩ (valid Vietnamese: "scholar/official")
@@ -361,7 +361,7 @@ fn words_that_stay_transformed() {
 
 #[test]
 fn pattern7_vowel_modifier_vowel_with_initial() {
-    telex(&[
+    telex_auto_restore(&[
         ("core ", "core "),
         ("more ", "more "),
         ("care ", "care "),
@@ -382,7 +382,7 @@ fn vietnamese_ua_uo_preserved() {
     // Vietnamese ưa/ươ patterns should NOT restore
     // u + modifier + a → ưa family (cửa, mua, bưa)
     // u + modifier + o → ươ family (được, bước)
-    telex(&[
+    telex_auto_restore(&[
         ("cura ", "của "),      // của (of) - common Vietnamese
         ("muar ", "mủa "),      // mủa (not common but valid structure)
         ("dduwowcj ", "được "), // được (can/get)
@@ -396,7 +396,7 @@ fn vietnamese_ua_uo_preserved() {
 
 #[test]
 fn pattern8_w_as_final() {
-    telex(&[
+    telex_auto_restore(&[
         ("raw ", "raw "),
         ("law ", "law "),
         ("saw ", "saw "),
@@ -411,7 +411,7 @@ fn pattern8_w_as_final() {
 
 #[test]
 fn vietnamese_hoi_with_sonorant_final() {
-    telex(&[
+    telex_auto_restore(&[
         // hỏi (r) + sonorant final (nh) - should stay Vietnamese
         ("nhirnh ", "nhỉnh "), // nhỉnh (a bit)
         ("tirnh ", "tỉnh "),   // tỉnh (province/wake)

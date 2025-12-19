@@ -1,5 +1,5 @@
 mod common;
-use common::{telex, vni};
+use common::{telex_auto_restore, vni};
 
 #[test]
 fn paragraph_telex() {
@@ -25,7 +25,7 @@ fn paragraph_telex() {
     let input = "Tooi ddax thuwr raats nhieeuf booj gox tieengs Vieetj treen macOS nhuwng toanf gawpj bug khos chiuj. Gox treen Chrome thif bij dinhs chuwx \"aaa\" thanhf \"aâ\", gox www thif thanhf \"ưưư\", vaof Claude Code thif lawpj kys tuwj lung tung, conf Google Docs thif cuws maats daaus giuwax chuwngf. Frustrated voo cungf neen tooi quyeets ddinhj tuwj build Gox Nhanh - booj gox handle muwowjt maf ngay car nhuwngx tuwf khos nhuw: giuwowngf, khuyru tay, khuyeens khichs, chuyeenr ddooir, nguyeenj vongj, huyr hoaij, quynhf hoa, khoer khoawns, loaf xoaf, nghieeng ngar. Giowf tooi cos theer thoair mais prompt Claude Code bawngf tieengs Vieetj, soanj proposal hay update report maf khoong stress veef typo nuwax. DDungs nhuw expect, deadline gaaps maf gox sai hoaif thif burnout laf cais chawcs. Legit recommend cho anh em dev, xaif laf ghieenf luoon as! Neeus cos feedback gif thif inbox tooi qua nhatkha1407@gmail.com nha.";
     let expected = "Tôi đã thử rất nhiều bộ gõ tiếng Việt trên macOS nhưng toàn gặp bug khó chịu. Gõ trên Chrome thì bị dính chữ \"aa\" thành \"aâ\", gõ ww thì thành \"ưưư\", vào Claude Code thì lặp ký tự lung tung, còn Google Dóc thì cứ mất dấu giữa chừng. Frustrated vô cùng nên tôi quyết định tự build Gõ Nhanh - bộ gõ handle mượt mà ngay cả những từ khó như: giường, khuỷu tay, khuyến khích, chuyển đổi, nguyện vọng, huỷ hoại, quỳnh hoa, khoẻ khoắn, loà xoà, nghiêng ngả. Giờ tôi có thể thoải mái prompt Claude Code bằng tiếng Việt, soạn proposal hay update report mà không stress về typo nữa. Đúng như expect, deadline gấp mà gõ sai hoài thì burnout là cái chắc. Legit recommend cho anh em dev, xài là ghiền luôn á! Nếu có feedback gì thì inbox tôi qua nhatkha1407@gmail.com nha.";
 
-    telex(&[(input, expected)]);
+    telex_auto_restore(&[(input, expected)]);
 }
 
 #[test]

@@ -157,6 +157,10 @@ pub struct Engine {
     /// When true: oà, uý (tone on second vowel)
     /// When false: òa, úy (tone on first vowel - traditional)
     modern_tone: bool,
+    /// Enable English auto-restore (experimental)
+    /// When true, automatically restores English words that were transformed
+    /// e.g., "tẽt" → "text", "ễpct" → "expect"
+    english_auto_restore: bool,
     /// Word history for backspace-after-space feature
     word_history: WordHistory,
     /// Number of spaces typed after committing a word (for backspace tracking)
@@ -187,7 +191,8 @@ impl Engine {
             skip_w_shortcut: false,
             esc_restore_enabled: false, // Default: OFF (user request)
             free_tone_enabled: false,
-            modern_tone: true, // Default: modern style (hoà, thuý)
+            modern_tone: true,           // Default: modern style (hoà, thuý)
+            english_auto_restore: false, // Default: OFF (experimental feature)
             word_history: WordHistory::new(),
             spaces_after_commit: 0,
             pending_breve_pos: None,
@@ -225,6 +230,11 @@ impl Engine {
     /// Set whether to use modern orthography for tone placement
     pub fn set_modern_tone(&mut self, modern: bool) {
         self.modern_tone = modern;
+    }
+
+    /// Set whether to enable English auto-restore (experimental)
+    pub fn set_english_auto_restore(&mut self, enabled: bool) {
+        self.english_auto_restore = enabled;
     }
 
     pub fn shortcuts(&self) -> &ShortcutTable {
@@ -947,7 +957,8 @@ impl Engine {
             // - But "aw" ending makes it look like English
             // Only restore if buffer has EARLIER transforms (tone or mark)
             // Don't restore for simple "aw" or "raw" - let breve deferral handle those
-            if key == keys::W && self.raw_input.len() >= 2 {
+            // Only run if english_auto_restore is enabled (experimental feature)
+            if self.english_auto_restore && key == keys::W && self.raw_input.len() >= 2 {
                 let (prev_key, _) = self.raw_input[self.raw_input.len() - 2];
                 if prev_key == keys::A {
                     // Check if there are earlier Vietnamese transforms in buffer
@@ -1094,12 +1105,19 @@ impl Engine {
         // This enables "dods" → "đó" while preventing "de" + "d" → "đe"
         let had_delayed_stroke = self.method == 0
             && self.buf.len() >= 2
-            && self.buf.get(0).is_some_and(|c| c.key == keys::D && !c.stroke)
+            && self
+                .buf
+                .get(0)
+                .is_some_and(|c| c.key == keys::D && !c.stroke)
             && self.buf.last().is_some_and(|c| c.key == keys::D)
             && {
                 // Check vowels and validity in one pass
                 let buf_len = self.buf.len();
-                let has_vowel = self.buf.iter().take(buf_len - 1).any(|c| keys::is_vowel(c.key));
+                let has_vowel = self
+                    .buf
+                    .iter()
+                    .take(buf_len - 1)
+                    .any(|c| keys::is_vowel(c.key));
                 has_vowel && {
                     let buffer_without_last: Vec<u16> =
                         self.buf.iter().take(buf_len - 1).map(|c| c.key).collect();
@@ -1639,13 +1657,16 @@ impl Engine {
             // Exception: complete ươ compound + vowel = valid Vietnamese triphthong
             // (like "rượu" = ươu, "mười" = ươi) - don't revert in these cases
             // Only skip for vowels that form valid triphthongs (u, i), not for consonants
-            let is_valid_triphthong_ending =
-                self.has_complete_uo_compound() && (key == keys::U || key == keys::I);
-            if self.has_w_as_vowel_transform() && !is_valid_triphthong_ending {
-                let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-                let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
-                if is_foreign_word_pattern(&buffer_keys, &buffer_tones, key) {
-                    return self.revert_w_as_vowel_transforms();
+            // Only run foreign word detection if english_auto_restore is enabled
+            if self.english_auto_restore {
+                let is_valid_triphthong_ending =
+                    self.has_complete_uo_compound() && (key == keys::U || key == keys::I);
+                if self.has_w_as_vowel_transform() && !is_valid_triphthong_ending {
+                    let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+                    let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
+                    if is_foreign_word_pattern(&buffer_keys, &buffer_tones, key) {
+                        return self.revert_w_as_vowel_transforms();
+                    }
                 }
             }
 
@@ -1658,7 +1679,9 @@ impl Engine {
             //
             // This catches: "tex" + 't' where 'x' modifier before 't' creates English cluster
             // But preserves: "dọ" + 'd' where 'j' modifier before 'd' doesn't indicate English
-            if keys::is_consonant(key) && self.buf.len() >= 2 {
+            //
+            // Only run if english_auto_restore is enabled (experimental feature)
+            if self.english_auto_restore && keys::is_consonant(key) && self.buf.len() >= 2 {
                 // Check if consonant immediately follows a marked character
                 if let Some(prev_char) = self.buf.get(self.buf.len() - 2) {
                     let prev_has_mark = prev_char.mark > 0 || prev_char.tone > 0;
@@ -1854,6 +1877,11 @@ impl Engine {
     /// `is_word_complete`: true when called on space/break (word is complete)
     ///                     false when called mid-word (during typing)
     fn should_auto_restore(&self, is_word_complete: bool) -> Option<Vec<char>> {
+        // Only run auto-restore if the feature is enabled
+        if !self.english_auto_restore {
+            return None;
+        }
+
         if self.raw_input.is_empty() || self.buf.is_empty() {
             return None;
         }
