@@ -1834,12 +1834,42 @@ impl Engine {
                 if has_later_w {
                     return true;
                 }
-                // Check for consonant after W → English like "window"
-                let has_consonant = self.raw_input[1..]
+
+                // Analyze pattern: W + vowels + consonants
+                let vowels_after: Vec<u16> = self.raw_input[1..]
                     .iter()
-                    .any(|(k, _)| keys::is_consonant(*k) && *k != keys::W);
-                if has_consonant {
+                    .filter(|(k, _)| keys::is_vowel(*k) && *k != keys::W)
+                    .map(|(k, _)| *k)
+                    .collect();
+
+                let consonants_after: Vec<u16> = self.raw_input[1..]
+                    .iter()
+                    .filter(|(k, _)| keys::is_consonant(*k) && *k != keys::W)
+                    .map(|(k, _)| *k)
+                    .collect();
+
+                // W + vowel + consonant → likely English like "win", "water"
+                // But W + vowel only → valid Vietnamese (ưa, ưe, ưi, ươ)
+                // And W + consonant only → valid Vietnamese (ưng, ưn, ưm)
+                if !vowels_after.is_empty() && !consonants_after.is_empty() {
+                    // Both vowels and consonants after W → likely English
                     return true;
+                }
+
+                // W + consonants only → check if valid Vietnamese final
+                if !consonants_after.is_empty() && vowels_after.is_empty() {
+                    let is_valid_final = match consonants_after.len() {
+                        1 => constants::VALID_FINALS_1.contains(&consonants_after[0]),
+                        2 => {
+                            let pair = [consonants_after[0], consonants_after[1]];
+                            constants::VALID_FINALS_2.contains(&pair)
+                        }
+                        _ => false, // 3+ consonants is invalid
+                    };
+
+                    if !is_valid_final {
+                        return true;
+                    }
                 }
             }
 

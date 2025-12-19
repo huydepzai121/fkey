@@ -244,6 +244,21 @@ fn w_vowel_produces_valid_vietnamese() {
     ]);
 }
 
+/// W + valid Vietnamese finals (ng, n, m, c, t, p) produces valid Vietnamese
+/// These are NOT auto-restored because they form valid syllables
+#[test]
+fn w_final_consonant_produces_valid_vietnamese() {
+    telex(&[
+        ("wng ", "ưng "),   // ưng is valid Vietnamese (w→ư + ng final)
+        ("uwng ", "ưng "),  // uwng also produces ưng (redundant u)
+        ("wn ", "ưn "),     // ưn is valid Vietnamese
+        ("wm ", "ưm "),     // ưm is valid Vietnamese
+        ("wc ", "ưc "),     // ưc is valid Vietnamese
+        ("wt ", "ưt "),     // ưt is valid Vietnamese
+        ("wp ", "ưp "),     // ưp is valid Vietnamese
+    ]);
+}
+
 /// W + consonant cluster patterns that should restore
 #[rstest]
 #[case("wh", "a", "wha")]
