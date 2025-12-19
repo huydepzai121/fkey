@@ -442,15 +442,17 @@ impl Phonology {
                 let k1 = buffer_keys.get(pos1).copied().unwrap_or(0);
                 let k2 = buffer_keys.get(pos2).copied().unwrap_or(0);
 
-                // Special case: "ua" - check preceding consonant (Q excluded)
+                // Special case: "ua" pattern
+                // - "qua" → Q is part of initial, so target A for breve → "quă"
+                // - "ua" standalone → target U for horn → "ưa"
+                // - "mua", "chua" → target U for horn → "mưa", "chưa"
                 if k1 == keys::U && k2 == keys::A {
-                    let has_non_q_consonant = pos1 > 0
-                        && buffer_keys
-                            .get(pos1 - 1)
-                            .map(|&k| keys::is_consonant(k) && k != keys::Q)
-                            .unwrap_or(false);
+                    let preceded_by_q = pos1 > 0
+                        && buffer_keys.get(pos1 - 1).copied() == Some(keys::Q);
 
-                    result.push(if has_non_q_consonant { pos1 } else { pos2 });
+                    // Only apply breve to A when preceded by Q (qu-initial)
+                    // Otherwise apply horn to U
+                    result.push(if preceded_by_q { pos2 } else { pos1 });
                     return result;
                 }
 
@@ -479,6 +481,14 @@ impl Phonology {
         for &pos in vowel_positions.iter().rev() {
             let k = buffer_keys.get(pos).copied().unwrap_or(0);
             if k == keys::U || k == keys::O {
+                // Check if this creates invalid vowel combination
+                // "oe" pattern: horn on 'o' creates invalid "ơe" - skip this position
+                if k == keys::O {
+                    let next_key = buffer_keys.get(pos + 1).copied();
+                    if next_key == Some(keys::E) {
+                        continue; // Skip - "oe" doesn't accept horn on 'o'
+                    }
+                }
                 result.push(pos);
                 return result;
             }

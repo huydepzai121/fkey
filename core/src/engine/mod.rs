@@ -78,6 +78,9 @@ enum Transform {
     Mark(u16, u8),
     Tone(u16, u8),
     Stroke(u16),
+    /// Short-pattern stroke (d + vowel + d → đ + vowel)
+    /// This is revertible if next character creates invalid Vietnamese
+    ShortPatternStroke,
     /// W as vowel ư (for revert: ww → w)
     WAsVowel,
     /// W shortcut was explicitly skipped (prevent re-transformation)
@@ -404,6 +407,44 @@ impl Engine {
     fn process(&mut self, key: u16, caps: bool, shift: bool) -> Result {
         let m = input::get(self.method);
 
+        // Revert short-pattern stroke when new letter creates invalid Vietnamese
+        // This handles: "ded" → "đe" (stroke applied), then 'e' → "dede" (invalid, revert)
+        // IMPORTANT: This check must happen BEFORE any modifiers (tone, mark, etc.)
+        // because the modifier key (like 'e' for circumflex) would transform the
+        // buffer before we can check validity.
+        //
+        // We check validity using raw_input (not self.buf) because:
+        // - self.buf = [đ, e] after stroke (2 chars)
+        // - raw_input = [d, e, d, e] with new 'e' (4 chars - the actual full input)
+        // Checking [D, E, D, E] correctly identifies "dede" as invalid.
+        //
+        // Skip revert for mark keys (s, f, r, x, j) since they confirm Vietnamese intent.
+        let is_mark_key = m.mark(key).is_some();
+
+        if keys::is_letter(key)
+            && !is_mark_key
+            && matches!(self.last_transform, Some(Transform::ShortPatternStroke))
+        {
+            // Build buffer_keys from raw_input (which already includes current key)
+            let buffer_keys: Vec<u16> = self.raw_input.iter().map(|&(k, _)| k).collect();
+            if !is_valid(&buffer_keys) {
+                // Invalid pattern - revert stroke and rebuild from raw_input
+                if let Some(raw_chars) = self.build_raw_chars() {
+                    // Calculate backspace: screen shows buffer content (e.g., "đe")
+                    let backspace = self.buf.len() as u8;
+
+                    // Rebuild buffer from raw_input (plain chars, no stroke)
+                    self.buf.clear();
+                    for &(k, c) in &self.raw_input {
+                        self.buf.push(Char::new(k, c));
+                    }
+                    self.last_transform = None;
+
+                    return Result::send(backspace, &raw_chars);
+                }
+            }
+        }
+
         // In VNI mode, if Shift is pressed with a number key, skip all modifiers
         // User wants the symbol (@ for Shift+2, # for Shift+3, etc.), not VNI marks
         let skip_vni_modifiers = self.method == 1 && shift && keys::is_number(key);
@@ -566,19 +607,42 @@ impl Engine {
     /// In VNI mode, '9' is always an intentional stroke command (not a letter), so
     /// delayed stroke is allowed (e.g., "duong9" → "đuong").
     fn try_stroke(&mut self, key: u16) -> Option<Result> {
+        // Check for stroke revert first: ddd → dd
+        // If last transform was stroke and same key pressed again, revert the stroke
+        if let Some(Transform::Stroke(last_key)) = self.last_transform {
+            if last_key == key {
+                // Find the stroked 'd' to revert
+                if let Some(pos) = self
+                    .buf
+                    .iter()
+                    .position(|c| c.key == keys::D && c.stroke)
+                {
+                    // Revert: un-stroke the 'd'
+                    if let Some(c) = self.buf.get_mut(pos) {
+                        c.stroke = false;
+                    }
+                    // Add another 'd' as normal char
+                    self.buf.push(Char::new(key, false));
+                    self.last_transform = None;
+                    return Some(self.rebuild_from(pos));
+                }
+            }
+        }
+
         // Collect buffer keys once for all validations
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
         let has_vowel = buffer_keys.iter().any(|&k| keys::is_vowel(k));
 
         // Find position of un-stroked 'd' to apply stroke
-        let pos = if self.method == 0 {
+        // Also track if this is a short pattern stroke (revertible)
+        let (pos, is_short_pattern_stroke) = if self.method == 0 {
             // Telex: First try adjacent 'd' (last char is un-stroked d)
             let last_pos = self.buf.len().checked_sub(1)?;
             let last_char = self.buf.get(last_pos)?;
 
             if last_char.key == keys::D && !last_char.stroke {
-                // Adjacent stroke: "dd" → "đ"
-                last_pos
+                // Adjacent stroke: "dd" → "đ" (not a short pattern)
+                (last_pos, false)
             } else {
                 // Delayed stroke: check if initial 'd' can be stroked
                 // Only allow if: first char is 'd', has vowel, and forms valid Vietnamese
@@ -600,27 +664,37 @@ impl Engine {
                 }
 
                 // For open syllables (d + vowel only), defer stroke to try_mark
-                // UNLESS a mark is already applied (confirms Vietnamese intent)
+                // UNLESS:
+                // - A mark is already applied (confirms Vietnamese intent)
+                // - The triggering key is 'd' AND buffer is short (d + single vowel)
+                //   This allows "did" → "đi", "dod" → "đo", etc.
                 // This prevents "de" + "d" → "đe" while allowing:
                 // - "dods" → "đó" (mark key triggers stroke)
                 // - "dojd" → "đọ" (mark already present, stroke applies immediately)
+                // - "did" → "đi" (d triggers stroke on short open syllable)
                 let syllable = syllable::parse(&buffer_keys);
                 let has_mark_applied = self.buf.iter().any(|c| c.mark > 0);
-                if syllable.final_c.is_empty() && !has_mark_applied {
-                    // Open syllable without mark - defer stroke decision to try_mark
+                // Only allow 'd' to trigger immediate stroke on short patterns (d + 1 vowel = 2 chars)
+                let is_short_d_pattern = key == keys::D && self.buf.len() == 2;
+                if syllable.final_c.is_empty() && !has_mark_applied && !is_short_d_pattern {
+                    // Open syllable without mark, not short d pattern - defer stroke decision
                     return None;
                 }
 
-                0 // Position 0 = initial consonant
+                // Track if this is a short pattern stroke (can be reverted later)
+                // Only revertible if no mark applied - mark confirms Vietnamese intent
+                (0, is_short_d_pattern && !has_mark_applied)
             }
         } else {
             // VNI: Allow delayed stroke - find first un-stroked 'd' anywhere in buffer
             // '9' is always intentional stroke command, not a letter
-            self.buf
+            let pos = self
+                .buf
                 .iter()
                 .enumerate()
                 .find(|(_, c)| c.key == keys::D && !c.stroke)
-                .map(|(i, _)| i)?
+                .map(|(i, _)| i)?;
+            (pos, false) // VNI never uses short pattern stroke
         };
 
         // Check revert: if last transform was stroke on same key at same position
@@ -643,7 +717,12 @@ impl Engine {
             c.stroke = true;
         }
 
-        self.last_transform = Some(Transform::Stroke(key));
+        // Track transform type for potential revert
+        self.last_transform = if is_short_pattern_stroke {
+            Some(Transform::ShortPatternStroke)
+        } else {
+            Some(Transform::Stroke(key))
+        };
         Some(self.rebuild_from(pos))
     }
 
@@ -1567,6 +1646,9 @@ impl Engine {
             let vowel_char = chars::to_char(keys::O, caps, tone::HORN, 0).unwrap();
             return Result::send(0, &[vowel_char]);
         }
+
+        // Note: ShortPatternStroke revert is now handled at the beginning of process()
+        // before any modifiers are applied, so we don't need to check it here.
 
         self.last_transform = None;
         if keys::is_letter(key) {

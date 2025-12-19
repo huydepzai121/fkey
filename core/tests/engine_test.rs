@@ -303,14 +303,14 @@ fn stroke_dd() {
 
 #[test]
 fn stroke_delayed_valid_vietnamese() {
-    // Delayed stroke for OPEN syllables (d + vowel + d) is DEFERRED to mark key
-    // This prevents "de" + "d" → "đe" while still allowing "dods" → "đó"
-    // The pattern d + vowel + d waits for a mark key (s,f,r,x,j) to confirm Vietnamese
+    // When 'd' is typed after "d + vowel", stroke is applied immediately
+    // This allows: "did" → "đi", "dod" → "đo", etc.
+    // The trailing 'd' triggers stroke and is consumed (not added to buffer)
     telex(&[
-        ("dod", "dod"), // Open syllable - stroke deferred, no mark key
-        ("dad", "dad"), // Open syllable - stroke deferred
-        ("did", "did"), // Open syllable - stroke deferred
-        ("dud", "dud"), // Open syllable - stroke deferred
+        ("dod", "đo"), // d triggers stroke: đo
+        ("dad", "đa"), // d triggers stroke: đa
+        ("did", "đi"), // d triggers stroke: đi
+        ("dud", "đu"), // d triggers stroke: đu
     ]);
 
     // Delayed stroke WITH mark key applies both stroke and mark
@@ -366,9 +366,9 @@ fn revert_mark_double_key() {
 
 #[test]
 fn revert_stroke_double_key() {
-    // ddd → đd (đ + d because third d is just added)
-    // Note: This is correct behavior - dd makes đ, third d just adds d
-    telex(&[("ddd", "đd")]);
+    // ddd → dd (third d reverts stroke, returning to raw "dd")
+    // This matches user expectation: if you typed too many d's, you get raw text
+    telex(&[("ddd", "dd")]);
 }
 
 #[test]
