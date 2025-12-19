@@ -425,5 +425,8 @@ fn vietnamese_hoi_with_sonorant_final() {
         // ngã (x) + sonorant final
         ("maxnh ", "mãnh "), // mãnh (fierce)
         ("haxnh ", "hãnh "), // hãnh (proud)
+        // nặng (j) + stop final (c) - should stay Vietnamese
+        ("trwjc ", "trực "), // trực (direct)
+        ("bwjc ", "bực "),   // bực (annoyed)
     ]);
 }

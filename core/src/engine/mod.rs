@@ -1696,7 +1696,9 @@ impl Engine {
             // Counter-example: "dojdc" = D+O+J+D+C (Vietnamese "đọc" - j + consonants is valid)
             if i + 1 < self.raw_input.len() {
                 let (next_key, _) = self.raw_input[i + 1];
-                if keys::is_consonant(next_key) {
+                // W is a vowel modifier in Telex, not a true consonant for this check
+                let is_true_consonant = keys::is_consonant(next_key) && next_key != keys::W;
+                if is_true_consonant {
                     // Heuristic: In Vietnamese, tone modifiers + consonant is common:
                     // - nặng (j) + consonant: học, bọc, bật, cặp, đọc, etc.
                     // - sắc (s) + consonant: bức, đất, ất, etc.
