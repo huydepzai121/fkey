@@ -685,6 +685,17 @@ impl Engine {
                     self.last_transform = None;
                     // Mark that stroke was reverted - subsequent 'd' keys will be normal letters
                     self.stroke_reverted = true;
+                    // Fix raw_input: "ddd" typed → raw has [d,d,d] but buffer is "dd"
+                    // Remove the stroke-triggering 'd' from raw_input so restore works correctly
+                    // raw_input: [d, d, d] → [d, d] (remove middle 'd' that triggered stroke)
+                    // This ensures "didd" → "did" not "didd" on auto-restore
+                    if self.raw_input.len() >= 2 {
+                        let current = self.raw_input.pop(); // current 'd' (just added)
+                        self.raw_input.pop(); // stroke-trigger 'd' (consumed, discard)
+                        if let Some(c) = current {
+                            self.raw_input.push(c);
+                        }
+                    }
                     // Use rebuild_from_after_insert because the new 'd' was just pushed
                     // and hasn't been displayed on screen yet
                     return Some(self.rebuild_from_after_insert(pos));
@@ -708,6 +719,14 @@ impl Engine {
                     self.last_transform = None;
                     // Mark that stroke was reverted - subsequent 'd' keys will be normal letters
                     self.stroke_reverted = true;
+                    // Fix raw_input same as above
+                    if self.raw_input.len() >= 2 {
+                        let current = self.raw_input.pop();
+                        self.raw_input.pop();
+                        if let Some(c) = current {
+                            self.raw_input.push(c);
+                        }
+                    }
                     // Use rebuild_from_after_insert because the new 'd' was just pushed
                     // and hasn't been displayed on screen yet
                     return Some(self.rebuild_from_after_insert(pos));

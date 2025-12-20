@@ -1382,6 +1382,8 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     // oai triphthong - tone always on 'a' (middle vowel)
     ("khoais ", "khoái "), // khoái - tone on a (comfortable, satisfied)
     ("ngoais ", "ngoái "), // ngoái - tone on a (look back)
+    // Stroke revert: "didd" → stroke triggered then reverted → "did" (not "didd")
+    ("didd you", "did you"), // English "did you" with typo
 ];
 
 // ============================================================
