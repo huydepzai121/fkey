@@ -131,6 +131,8 @@ Một số từ tiếng Anh tạo ra cấu trúc **hợp lệ tiếng Việt** n
 - Nhấn **ESC** sau khi gõ để khôi phục
 - Tắt bộ gõ tạm thời (⌘+Space hoặc click menu bar)
 
+---
+
 ## ❤️‍🔥 Động lực
 
 Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
