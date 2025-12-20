@@ -209,13 +209,27 @@ pub extern "C" fn ime_english_auto_restore(enabled: bool) {
 
 /// Clear the input buffer.
 ///
-/// Call on word boundaries (space, punctuation, mouse click, focus change).
+/// Call on word boundaries (space, punctuation).
+/// Preserves word history for backspace-after-space feature.
 /// No-op if engine not initialized.
 #[no_mangle]
 pub extern "C" fn ime_clear() {
     let mut guard = lock_engine();
     if let Some(ref mut e) = *guard {
         e.clear();
+    }
+}
+
+/// Clear everything including word history.
+///
+/// Call when cursor position changes (mouse click, arrow keys, focus change).
+/// This prevents accidental restore from stale history.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_clear_all() {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.clear_all();
     }
 }
 

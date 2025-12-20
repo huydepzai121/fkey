@@ -1937,6 +1937,7 @@ impl Engine {
     }
 
     /// Clear buffer and raw input history
+    /// Note: Does NOT clear word_history to preserve backspace-after-space feature
     pub fn clear(&mut self) {
         self.buf.clear();
         self.raw_input.clear();
@@ -1945,6 +1946,15 @@ impl Engine {
         self.pending_breve_pos = None;
         self.stroke_reverted = false;
         self.had_mark_revert = false;
+    }
+
+    /// Clear everything including word history
+    /// Used when cursor position changes (mouse click, arrow keys, etc.)
+    /// to prevent accidental restore from stale history
+    pub fn clear_all(&mut self) {
+        self.clear();
+        self.word_history.clear();
+        self.spaces_after_commit = 0;
     }
 
     /// Get the full composed buffer as a Vietnamese string with diacritics.
