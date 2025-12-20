@@ -2698,6 +2698,23 @@ impl Engine {
             }
         }
 
+        // Pattern 6: Double vowel (oo, aa, ee) followed by K → English
+        // Vietnamese uses single vowel + breve + K (đắk = aw+k)
+        // English uses double vowel + K (looks, took, book)
+        // This distinguishes "looks" (English) from "đắk" (Vietnamese)
+        if self.raw_input.len() >= 3 {
+            for i in 0..self.raw_input.len() - 2 {
+                let (v1, _, _) = self.raw_input[i];
+                let (v2, _, _) = self.raw_input[i + 1];
+                let (next, _, _) = self.raw_input[i + 2];
+
+                // Check for double vowel (same vowel twice)
+                if keys::is_vowel(v1) && v1 == v2 && next == keys::K {
+                    return true;
+                }
+            }
+        }
+
         false
     }
 

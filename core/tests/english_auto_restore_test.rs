@@ -89,6 +89,11 @@ fn pattern2_ei_vowel_pair() {
     telex_auto_restore(&[("their ", "their "), ("weird ", "weird ")]);
 }
 
+#[test]
+fn pattern2_oo_vowel_pair() {
+    telex_auto_restore(&[("looks ", "looks "), ("took ", "took ")]);
+}
+
 // =============================================================================
 // PATTERN 3: AI VOWEL PAIR + RARE INITIAL (P)
 // P alone (not PH) is rare in native Vietnamese
