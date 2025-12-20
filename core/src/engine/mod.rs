@@ -2231,18 +2231,68 @@ impl Engine {
     }
 
     /// Build raw chars from raw_input for restore
+    ///
+    /// When a mark was reverted (e.g., "ss" → "s"), decide between buffer and raw_input:
+    /// - If after revert there's vowel + consonant pattern → use buffer ("dissable" → "disable")
+    /// - If after revert there's only vowels → use raw_input ("issue" → "issue")
     fn build_raw_chars(&self) -> Option<Vec<char>> {
-        let raw_chars: Vec<char> = self
-            .raw_input
-            .iter()
-            .filter_map(|&(key, caps, shift)| utils::key_to_char_ext(key, caps, shift))
-            .collect();
+        let raw_chars: Vec<char> = if self.had_mark_revert && self.should_use_buffer_for_revert() {
+            // Use buffer content which already has the correct reverted form
+            // e.g., "dissable" typed → buffer has "disable" after revert
+            self.buf.to_string_preserve_case().chars().collect()
+        } else {
+            self.raw_input
+                .iter()
+                .filter_map(|&(key, caps, shift)| utils::key_to_char_ext(key, caps, shift))
+                .collect()
+        };
 
         if raw_chars.is_empty() {
             None
         } else {
             Some(raw_chars)
         }
+    }
+
+    /// Determine if buffer should be used for restore after a mark revert
+    ///
+    /// Heuristic: Use buffer only when it forms a recognizable English word pattern.
+    /// Common patterns that indicate intentional revert (typo correction):
+    /// - Words with common prefixes: dis-, mis-, un-, re-, de-, pre-, etc.
+    /// - Words with common suffixes: -able, -ible, -tion, -ment, etc.
+    ///
+    /// Examples:
+    /// - "dissable" → buffer "disable" has dis- prefix → use buffer
+    /// - "issue" → buffer "isue" has no pattern → use raw_input "issue"
+    /// - "error" → buffer "eror" has no pattern → use raw_input "error"
+    fn should_use_buffer_for_revert(&self) -> bool {
+        let buf_str = self.buf.to_lowercase_string();
+
+        // Common English prefixes that suggest intentional revert
+        const PREFIXES: &[&str] = &[
+            "dis", "mis", "un", "re", "de", "pre", "anti", "non", "sub", "trans",
+        ];
+
+        // Common English suffixes
+        const SUFFIXES: &[&str] = &[
+            "able", "ible", "tion", "sion", "ment", "ness", "less", "ful", "ing", "ive",
+        ];
+
+        // Check if buffer matches common English word patterns
+        // Use >= to include short words like "transit" (7 chars) with "trans" (5 chars)
+        for prefix in PREFIXES {
+            if buf_str.starts_with(prefix) && buf_str.len() >= prefix.len() + 2 {
+                return true;
+            }
+        }
+
+        for suffix in SUFFIXES {
+            if buf_str.ends_with(suffix) && buf_str.len() >= suffix.len() + 2 {
+                return true;
+            }
+        }
+
+        false
     }
 
     /// Check for English patterns in raw_input that suggest non-Vietnamese

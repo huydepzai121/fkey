@@ -447,6 +447,144 @@ fn vietnamese_hoi_with_sonorant_final() {
 }
 
 // =============================================================================
+// PATTERN 9: COMMON ENGLISH PREFIXES WITH MARK REVERT
+// When user types double mark key (ss, ff, rr) to revert, and buffer forms
+// a word with common English prefix/suffix, use buffer instead of raw_input.
+// =============================================================================
+
+#[test]
+fn pattern9_dis_prefix() {
+    // "dis-" prefix: double 's' reverts mark, buffer has valid prefix pattern
+    telex_auto_restore(&[
+        ("disable ", "disable "),   // normal typing
+        ("dissable ", "disable "),  // double 's' reverts → "disable" (dis- prefix)
+        ("disscover ", "discover "),
+        ("dissconnect ", "disconnect "),
+        ("disscuss ", "discuss "),
+        ("disspatch ", "dispatch "),
+        ("disspute ", "dispute "),
+        ("disstance ", "distance "),
+        ("disstinct ", "distinct "),
+        ("disstribute ", "distribute "),
+        ("disstract ", "distract "),
+        ("disstress ", "distress "),
+        ("disstrust ", "distrust "),
+    ]);
+}
+
+#[test]
+fn pattern9_mis_prefix() {
+    // "mis-" prefix: double 's' reverts mark, buffer has valid prefix pattern
+    telex_auto_restore(&[
+        ("misstake ", "mistake "),
+        ("misstrust ", "mistrust "),
+        ("misstype ", "mistype "),
+        ("missplace ", "misplace "),
+        ("misslead ", "mislead "),
+        ("missread ", "misread "),
+        ("missmatch ", "mismatch "),
+    ]);
+}
+
+#[test]
+fn pattern9_trans_prefix() {
+    // "trans-" prefix: double 's' reverts mark
+    telex_auto_restore(&[
+        ("transsfer ", "transfer "),
+        ("transsform ", "transform "),
+        ("transsport ", "transport "),
+        ("transsaction ", "transaction "),
+        ("transsition ", "transition "),
+        ("transsparent ", "transparent "),
+        ("transsit ", "transit "),
+    ]);
+}
+
+#[test]
+fn pattern9_re_prefix() {
+    // "re-" prefix: double 's' (sắc) after 'e' triggers revert
+    // Pattern: re + ss → "rés" → "res" (revert)
+    telex_auto_restore(&[
+        ("ressponse ", "response "),
+        ("ressource ", "resource "),
+        ("ressult ", "result "),
+        ("ressolve ", "resolve "),
+        ("ressearch ", "research "),
+        ("ressume ", "resume "),
+        ("ressist ", "resist "),
+        ("ressort ", "resort "),
+        ("ressign ", "resign "),
+    ]);
+}
+
+#[test]
+fn pattern9_double_mark_no_prefix() {
+    // Words with double mark keys but NO matching prefix/suffix pattern
+    // These should use raw_input (preserve double letter)
+    telex_auto_restore(&[
+        // Double 's' without dis-/mis-/trans- prefix
+        ("issue ", "issue "),
+        ("bass ", "bass "),
+        ("boss ", "boss "),
+        ("class ", "class "),
+        ("cross ", "cross "),
+        ("dress ", "dress "),
+        ("glass ", "glass "),
+        ("grass ", "grass "),
+        ("gross ", "gross "),
+        ("less ", "less "),
+        ("loss ", "loss "),
+        ("mass ", "mass "),
+        ("mess ", "mess "),
+        ("miss ", "miss "),
+        ("pass ", "pass "),
+        ("press ", "press "),
+        ("stress ", "stress "),
+        ("assess ", "assess "),
+        ("possess ", "possess "),
+        ("success ", "success "),
+        ("express ", "express "),
+        ("impress ", "impress "),
+        ("process ", "process "),
+        ("profess ", "profess "),
+        ("progress ", "progress "),
+        // Double 'r' without matching prefix (need vowel before rr)
+        ("error ", "error "),
+        ("mirror ", "mirror "),
+        ("horror ", "horror "),
+        ("terror ", "terror "),
+        ("current ", "current "),
+        ("correct ", "correct "),
+        ("borrow ", "borrow "),
+        ("carry ", "carry "),
+        ("marry ", "marry "),
+        ("sorry ", "sorry "),
+        ("worry ", "worry "),
+    ]);
+}
+
+#[test]
+fn pattern9_double_f_words() {
+    // Double 'f' (huyền mark) - need vowel before ff for revert to happen
+    telex_auto_restore(&[
+        ("staff ", "staff "),
+        ("stuff ", "stuff "),
+        ("cliff ", "cliff "),
+        ("stiff ", "stiff "),
+        ("effect ", "effect "),
+        ("effort ", "effort "),
+        ("offer ", "offer "),
+        ("suffer ", "suffer "),
+        ("differ ", "differ "),
+        ("buffer ", "buffer "),
+        ("affair ", "affair "),
+        ("affair ", "affair "),
+        ("afford ", "afford "),
+        ("offend ", "offend "),
+    ]);
+}
+
+// =============================================================================
 // ETHNIC MINORITY LANGUAGE PLACE NAMES (ISSUE #134)
 // Đắk Lắk, Đắk Nông should stay Vietnamese - NOT auto-restored
 // =============================================================================
