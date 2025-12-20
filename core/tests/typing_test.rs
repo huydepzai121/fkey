@@ -1379,6 +1379,9 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     // qu + ao + huyền - mark position flexibility
     ("quaof ", "quào "), // quào - mark typed after vowels
     ("quafo ", "quào "), // quào - mark typed between vowels (same result)
+    // oai triphthong - tone always on 'a' (middle vowel)
+    ("khoais ", "khoái "), // khoái - tone on a (comfortable, satisfied)
+    ("ngoais ", "ngoái "), // ngoái - tone on a (look back)
 ];
 
 // ============================================================
