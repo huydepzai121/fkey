@@ -18,10 +18,17 @@ let configPath = "/tmp/gonhanh_config.txt"
 var typeDelay: UInt32 = 50000  // 50ms between keys
 
 func typeKey(_ char: Character) {
-    guard let keycode = keycodes[char] else { return }
+    let isUppercase = char.isUppercase
+    let lowerChar = Character(char.lowercased())
+    guard let keycode = keycodes[lowerChar] else { return }
     guard let source = CGEventSource(stateID: .combinedSessionState) else { return }
+
     if let down = CGEvent(keyboardEventSource: source, virtualKey: keycode, keyDown: true),
        let up = CGEvent(keyboardEventSource: source, virtualKey: keycode, keyDown: false) {
+        if isUppercase {
+            down.flags = .maskShift
+            up.flags = .maskShift
+        }
         down.post(tap: .cghidEventTap)
         usleep(5000)
         up.post(tap: .cghidEventTap)
@@ -30,7 +37,7 @@ func typeKey(_ char: Character) {
 }
 
 func typeString(_ str: String) {
-    for char in str.lowercased() {
+    for char in str {
         typeKey(char)
     }
 }
@@ -62,10 +69,10 @@ func setConfig(_ config: String) {
 
 // Short paragraph mixing English and Vietnamese for auto-restore testing
 // Telex input: Vietnamese words use telex (dduwowcj = được, tieengs = tiếng, etc.)
-let testParagraph = "Tooi ddang test auto restore vowis cacs tuwd tieengs Anh nhuw text, expect, perfect, window, with, their, luxury, tesla, wow, file, fix. Neeus hoatj ddoongj ddungs thif seex khoonng bij loix. I expect this text file to be perfect. Mowrf window leenf xem their luxury tesla, wow thatj ddepj. Please fix this issue with the system. Tooi thaays nos hoatj ddoongj raats toots."
+let testParagraph = "Chafo cacs banfj, tooi ddang test chuwsc nawng auto restore tuwd tieengs Anh treen Gox Nhanh. I expect this text file to work perfectly without any issues. Their luxury Tesla looks stunning with the new window tint, wow. I sincerely express my thanks for your wonderful support with this software."
 
 // Expected output: Vietnamese converted, English preserved
-let expectedOutput = "Tôi đang test auto restore với các từ tiếng Anh như text, expect, perfect, window, with, their, luxury, tesla, wow, file, fix. Nếu hoạt động đúng thì sẽ không bị lỗi. I expect this text file to be perfect. Mở window lên xem their luxury tesla, wow thật đẹp. Please fix this issue with the system. Tôi thấy nó hoạt động rất tốt."
+let expectedOutput = "Chào các bạn, tôi đang test chức năng auto restore từ tiếng Anh trên Gõ Nhanh. I expect this text file to work perfectly without any issues. Their luxury Tesla looks stunning with the new window tint, wow. I sincerely express my thanks for your wonderful support with this software."
 
 func runTest() {
     print("")
@@ -80,7 +87,7 @@ func runTest() {
 
     print(" Đang gõ (delay: \(typeDelay/1000)ms)...")
 
-    for char in testParagraph.lowercased() {
+    for char in testParagraph {
         typeKey(char)
     }
 
