@@ -2043,6 +2043,47 @@ impl Engine {
         // Note: ShortPatternStroke revert is now handled at the beginning of process()
         // before any modifiers are applied, so we don't need to check it here.
 
+        // Telex: Revert delayed circumflex when same vowel is typed again
+        // Pattern: After "data" → "dât" (delayed circumflex), typing 'a' again should revert to "data"
+        // Buffer ends with: vowel-with-circumflex + non-extending-final (t, m, p)
+        // Typed key matches the base of the circumflex vowel (a→â, e→ê, o→ô)
+        if self.method == 0 && matches!(key, keys::A | keys::E | keys::O) && self.buf.len() >= 2 {
+            let last_idx = self.buf.len() - 1;
+            let vowel_idx = self.buf.len() - 2;
+
+            // Check if last char is a non-extending final consonant
+            let last_is_non_extending = self
+                .buf
+                .get(last_idx)
+                .is_some_and(|c| matches!(c.key, keys::T | keys::M | keys::P));
+
+            // Check if second-to-last has circumflex and matches typed vowel
+            let should_revert = last_is_non_extending
+                && self.buf.get(vowel_idx).is_some_and(|c| {
+                    c.tone == tone::CIRCUMFLEX
+                        && c.key == key
+                        && matches!(c.key, keys::A | keys::E | keys::O)
+                });
+
+            if should_revert {
+                // Remove circumflex from the vowel
+                if let Some(c) = self.buf.get_mut(vowel_idx) {
+                    c.tone = tone::NONE;
+                }
+                // Reset vowel-triggered circumflex flag since we're reverting
+                self.had_vowel_triggered_circumflex = false;
+
+                // Add the typed vowel to buffer (the one that triggered revert)
+                // "dataa" flow: "dât" (3 chars) → revert â → "dat" → add 'a' → "data" (4 chars)
+                self.buf.push(Char::new(key, caps));
+
+                // Rebuild from vowel position using after_insert (new char not yet on screen)
+                // Screen has: "dât" (3 chars), buffer now has: "data" (4 chars)
+                // Need to delete "ât" (2 chars) and output "ata" (3 chars) → screen becomes "data"
+                return self.rebuild_from_after_insert(vowel_idx);
+            }
+        }
+
         self.last_transform = None;
         // Add letters to buffer, and numbers in VNI mode (for pass-through after revert)
         // This ensures buffer.len() stays in sync with screen chars for correct backspace count

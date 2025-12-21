@@ -553,10 +553,13 @@ fn delayed_circumflex_vowel_trigger() {
     // Delayed circumflex triggered by second matching vowel
     // Pattern: V + C + V (same vowel) → circumflex on first V, remove trigger
     telex(&[
-        ("toto", "tôt"), // tôt - second 'o' triggers circumflex
-        ("noto", "nôt"), // nôt - second 'o' triggers circumflex
-        ("data", "dât"), // dât - second 'a' triggers circumflex
-        ("hete", "hêt"), // hêt - second 'e' triggers circumflex
+        ("toto", "tôt"),   // tôt - second 'o' triggers circumflex
+        ("noto", "nôt"),   // nôt - second 'o' triggers circumflex
+        ("data", "dât"),   // dât - second 'a' triggers circumflex
+        ("dataa", "data"), // data - third 'a' reverts circumflex (â→a)
+        ("hete", "hêt"),   // hêt - second 'e' triggers circumflex
+        ("tetee", "tete"), // tete - third 'e' reverts circumflex (ê→e)
+        ("cocoo", "coco"), // coco - third 'o' reverts circumflex (ô→o)
     ]);
 }
 
@@ -587,10 +590,13 @@ fn delayed_circumflex_auto_restore_space() {
     use gonhanh_core::utils::type_word;
 
     let cases = [
-        ("toto ", "toto "), // No mark → restore
-        ("data ", "data "), // No mark → restore
-        ("noto ", "noto "), // No mark → restore
-        ("hete ", "hete "), // No mark → restore
+        ("toto ", "toto "),  // No mark → restore
+        ("data ", "data "),  // No mark → restore
+        ("dataa ", "data "), // Revert: dataa → data (no restore needed, already plain)
+        ("noto ", "noto "),  // No mark → restore
+        ("hete ", "hete "),  // No mark → restore
+        ("tetee ", "tete "), // Revert: tetee → tete (no restore needed)
+        ("cocoo ", "coco "), // Revert: cocoo → coco (no restore needed)
     ];
 
     for (input, expected) in cases {
