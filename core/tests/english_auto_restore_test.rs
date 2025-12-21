@@ -108,6 +108,7 @@ fn pattern2_aa_vowel_pair() {
         // Valid Vietnamese triphthongs - should NOT be restored
         ("ngueeuf ", "nguều "), // ng+u+ê+u with huyền → valid Vietnamese (ee for ê)
         ("ngoafo ", "ngoào "),  // ng+o+à+o - ôa is invalid, so 'o' appends raw
+        ("ngoejo ", "ngoẹo "),  // ng+o+ẹ+o - oeo triphthong with nặng → valid Vietnamese
     ]);
 }
 
@@ -178,12 +179,35 @@ fn pattern5_double_w_at_start() {
 
 #[test]
 fn pattern_double_vowel_after_tone() {
-    // When invalid Vietnamese has tone + double vowel at end,
-    // restore with tone kept but double vowel not collapsed
-    // Example: "tafoo" = t + à (huyền) + oo → restore to "tàoo" (keep tone, keep 'oo')
+    // When a vowel has a mark (huyền/sắc/etc.) and user types double DIFFERENT vowel,
+    // circumflex should NOT be applied. This prevents invalid diphthongs like "ồa", "âi", etc.
+    // Example: "tafoo" = t + à (huyền on 'a') + oo → skip circumflex → "tàoo"
     telex_auto_restore(&[
-        ("tafoo ", "tàoo "), // t + à + oo → invalid structure → restore with tone
-        ("mufaa ", "mùaa "), // m + ù + aa → invalid structure → restore with tone
+        // huyền (f) + different double vowel
+        ("tafoo ", "tàoo "), // t + à + oo → 'a' has mark, 'o' different → skip circumflex
+        ("tefoo ", "tèoo "), // t + è + oo → 'e' has mark, 'o' different → skip circumflex
+        ("tofaa ", "tòaa "), // t + ò + aa → 'o' has mark, 'a' different → skip circumflex
+        ("tofee ", "tòee "), // t + ò + ee → 'o' has mark, 'e' different → skip circumflex
+        ("tifaa ", "tìaa "), // t + ì + aa → 'i' has mark, 'a' different → skip circumflex
+        ("mufaa ", "mùaa "), // m + ù + aa → 'u' has mark, 'a' different → skip circumflex
+        // sắc (s) + different double vowel
+        ("tasoo ", "táoo "), // t + á + oo → 'a' has mark, 'o' different → skip circumflex
+        ("tesaa ", "téaa "), // t + é + aa → 'e' has mark, 'a' different → skip circumflex
+    ]);
+}
+
+#[test]
+fn pattern_risk_words() {
+    // Words ending with -isk/-usk pattern - should auto-restore
+    telex_auto_restore(&[
+        ("risk ", "risk "),
+        ("disk ", "disk "),
+        ("task ", "task "),
+        ("mask ", "mask "),
+        ("desk ", "desk "),
+        ("dusk ", "dusk "),
+        ("tusk ", "tusk "),
+        ("husk ", "husk "),
     ]);
 }
 

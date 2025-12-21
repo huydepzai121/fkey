@@ -958,23 +958,23 @@ impl Engine {
                         return None;
                     }
 
-                    // Check if applying circumflex would create an invalid diphthong
-                    // Example: "ngoà" + "o" → would create "ồa" which is invalid
-                    // Valid O diphthongs: oa, oă, oe, oi, ôi, ơi - but NOT "ôa"
-                    if key == keys::O {
-                        // Find the target O and check what vowel comes after it
-                        for (i, c) in self.buf.iter().enumerate().rev() {
-                            if c.key == keys::O && c.tone == tone::NONE {
-                                // Check if there's an 'a' after this 'o' (with or without mark)
-                                if let Some(next) = self.buf.get(i + 1) {
-                                    if next.key == keys::A {
-                                        // "oa" + circumflex on 'o' would create "ôa" - invalid!
-                                        return None;
-                                    }
-                                }
-                                break;
-                            }
-                        }
+                    // Check if any DIFFERENT vowel has a mark (sắc/huyền/hỏi/ngã/nặng)
+                    // If so, applying circumflex to this vowel would create invalid diphthong
+                    // Examples:
+                    // - "tà" + "oo" → 'a' has mark, 'o' is different → skip → "tàoo"
+                    // - "tì" + "aa" → 'i' has mark, 'a' is different → skip → "tìaa"
+                    // - "ngoà" + "o" → 'a' has mark, 'o' is different → skip → "ngoào"
+                    // But allow same-vowel:
+                    // - "đén" + "e" → 'e' has mark, key is 'e' (same) → allow → "đến"
+                    let has_different_vowel_with_mark = self
+                        .buf
+                        .iter()
+                        .filter(|c| keys::is_vowel(c.key))
+                        .any(|c| c.has_mark() && c.key != key);
+
+                    if has_different_vowel_with_mark {
+                        // Skip circumflex, let the vowel append as raw letter
+                        return None;
                     }
                 }
 
@@ -2984,6 +2984,70 @@ impl Engine {
 
             if is_consonant_0 && is_vowel_1 && is_tone_2 && is_circumflex_vowel_34 {
                 return true;
+            }
+        }
+
+        // Pattern 8: tone_modifier + K at end → English (risk, disk, task, mask)
+        // K as final is only valid in Vietnamese with breve vowels (Đắk Lắk ethnic minority words)
+        // or other ethnic minority patterns like "Búk"
+        // Example: "risk" = r + i + s + k → should restore to "risk" (s NOT consumed)
+        // Counter-example: "đắk" = dd + aw + k → "đắk" (breve 'ắ', valid Vietnamese)
+        // Counter-example: "Busk" = B + u + s + k → "Búk" (s consumed as sắc, valid Vietnamese)
+        if self.raw_input.len() >= 4 {
+            let (last, _, _) = self.raw_input[self.raw_input.len() - 1];
+            if last == keys::K {
+                let (second_last, _, _) = self.raw_input[self.raw_input.len() - 2];
+                let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+                // Check if second_last is a tone modifier (s, f, r, x, j)
+                if tone_modifiers.contains(&second_last) {
+                    // Key insight: if modifier was consumed (applied to vowel),
+                    // buf.len() < raw_input.len() → Vietnamese
+                    // If modifier was NOT consumed (stayed as letter),
+                    // buf.len() == raw_input.len() → English
+                    // Example: "Busk" → "Búk" (4 chars → 3 chars, s consumed)
+                    // Example: "risk" → "rík" (4 chars → 3 chars, s consumed)
+                    // Both have s consumed, so we need another check...
+
+                    // Vietnamese ethnic minority words have breve: ắ, ẳ, ẵ (from 'aw')
+                    // Check if there's a 'w' in raw_input before the modifier (indicating breve)
+                    let has_breve_marker = self.raw_input[..self.raw_input.len() - 2]
+                        .iter()
+                        .any(|(k, _, _)| *k == keys::W);
+
+                    // Also check for common English -Vsk patterns where V is i, a, e, o, u
+                    // but NOT ethnic minority patterns
+                    // The key difference: ethnic minority words are usually short (3-4 letters)
+                    // and have specific structures. English -sk words often have more consonants.
+                    let (third_last, _, _) = self.raw_input[self.raw_input.len() - 3];
+                    let is_isk_ask_pattern = keys::is_vowel(third_last)
+                        && second_last == keys::S
+                        && !has_breve_marker
+                        && self.raw_input.len() >= 4;
+
+                    // Only restore if it's a common English -Vsk pattern (V+s+k)
+                    // AND there's no breve marker (aw pattern)
+                    // AND word has at least one consonant before the vowel (like r-i-s-k, d-i-s-k)
+                    if is_isk_ask_pattern {
+                        // Check if there's a consonant initial before the vowel
+                        let has_consonant_before_vowel =
+                            self.raw_input.len() >= 4 && keys::is_consonant(self.raw_input[0].0);
+
+                        // For short words (4 chars like "risk", "disk", "task"),
+                        // only restore if initial is a common English consonant pattern
+                        if has_consonant_before_vowel {
+                            // Skip restore for ethnic minority initials that commonly use K final
+                            // B, L are common in Vietnamese ethnic minority words (Búk, Lắk)
+                            // Note: Đắk uses DD (double D) for Đ, not single D
+                            // So D initial (disk, desk, dusk) should restore as English
+                            let (first, _, _) = self.raw_input[0];
+                            let is_ethnic_initial = first == keys::B || first == keys::L;
+
+                            if !is_ethnic_initial {
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
         }
 
