@@ -718,7 +718,23 @@ INVALID PATTERNS - Cho Bộ gõ:
 └── TRƯỜNG HỢP ĐẶC BIỆT:
     ├── "p" đầu từ thuần Việt: rất hiếm
     ├── "qu" không theo "u": qa, qe, qi (luôn phải là qu+nguyên âm)
-    └── Nguyên âm ba chỉ giới hạn: iêu, yêu, ươi, ươu, uôi, oai, oay, oeo, uây, uyê
+    └── Nguyên âm ba: iêu, yêu, ươi, ươu, uôi, oai, oay, oeo, uây, uyê, uya, uyu, uêu, oao
+
+INVALID DIPHTHONGS - Nguyên âm đôi không hợp lệ:
+│
+├── KHÔNG CÓ CIRCUMFLEX:
+│   ├── ôa (chỉ có oa) - "ngoafo" phải cho "ngoào" không phải "ngồa"
+│   ├── âi (chỉ có ai, ay)
+│   └── ôe (chỉ có oe)
+│
+├── KHI ĐÃ CÓ DẤU THANH:
+│   ├── V1 có dấu + V2 khác → KHÔNG áp circumflex cho V2
+│   ├── Ví dụ: "tà" + "oo" → "tàoo" (không phải "tàô")
+│   ├── Ví dụ: "tò" + "aa" → "tòaa" (không phải "tòâ")
+│   └── Ví dụ: "mù" + "aa" → "mùaa" (không phải "mùâ")
+│
+└── NGOẠI LỆ CÙNG NGUYÊN ÂM:
+    └── "đé" + "e" → "đến" (same vowel, cho phép circumflex)
 ```
 
 #### 6.5.6 Bảng Tham chiếu Nhanh cho Validation
@@ -882,7 +898,7 @@ Dấu phụ (circumflex ^, horn, breve ˘) được định nghĩa trong cột *
 | 28 | ưu | U+U | u₁→ư (ʼ) | **ứ**u | **ừ**u | **ử**u | **ữ**u | **ự**u |
 | 29 | yê | Y+E | e→ê (^) | y**ế** | y**ề** | y**ể** | y**ễ** | y**ệ** |
 
-**B. Nguyên âm ba (Triphthongs) - 11 patterns**
+**B. Nguyên âm ba (Triphthongs) - 14 patterns**
 
 | # | Pattern | Keys | Modifier | sắc | huyền | hỏi | ngã | nặng |
 |--:|---------|------|----------|-----|-------|-----|-----|------|
@@ -897,8 +913,16 @@ Dấu phụ (circumflex ^, horn, breve ˘) được định nghĩa trong cột *
 | 38 | ươi | U+O+I | u→ư, o→ơ (ʼʼ) | ư**ớ**i | ư**ờ**i | ư**ở**i | ư**ỡ**i | ư**ợ**i |
 | 39 | ươu | U+O+U | u₁→ư, o→ơ (ʼʼ) | ư**ớ**u | ư**ờ**u | ư**ở**u | ư**ỡ**u | ư**ợ**u |
 | 40 | uyê | U+Y+E | e→ê (^) | uy**ế** | uy**ề** | uy**ể** | uy**ễ** | uy**ệ** |
+| 41 | uyu | U+Y+U | - | u**ý**u | u**ỳ**u | u**ỷ**u | u**ỹ**u | u**ỵ**u |
+| 42 | uêu | U+E+U | e→ê (^) | u**ế**u | u**ề**u | u**ể**u | u**ễ**u | u**ệ**u |
+| 43 | oao | O+A+O | - | o**á**o | o**à**o | o**ả**o | o**ã**o | o**ạ**o |
 
 > **Note**: Bold (**x**) = nguyên âm nhận dấu thanh. Pattern 19 (ua sau q) có vị trí dấu khác pattern 18.
+>
+> **Added 2025-12**: Patterns 41-43 cho các từ đặc biệt:
+> - **uyu** (#41): khuỷu (khuỷu tay - elbow)
+> - **uêu** (#42): nguều (nguều ngoào - tangled/messy)
+> - **oao** (#43): ngoào (nguều ngoào)
 
 #### 7.6.2 Validation & Placement Rules
 
