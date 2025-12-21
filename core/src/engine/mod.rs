@@ -3153,7 +3153,11 @@ impl Engine {
                         let is_vietnamese_pattern = match prev_vowel {
                             k if k == keys::U => next_key == keys::A || next_key == keys::O,
                             k if k == keys::A => {
-                                next_key == keys::I || next_key == keys::Y || next_key == keys::O
+                                // au: màu, náu, cau, lau, etc.
+                                next_key == keys::I
+                                    || next_key == keys::Y
+                                    || next_key == keys::O
+                                    || next_key == keys::U
                             }
                             k if k == keys::O => next_key == keys::I || next_key == keys::A,
                             k if k == keys::E => next_key == keys::O, // eo: đeo, kẹo, mèo
