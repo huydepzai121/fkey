@@ -66,8 +66,16 @@ pub const EQUAL: u16 = 24;
 pub const BACKQUOTE: u16 = 50;
 
 /// Check if key breaks word (space, punctuation, arrows, etc.)
+/// When shift=true, also treat number keys as break (they produce !@#$%^&*())
 pub fn is_break(key: u16) -> bool {
-    matches!(
+    is_break_ext(key, false)
+}
+
+/// Extended break check with shift parameter
+/// Shift+number keys produce symbols like @, !, #, etc. which are break chars
+pub fn is_break_ext(key: u16, shift: bool) -> bool {
+    // Standard break keys
+    let standard_break = matches!(
         key,
         SPACE
             | TAB
@@ -89,7 +97,12 @@ pub fn is_break(key: u16) -> bool {
             | MINUS
             | EQUAL
             | BACKQUOTE
-    )
+    );
+
+    // Shifted number keys produce symbols: !@#$%^&*()
+    let shifted_number = shift && matches!(key, N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N0);
+
+    standard_break || shifted_number
 }
 
 /// Check if key is a vowel (a, e, i, o, u, y)

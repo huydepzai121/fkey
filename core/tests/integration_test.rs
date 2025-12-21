@@ -28,6 +28,25 @@ fn re_enable_engine_works() {
     assert_eq!(result, "á");
 }
 
+#[test]
+fn disabled_engine_ignores_auto_restore() {
+    // When engine is disabled (e.g., macOS input source is Telex),
+    // auto-restore should NOT work - all keys should pass through
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    e.set_enabled(false);
+
+    // Even with auto-restore enabled, disabled engine returns None
+    for key in [keys::T, keys::O, keys::T, keys::O, keys::SPACE] {
+        let r = e.on_key(key, false, false);
+        assert_eq!(
+            r.action,
+            Action::None as u8,
+            "Disabled engine should pass through"
+        );
+    }
+}
+
 // ============================================================
 // CTRL/CMD: Modifier key handling
 // ============================================================

@@ -386,7 +386,8 @@ impl Engine {
 
         // Other break keys (punctuation, arrows, etc.)
         // Also trigger auto-restore for invalid Vietnamese before clearing
-        if keys::is_break(key) {
+        // Use is_break_ext to handle shifted symbols like @, !, #, etc.
+        if keys::is_break_ext(key, shift) {
             let restore_result = self.try_auto_restore_on_break();
             self.clear();
             self.word_history.clear();
