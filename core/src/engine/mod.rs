@@ -2363,6 +2363,81 @@ impl Engine {
                 chars.remove(pos);
             }
 
+            // Collapse double 'w' at start to single 'w'
+            // Example: "wwax" → "wax" (double 'w' is Telex revert pattern)
+            if chars.len() >= 2
+                && chars[0].to_ascii_lowercase() == 'w'
+                && chars[1].to_ascii_lowercase() == 'w'
+            {
+                chars.remove(0);
+            }
+
+            // Partial restore: tone + double vowel at end
+            // Pattern: C + V + tone_modifier + V + V (same vowel)
+            // Example: "tafoo" = t + a + f + o + o → restore to "tàoo"
+            // - Keep the tone on first vowel (from 'f' = huyền)
+            // - Keep double vowel at end (not collapsed to circumflex)
+            if chars.len() == 5 && self.method == 0 {
+                // Telex only
+                let c0 = chars[0].to_ascii_lowercase();
+                let c1 = chars[1].to_ascii_lowercase();
+                let c2 = chars[2].to_ascii_lowercase();
+                let c3 = chars[3].to_ascii_lowercase();
+                let c4 = chars[4].to_ascii_lowercase();
+
+                // Check pattern: consonant + vowel + tone_modifier + vowel + vowel (same)
+                let is_consonant_0 =
+                    !matches!(c0, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+                let is_vowel_1 = matches!(c1, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+                let is_tone_2 = matches!(c2, 's' | 'f' | 'r' | 'x' | 'j');
+                let is_circumflex_vowel_34 =
+                    matches!(c3, 'a' | 'e' | 'o') && c3 == c4;
+
+                if is_consonant_0 && is_vowel_1 && is_tone_2 && is_circumflex_vowel_34 {
+                    // Build: C + (V with tone) + V + V
+                    let toned_vowel = match (c1, c2) {
+                        ('a', 's') => 'á',
+                        ('a', 'f') => 'à',
+                        ('a', 'r') => 'ả',
+                        ('a', 'x') => 'ã',
+                        ('a', 'j') => 'ạ',
+                        ('e', 's') => 'é',
+                        ('e', 'f') => 'è',
+                        ('e', 'r') => 'ẻ',
+                        ('e', 'x') => 'ẽ',
+                        ('e', 'j') => 'ẹ',
+                        ('i', 's') => 'í',
+                        ('i', 'f') => 'ì',
+                        ('i', 'r') => 'ỉ',
+                        ('i', 'x') => 'ĩ',
+                        ('i', 'j') => 'ị',
+                        ('o', 's') => 'ó',
+                        ('o', 'f') => 'ò',
+                        ('o', 'r') => 'ỏ',
+                        ('o', 'x') => 'õ',
+                        ('o', 'j') => 'ọ',
+                        ('u', 's') => 'ú',
+                        ('u', 'f') => 'ù',
+                        ('u', 'r') => 'ủ',
+                        ('u', 'x') => 'ũ',
+                        ('u', 'j') => 'ụ',
+                        ('y', 's') => 'ý',
+                        ('y', 'f') => 'ỳ',
+                        ('y', 'r') => 'ỷ',
+                        ('y', 'x') => 'ỹ',
+                        ('y', 'j') => 'ỵ',
+                        _ => c1,
+                    };
+                    // Preserve case
+                    let toned_vowel = if chars[1].is_uppercase() {
+                        toned_vowel.to_uppercase().next().unwrap_or(toned_vowel)
+                    } else {
+                        toned_vowel
+                    };
+                    return Some(vec![chars[0], toned_vowel, chars[3], chars[4]]);
+                }
+            }
+
             chars
         };
 
@@ -2866,6 +2941,28 @@ impl Engine {
             let (third, _, _) = self.raw_input[2];
             // Only S + A + X (not other vowels)
             if first == keys::S && second == keys::A && third == keys::X {
+                return true;
+            }
+        }
+
+        // Pattern 7: C + V + tone_modifier + double_vowel → partial English restore
+        // Example: "tafoo" = t + a + f + o + o → restore to "tàoo"
+        // Example: "mufaa" = m + u + f + a + a → restore to "mùaa"
+        // This pattern detects when someone types like "tattoo" with Vietnamese tone
+        if self.raw_input.len() == 5 {
+            let (c0, _, _) = self.raw_input[0];
+            let (c1, _, _) = self.raw_input[1];
+            let (c2, _, _) = self.raw_input[2];
+            let (c3, _, _) = self.raw_input[3];
+            let (c4, _, _) = self.raw_input[4];
+
+            let is_consonant_0 = keys::is_consonant(c0);
+            let is_vowel_1 = keys::is_vowel(c1);
+            let is_tone_2 = matches!(c2, keys::S | keys::F | keys::R | keys::X | keys::J);
+            let is_circumflex_vowel_34 =
+                matches!(c3, keys::A | keys::E | keys::O) && c3 == c4;
+
+            if is_consonant_0 && is_vowel_1 && is_tone_2 && is_circumflex_vowel_34 {
                 return true;
             }
         }

@@ -102,6 +102,9 @@ fn pattern2_aa_vowel_pair() {
         ("saaas ", "saas "),  // s+a+a+a+s → third 'a' reverts circumflex → "saas"
         ("sax ", "sax "),     // s+a+x → "sã" invalid word → restore "sax"
         ("saax ", "sax "),    // s+a+a+x → "sẫ" invalid → restore to buffer "sax"
+        // Triple 'o' with consonant
+        ("xooong ", "xoong "), // x+o+o+o+ng → triple 'o' collapses to double
+        ("booong ", "boong "), // b+o+o+o+ng → triple 'o' collapses to double
     ]);
 }
 
@@ -162,6 +165,23 @@ fn pattern5_w_start_consonant() {
 #[test]
 fn pattern5_w_vowel_w() {
     telex_auto_restore(&[("wow ", "wow ")]);
+}
+
+#[test]
+fn pattern5_double_w_at_start() {
+    // Double 'w' at start should collapse to single 'w' when restoring
+    telex_auto_restore(&[("wwax ", "wax ")]);
+}
+
+#[test]
+fn pattern_double_vowel_after_tone() {
+    // When invalid Vietnamese has tone + double vowel at end,
+    // restore with tone kept but double vowel not collapsed
+    // Example: "tafoo" = t + à (huyền) + oo → restore to "tàoo" (keep tone, keep 'oo')
+    telex_auto_restore(&[
+        ("tafoo ", "tàoo "), // t + à + oo → invalid structure → restore with tone
+        ("mufaa ", "mùaa "), // m + ù + aa → invalid structure → restore with tone
+    ]);
 }
 
 // =============================================================================
