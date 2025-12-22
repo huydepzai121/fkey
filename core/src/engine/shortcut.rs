@@ -309,7 +309,8 @@ impl ShortcutTable {
             TriggerCondition::Immediate => {
                 let output = self.apply_case(buffer, &shortcut.replacement, shortcut.case_mode);
                 Some(ShortcutMatch {
-                    backspace_count: trigger.len(),
+                    // Use char count, not byte length (UTF-8 chars like đ are multi-byte)
+                    backspace_count: trigger.chars().count(),
                     output,
                     include_trigger_key: false,
                 })
@@ -323,7 +324,8 @@ impl ShortcutTable {
                         output.push(ch);
                     }
                     Some(ShortcutMatch {
-                        backspace_count: trigger.len(),
+                        // Use char count, not byte length (UTF-8 chars like đ are multi-byte)
+                        backspace_count: trigger.chars().count(),
                         output,
                         include_trigger_key: true,
                     })

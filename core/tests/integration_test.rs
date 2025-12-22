@@ -2633,3 +2633,168 @@ fn shortcut_with_hash_prefix_fnv() {
     );
     assert_eq!(r.backspace, 4, "backspace = trigger.len() = 4");
 }
+
+/// Issue #107: Regular shortcut "đc" -> "được" should have correct backspace count
+/// User types "ddc" (3 keys) but screen shows "đc" (2 chars)
+/// Shortcut trigger is "đc" (2 chars) so backspace should be 2
+#[test]
+fn shortcut_vietnamese_dc_duoc() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.shortcuts_mut().add(Shortcut::new("đc", "được"));
+
+    // Type "đc" using Telex: d + d + c
+    e.on_key(keys::D, false, false); // d
+    e.on_key(keys::D, false, false); // dd -> đ
+    e.on_key(keys::C, false, false); // đc
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8, "shortcut 'đc' should trigger");
+    // Screen shows "đc" = 2 chars, so backspace should be 2
+    assert_eq!(
+        r.backspace, 2,
+        "backspace should be 2 (screen chars), not 3 (keys typed)"
+    );
+    let chars: String = (0..r.count as usize)
+        .map(|i| char::from_u32(r.chars[i]).unwrap_or('?'))
+        .collect();
+    assert_eq!(chars, "được ");
+}
+
+/// Shortcut with circumflex: "ân" (2 chars, â=2 bytes) -> backspace=2
+#[test]
+fn shortcut_backspace_circumflex() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ân", "ân cần"));
+
+    // Type "ân": a + a + n
+    e.on_key(keys::A, false, false);
+    e.on_key(keys::A, false, false); // aa -> â
+    e.on_key(keys::N, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 2, "ân = 2 chars");
+}
+
+/// Shortcut with horn: "ư" (1 char, 2 bytes) -> backspace=1
+#[test]
+fn shortcut_backspace_horn_single() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ư", "ừ"));
+
+    // Type "ư": u + w
+    e.on_key(keys::U, false, false);
+    e.on_key(keys::W, false, false); // uw -> ư
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 1, "ư = 1 char");
+}
+
+/// Shortcut with multiple Vietnamese chars: "đây" (3 chars) -> backspace=3
+#[test]
+fn shortcut_backspace_multiple_viet_chars() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("đây", "đây là"));
+
+    // Type "đây": d + d + a + a + y
+    e.on_key(keys::D, false, false);
+    e.on_key(keys::D, false, false); // đ
+    e.on_key(keys::A, false, false);
+    e.on_key(keys::A, false, false); // â
+    e.on_key(keys::Y, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 3, "đây = 3 chars");
+}
+
+/// Shortcut pure ASCII trigger: "vn" -> "Việt Nam"
+#[test]
+fn shortcut_backspace_ascii_trigger() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("vn", "Việt Nam"));
+
+    e.on_key(keys::V, false, false);
+    e.on_key(keys::N, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 2, "vn = 2 ASCII chars");
+}
+
+/// Shortcut with complex horn: "ươc" (2 chars: ươ + c)
+#[test]
+fn shortcut_backspace_complex_horn() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ươc", "ước mơ"));
+
+    // Type "ươc": u + o + w + c
+    e.on_key(keys::U, false, false);
+    e.on_key(keys::O, false, false);
+    e.on_key(keys::W, false, false); // uo -> ươ
+    e.on_key(keys::C, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 3, "ươc = 3 chars (ư + ơ + c)");
+}
+
+/// Shortcut "#abcd" with hash prefix: 5 chars -> backspace=5
+/// Note: avoid "test" because 's' is Telex modifier (sắc)
+#[test]
+fn shortcut_backspace_hash_prefix_longer() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("#abcd", "alphabet"));
+
+    e.on_key_ext(keys::N3, false, false, true); // #
+    e.on_key(keys::A, false, false);
+    e.on_key(keys::B, false, false);
+    e.on_key(keys::C, false, false);
+    e.on_key(keys::D, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 5, "#abcd = 5 chars");
+}
+
+/// Shortcut "@vn" with at prefix + Vietnamese output
+#[test]
+fn shortcut_backspace_at_prefix() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("@vn", "Việt Nam"));
+
+    e.on_key_ext(keys::N2, false, false, true); // @
+    e.on_key(keys::V, false, false);
+    e.on_key(keys::N, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 3, "@vn = 3 chars");
+}
+
+/// Shortcut with mark (sắc): "án" trigger (2 chars)
+/// Note: "án" = a + s + n in Telex (mark then consonant, no revert)
+#[test]
+fn shortcut_backspace_with_mark() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("án", "ấy nhé"));
+
+    // Type "án": a + s + n
+    e.on_key(keys::A, false, false);
+    e.on_key(keys::S, false, false); // á
+    e.on_key(keys::N, false, false); // án
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8);
+    assert_eq!(r.backspace, 2, "án = 2 chars");
+}
