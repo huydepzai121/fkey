@@ -1396,6 +1396,9 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     ("waf ", "ừa "),    // ừa - Vietnamese (ư + huyền + a)
     ("was ", "ứa "),    // ứa - Vietnamese (ư + sắc + a)
     ("waj ", "ựa "),    // ựa - Vietnamese (ư + nặng + a)
+    // nghiệp/hiệp patterns - valid Vietnamese, NOT restored
+    ("nghieepj ", "nghiệp "), // nghiệp - occupation/karma
+    ("hieepj ", "hiệp "),     // hiệp - united/round
     // au diphthong with delayed tone
     ("mauf ", "màu "), // m + a + u + f → màu (delayed huyền tone on 'a')
     ("mafu ", "màu "), // m + a + f + u → màu (tone between vowels)

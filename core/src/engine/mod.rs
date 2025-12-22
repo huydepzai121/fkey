@@ -135,6 +135,24 @@ impl WordHistory {
     }
 }
 
+/// Convert shifted number key to its symbol character
+/// Shift+1 → !, Shift+2 → @, Shift+3 → #, etc.
+fn shifted_number_to_symbol(key: u16) -> Option<char> {
+    match key {
+        keys::N1 => Some('!'),
+        keys::N2 => Some('@'),
+        keys::N3 => Some('#'),
+        keys::N4 => Some('$'),
+        keys::N5 => Some('%'),
+        keys::N6 => Some('^'),
+        keys::N7 => Some('&'),
+        keys::N8 => Some('*'),
+        keys::N9 => Some('('),
+        keys::N0 => Some(')'),
+        _ => None,
+    }
+}
+
 /// Main Vietnamese IME engine
 pub struct Engine {
     buf: Buffer,
@@ -198,6 +216,10 @@ pub struct Engine {
     /// Example: "toto" → "tôt" (second 'o' triggers circumflex on first 'o')
     /// Used for auto-restore: if no mark follows, restore on space (e.g., "toto " → "toto ")
     had_vowel_triggered_circumflex: bool,
+    /// Issue #107: Special character prefix for shortcut matching
+    /// When a shifted symbol (like #, @, $) is typed first, store it here
+    /// so shortcuts like "#fne" can match even though # is normally a break char
+    shortcut_prefix: Option<char>,
 }
 
 impl Default for Engine {
@@ -230,6 +252,7 @@ impl Engine {
             pending_mark_revert_pop: false,
             had_any_transform: false,
             had_vowel_triggered_circumflex: false,
+            shortcut_prefix: None,
         }
     }
 
@@ -388,6 +411,16 @@ impl Engine {
         // Also trigger auto-restore for invalid Vietnamese before clearing
         // Use is_break_ext to handle shifted symbols like @, !, #, etc.
         if keys::is_break_ext(key, shift) {
+            // Issue #107: If buffer is empty and it's a shifted symbol (like #, @, $),
+            // store it as shortcut_prefix for shortcut matching instead of treating as break.
+            // This allows shortcuts like "#fne" to work.
+            if self.buf.is_empty() && shift && keys::is_number(key) {
+                if let Some(symbol) = shifted_number_to_symbol(key) {
+                    self.shortcut_prefix = Some(symbol);
+                    return Result::none(); // Let the symbol pass through
+                }
+            }
+
             let restore_result = self.try_auto_restore_on_break();
             self.clear();
             self.word_history.clear();
@@ -568,26 +601,39 @@ impl Engine {
 
     /// Try word boundary shortcuts (triggered by space, punctuation, etc.)
     fn try_word_boundary_shortcut(&mut self) -> Result {
-        if self.buf.is_empty() {
+        // Issue #107: Allow shortcuts with special char prefix (like "#fne")
+        // If shortcut_prefix is set, we still try to match even with empty buffer
+        if self.buf.is_empty() && self.shortcut_prefix.is_none() {
             return Result::none();
         }
 
-        // Don't trigger shortcut if word has non-letter prefix
-        // e.g., "149k" should NOT match shortcut "k"
+        // Don't trigger shortcut if word has non-letter prefix (like "149k")
+        // But DO allow shortcut_prefix (like "#fne") - that's intentional
         if self.has_non_letter_prefix {
             return Result::none();
         }
 
-        let buffer_str = self.buf.to_full_string();
+        // Build full trigger string including shortcut_prefix if present
+        let full_trigger = match self.shortcut_prefix {
+            Some(prefix) => format!("{}{}", prefix, self.buf.to_full_string()),
+            None => self.buf.to_full_string(),
+        };
+
         let input_method = self.current_input_method();
 
         // Check for word boundary shortcut match
         if let Some(m) =
             self.shortcuts
-                .try_match_for_method(&buffer_str, Some(' '), true, input_method)
+                .try_match_for_method(&full_trigger, Some(' '), true, input_method)
         {
             let output: Vec<char> = m.output.chars().collect();
-            return Result::send(m.backspace_count as u8, &output);
+            // If shortcut_prefix was used, we need to backspace it too (+1)
+            let backspace = if self.shortcut_prefix.is_some() {
+                m.backspace_count as u8 + 1
+            } else {
+                m.backspace_count as u8
+            };
+            return Result::send(backspace, &output);
         }
 
         Result::none()
@@ -878,6 +924,7 @@ impl Engine {
         // Validate buffer structure (not vowel patterns - those are checked after transform)
         // Skip validation if free_tone mode is enabled
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+
         if !self.free_tone_enabled && !is_valid_for_transform(&buffer_keys) {
             return None;
         }
@@ -2235,6 +2282,7 @@ impl Engine {
                 // Check if consonant immediately follows a marked character
                 if let Some(prev_char) = self.buf.get(self.buf.len() - 2) {
                     let prev_has_mark = prev_char.mark > 0 || prev_char.tone > 0;
+
                     if prev_has_mark && self.has_english_modifier_pattern(false) {
                         // Clear English pattern detected - restore to raw
                         if let Some(raw_chars) = self.build_raw_chars() {
@@ -2408,6 +2456,7 @@ impl Engine {
         self.pending_mark_revert_pop = false;
         self.had_any_transform = false;
         self.had_vowel_triggered_circumflex = false;
+        self.shortcut_prefix = None;
     }
 
     /// Clear everything including word history
@@ -3236,6 +3285,7 @@ impl Engine {
 
         // Pattern 6a: Double E (ee) followed by P at END → English (keep, deep, sleep, seep)
         // Only EE+P, not AA+P or OO+P which can be valid Vietnamese (cấp = caaps)
+        // Exception: I+EE+P is Vietnamese "iệp" pattern (nghiệp, hiệp, kiệp, v.v.)
         if self.raw_input.len() >= 3 {
             let len = self.raw_input.len();
             let (last, _, _) = self.raw_input[len - 1];
@@ -3244,7 +3294,19 @@ impl Engine {
                 let (v2, _, _) = self.raw_input[len - 2];
                 // Only match EE (not AA or OO)
                 if v1 == keys::E && v2 == keys::E {
-                    return true;
+                    // Exception: I+EE+P is Vietnamese "iệp" (nghiệp, hiệp, kiệp)
+                    // Check if there's an I before the double E
+                    if len >= 4 {
+                        let (before_ee, _, _) = self.raw_input[len - 4];
+                        if before_ee == keys::I {
+                            // This is Vietnamese "iêp" pattern, don't restore
+                            // Continue to check other patterns
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        return true;
+                    }
                 }
             }
         }

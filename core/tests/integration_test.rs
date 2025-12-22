@@ -2578,3 +2578,54 @@ fn test_debug_rieneg() {
 
     println!("Final: '{}'", screen);
 }
+
+/// Issue #107: Shortcut with special character prefix should work
+/// "#fne" should expand to its replacement when followed by space
+#[test]
+fn shortcut_with_hash_prefix() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.shortcuts_mut()
+        .add(Shortcut::new("#fne", "for next episode"));
+
+    // Type "#fne" + SPACE
+    // # is Shift+3 (keycode N3 with shift=true)
+    e.on_key_ext(keys::N3, false, false, true); // # (Shift+3)
+    e.on_key(keys::F, false, false);
+    e.on_key(keys::N, false, false);
+    e.on_key(keys::E, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    // Should trigger shortcut
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "shortcut '#fne' should trigger"
+    );
+    let chars: String = (0..r.count as usize)
+        .map(|i| char::from_u32(r.chars[i]).unwrap_or('?'))
+        .collect();
+    assert_eq!(chars, "for next episode ");
+}
+
+/// Issue #107: Same test but with "#fnv" shortcut
+#[test]
+fn shortcut_with_hash_prefix_fnv() {
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+    e.shortcuts_mut()
+        .add(Shortcut::new("#fnv", "for next version"));
+
+    // Type "#fnv" + SPACE
+    e.on_key_ext(keys::N3, false, false, true); // # (Shift+3)
+    e.on_key(keys::F, false, false);
+    e.on_key(keys::N, false, false);
+    e.on_key(keys::V, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "shortcut '#fnv' should trigger"
+    );
+}

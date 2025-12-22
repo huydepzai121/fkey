@@ -335,6 +335,9 @@ const TELEX_WORDS: &[(&str, &str)] = &[
     ("tieengs", "tiếng"),
     ("bieenr", "biển"),
     ("ddieeuf", "điều"),
+    // nghiệp pattern (ngh + iê + p)
+    ("nghieepj", "nghiệp"),
+    ("hieepj", "hiệp"),
     // Compound uô
     ("muoons", "muốn"),
     ("cuoocj", "cuộc"),
