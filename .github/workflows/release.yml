@@ -8,6 +8,12 @@ on:
 permissions:
   contents: write
 
+env:
+  # Apple Developer Configuration
+  # These will be empty if secrets are not set (fallback to ad-hoc signing)
+  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -16,16 +22,51 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
 
-      - name: Build
+      # ============================================================
+      # APPLE DEVELOPER CERTIFICATE SETUP
+      # ============================================================
+      - name: Install Apple Developer Certificate
+        if: ${{ env.APPLE_SIGNING_IDENTITY != '' }}
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ github.run_id }}
         run: |
-          # Rust core (universal binary)
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # Decode certificate from base64
+          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify certificate
+          echo "Installed certificates:"
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
+      # ============================================================
+      # BUILD
+      # ============================================================
+      - name: Build Rust Core (Universal Binary)
+        run: |
           cd core
           cargo build --release --target aarch64-apple-darwin
           cargo build --release --target x86_64-apple-darwin
@@ -34,12 +75,94 @@ jobs:
             target/x86_64-apple-darwin/release/libgonhanh_core.a \
             -output ../platforms/macos/libgonhanh_core.a
 
-          # macOS app
-          cd ../platforms/macos
-          xcodebuild -scheme GoNhanh -configuration Release \
-            -derivedDataPath build CODE_SIGN_IDENTITY="-"
+      - name: Build macOS App
+        env:
+          CODE_SIGN_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY || '-' }}
+          DEVELOPMENT_TEAM: ${{ env.APPLE_TEAM_ID }}
+        run: |
+          cd platforms/macos
 
-      - name: Package
+          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "Building with Developer ID signing..."
+            xcodebuild -scheme GoNhanh -configuration Release \
+              -derivedDataPath build \
+              CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+              DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+              CODE_SIGN_STYLE="Manual" \
+              OTHER_CODE_SIGN_FLAGS="--options=runtime"
+          else
+            echo "Building with ad-hoc signing (no Apple Developer secrets configured)..."
+            xcodebuild -scheme GoNhanh -configuration Release \
+              -derivedDataPath build \
+              CODE_SIGN_IDENTITY="-"
+          fi
+
+      # ============================================================
+      # CODE SIGNING & NOTARIZATION
+      # ============================================================
+      - name: Sign App with Entitlements
+        env:
+          CODE_SIGN_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY || '-' }}
+        run: |
+          cd platforms/macos
+          APP="build/Build/Products/Release/GoNhanh.app"
+
+          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "Signing with Developer ID and hardened runtime..."
+            codesign --force --deep --sign "$CODE_SIGN_IDENTITY" \
+              --entitlements GoNhanh.entitlements.production \
+              --options runtime \
+              --timestamp \
+              "$APP"
+          else
+            echo "Signing with ad-hoc identity..."
+            codesign --force --deep --sign - \
+              --entitlements GoNhanh.entitlements \
+              "$APP"
+          fi
+
+          # Verify signature
+          echo "Verifying signature..."
+          codesign -vvv --deep --strict "$APP"
+          echo "Signature verified successfully!"
+
+      - name: Notarize App
+        if: ${{ env.APPLE_SIGNING_IDENTITY != '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cd platforms/macos
+          APP="build/Build/Products/Release/GoNhanh.app"
+          V="${GITHUB_REF_NAME#v}"
+
+          echo "Creating ZIP for notarization..."
+          ditto -c -k --keepParent "$APP" "GoNhanh-notarize.zip"
+
+          echo "Submitting to Apple for notarization..."
+          xcrun notarytool submit "GoNhanh-notarize.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait \
+            --timeout 30m
+
+          echo "Stapling notarization ticket to app..."
+          xcrun stapler staple "$APP"
+
+          echo "Verifying notarization..."
+          spctl -a -vvv -t install "$APP"
+
+          # Cleanup
+          rm -f "GoNhanh-notarize.zip"
+
+          echo "Notarization completed successfully!"
+
+      # ============================================================
+      # PACKAGE & RELEASE
+      # ============================================================
+      - name: Set Version in App
         run: |
           cd platforms/macos
           V="${GITHUB_REF_NAME#v}"
@@ -48,24 +171,22 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
 
-          # Create beautiful DMG with custom layout
+      - name: Create DMG
+        run: |
+          cd platforms/macos
+          APP="build/Build/Products/Release/GoNhanh.app"
           ../../scripts/create-dmg.sh "$APP"
 
-      - name: Get tag message
+      - name: Get Tag Message
         id: tag_message
         run: |
-          # Fetch tag with annotation
           git fetch origin tag ${{ github.ref_name }} --force
-
-          # Get message from annotated tag
           TAG_MSG=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
 
-          # Debug
           echo "=== Tag message ==="
           echo "$TAG_MSG"
           echo "==================="
 
-          # Output for next step
           {
             echo "message<<EOF"
             echo "$TAG_MSG"
@@ -78,6 +199,14 @@ jobs:
           files: platforms/macos/build/*.dmg
           body: ${{ steps.tag_message.outputs.message }}
           generate_release_notes: ${{ steps.tag_message.outputs.message == '' }}
+
+      # ============================================================
+      # CLEANUP
+      # ============================================================
+      - name: Cleanup Keychain
+        if: ${{ always() && env.APPLE_SIGNING_IDENTITY != '' }}
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
 
   build-linux:
     if: false  # Temporarily disabled
