@@ -35,6 +35,8 @@ brew tap khaphanspace/gonhanh
 brew install --cask gonhanh
 ```
 
+> **Cập nhật:** App tự động kiểm tra phiên bản mới mỗi 24h. Hoặc dùng `brew reinstall gonhanh` (app sẽ tự tắt → cập nhật → khởi động lại).
+
 ### 📦 Tải thủ công
 
 | Nền tảng | Trạng thái | Tải xuống | Hướng dẫn |
