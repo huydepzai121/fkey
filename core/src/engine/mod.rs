@@ -1373,18 +1373,25 @@ impl Engine {
                     // Check if adding this vowel would create a valid triphthong
                     // If so, skip circumflex and let the vowel append raw
                     // Example: "oe" + "o" → [O, E, O] = "oeo" triphthong → skip circumflex
-                    let vowels: Vec<u16> = self
-                        .buf
-                        .iter()
-                        .filter(|c| keys::is_vowel(c.key))
-                        .map(|c| c.key)
-                        .collect();
+                    // BUT: Only check this if the last char in buffer is a vowel
+                    // If there's a consonant at the end (e.g., "boem"), then same-vowel
+                    // trigger applies instead of triphthong building
+                    let last_is_vowel = self.buf.last().is_some_and(|c| keys::is_vowel(c.key));
 
-                    if vowels.len() == 2 {
-                        let potential_triphthong = [vowels[0], vowels[1], key];
-                        if constants::VALID_TRIPHTHONGS.contains(&potential_triphthong) {
-                            // This would create a valid triphthong, skip circumflex
-                            return None;
+                    if last_is_vowel {
+                        let vowels: Vec<u16> = self
+                            .buf
+                            .iter()
+                            .filter(|c| keys::is_vowel(c.key))
+                            .map(|c| c.key)
+                            .collect();
+
+                        if vowels.len() == 2 {
+                            let potential_triphthong = [vowels[0], vowels[1], key];
+                            if constants::VALID_TRIPHTHONGS.contains(&potential_triphthong) {
+                                // This would create a valid triphthong, skip circumflex
+                                return None;
+                            }
                         }
                     }
                 }
@@ -1472,18 +1479,29 @@ impl Engine {
                                     // Invalid final consonants → skip
                                     continue;
                                 } else {
-                                    // Single consonant final - need diphthong or double initial
-                                    // Check if there's another vowel adjacent to target (diphthong)
-                                    let has_adjacent_vowel = (i > 0
-                                        && self
-                                            .buf
-                                            .get(i - 1)
-                                            .is_some_and(|ch| keys::is_vowel(ch.key)))
-                                        || (i + 1 < self.buf.len()
-                                            && self
-                                                .buf
-                                                .get(i + 1)
-                                                .is_some_and(|ch| keys::is_vowel(ch.key)));
+                                    // Single consonant final - need VALID diphthong or double initial
+                                    // Check if there's another vowel adjacent to target that forms
+                                    // a VALID Vietnamese diphthong (in correct order)
+                                    // Example: "coup" + "o" → "ou" is NOT valid diphthong → block
+                                    // Example: "daup" + "a" → "au" IS valid diphthong → allow
+                                    // Note: diphthong order matters: [V1, V2] not [V2, V1]
+                                    let target_key = self.buf.get(i).map(|c| c.key).unwrap_or(0);
+                                    // Adjacent BEFORE: [adjacent, target] order
+                                    let adjacent_before = i > 0
+                                        && self.buf.get(i - 1).is_some_and(|ch| {
+                                            keys::is_vowel(ch.key)
+                                                && constants::VALID_DIPHTHONGS
+                                                    .contains(&[ch.key, target_key])
+                                        });
+                                    // Adjacent AFTER: [target, adjacent] order
+                                    let adjacent_after = i + 1 < self.buf.len()
+                                        && self.buf.get(i + 1).is_some_and(|ch| {
+                                            keys::is_vowel(ch.key)
+                                                && constants::VALID_DIPHTHONGS
+                                                    .contains(&[target_key, ch.key])
+                                        });
+                                    let has_valid_adjacent_diphthong =
+                                        adjacent_before || adjacent_after;
 
                                     // Check for Vietnamese-specific double initial (nh, ch, th, ph, etc.)
                                     // This allows "nhana" → "nhân" (nh + a + n + a)
@@ -1534,11 +1552,14 @@ impl Engine {
                                         );
 
                                     // Allow circumflex if any of these conditions are true:
-                                    // 1. Has adjacent vowel (diphthong pattern)
+                                    // 1. Has adjacent vowel forming VALID diphthong (au, oi, etc.)
+                                    //    BUT NOT if final is non-extending (t,m,p) - diphthong+t/m/p rarely valid
                                     // 2. Has Vietnamese double initial (nh, th, ph, etc.)
                                     // 3. Same-vowel trigger with middle consonant that can extend (n,c)
                                     // 4. Initial has stroke (đ) - clearly Vietnamese
-                                    let allow_circumflex = has_adjacent_vowel
+                                    let diphthong_allows =
+                                        has_valid_adjacent_diphthong && !is_non_extending_final;
+                                    let allow_circumflex = diphthong_allows
                                         || has_vietnamese_double_initial
                                         || (is_same_vowel_trigger && middle_can_extend)
                                         || initial_has_stroke;
@@ -1549,11 +1570,30 @@ impl Engine {
                                     // Auto-restore on space will revert if invalid (e.g., "data " → "data ")
                                     // Only apply if target has NO mark - if it has a mark (like ngã from 'x'),
                                     // the user is building a different pattern (like "expect" → ẽ-p-e-c-t)
+                                    // Also block if adjacent vowel forms INVALID diphthong
+                                    // Example: "coupo" → [O, U] invalid → don't apply circumflex
                                     let target_has_no_mark =
                                         self.buf.get(i).is_some_and(|c| c.mark == 0);
+                                    // Check if target has ANY adjacent vowel
+                                    // Diphthong + non-extending final (t,m,p) is rarely valid Vietnamese
+                                    // Examples: "âup", "oem", "aum" are all invalid syllables
+                                    let has_adjacent_vowel_before = i > 0
+                                        && self
+                                            .buf
+                                            .get(i - 1)
+                                            .is_some_and(|ch| keys::is_vowel(ch.key));
+                                    let has_adjacent_vowel_after = i + 1 < self.buf.len()
+                                        && self
+                                            .buf
+                                            .get(i + 1)
+                                            .is_some_and(|ch| keys::is_vowel(ch.key));
+                                    let has_any_adjacent_vowel =
+                                        has_adjacent_vowel_before || has_adjacent_vowel_after;
+                                    // Block if: has adjacent vowel (diphthong pattern) with non-extending final
                                     if is_same_vowel_trigger
                                         && is_non_extending_final
                                         && target_has_no_mark
+                                        && !has_any_adjacent_vowel
                                     {
                                         // Apply circumflex to first vowel
                                         if let Some(c) = self.buf.get_mut(i) {
@@ -3005,6 +3045,34 @@ impl Engine {
             }
         }
 
+        // Check 5: Same modifier doubled + vowel = Telex revert pattern
+        // When user typed double modifier to revert unwanted Vietnamese transform,
+        // the resulting buffer might be valid VN but user intended English.
+        // Example: "arro" → user wanted "aro", typed 'rr' to cancel hỏi
+        // Only apply to short buffers (<=3 chars) to avoid false positives on words
+        // like "issue" (buffer "isue" = 4 chars) or "worry" (buffer "wory" = 4 chars)
+        // For no-initial patterns: V + modifier + modifier + V → buf = 3 chars
+        if is_word_complete
+            && self.had_mark_revert
+            && self.buf.len() <= 3
+            && raw_input_valid_en
+            && !has_stroke
+        {
+            let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+            let has_same_modifier_doubled_vowel =
+                (0..self.raw_input.len().saturating_sub(2)).any(|i| {
+                    let (key, _, _) = self.raw_input[i];
+                    let (next_key, _, _) = self.raw_input[i + 1];
+                    let (after_key, _, _) = self.raw_input[i + 2];
+                    tone_modifiers.contains(&key)
+                        && key == next_key // Same modifier doubled (rr, ss, ff)
+                        && keys::is_vowel(after_key)
+                });
+            if has_same_modifier_doubled_vowel {
+                return self.build_raw_chars();
+            }
+        }
+
         // Buffer is valid Vietnamese AND no English patterns → KEEP
         None
     }
@@ -3223,6 +3291,33 @@ impl Engine {
                 && chars[1].eq_ignore_ascii_case(&'w')
             {
                 chars.remove(0);
+            }
+
+            // Collapse consecutive double tone modifiers when mark was reverted
+            // AND one of these conditions:
+            // 1. Short buffer (<=3 chars) - user just wanted a diphthong
+            //    Example: "arro" → "aro" (buffer="aro" = 3 chars, collapse double 'r')
+            // 2. Word starts with "u + ss" - very rare in English (no words start "uss")
+            //    Example: "ussers" → "users" (u+ss is revert artifact, not intentional)
+            // Counter-example: "issue" → "issue" (i+ss is common: issue, mission, etc.)
+            // Counter-example: "worry" → "worry" (consonant start, different pattern)
+            let starts_with_u_double_s = chars.len() >= 3
+                && chars[0].eq_ignore_ascii_case(&'u')
+                && chars[1].eq_ignore_ascii_case(&'s')
+                && chars[2].eq_ignore_ascii_case(&'s');
+            if self.had_mark_revert && (self.buf.len() <= 3 || starts_with_u_double_s) {
+                let tone_modifiers = ['s', 'f', 'r', 'x', 'j'];
+                let mut i = 0;
+                while i + 1 < chars.len() {
+                    let c = chars[i].to_ascii_lowercase();
+                    let next = chars[i + 1].to_ascii_lowercase();
+                    // Same tone modifier doubled → collapse to single
+                    if tone_modifiers.contains(&c) && c == next {
+                        chars.remove(i);
+                        continue; // Check again at same position for triple+
+                    }
+                    i += 1;
+                }
             }
 
             // Partial restore: tone + double vowel at end
@@ -3746,9 +3841,13 @@ impl Engine {
             let (key, _, _) = self.raw_input[i];
             let (next_key, _, _) = self.raw_input[i + 1];
             let (after_key, _, _) = self.raw_input[i + 2];
-            // Two consecutive modifiers followed by vowel → English
+            // Two DIFFERENT consecutive modifiers followed by vowel → English
+            // Example: "cursor" = c-u-r-s-o-r → "rs" (r≠s) followed by vowel 'o' → English
+            // Same modifier doubled (rr, ss, ff) is Telex revert pattern, NOT English
+            // Example: "arro" = a-r-r-o → "rr" (r=r) is revert pattern → skip
             if tone_modifiers.contains(&key)
                 && tone_modifiers.contains(&next_key)
+                && key != next_key // Only different modifiers indicate English
                 && keys::is_vowel(after_key)
             {
                 return true;
@@ -3921,8 +4020,12 @@ impl Engine {
                         && keys::is_consonant(self.raw_input[first_vowel_pos + 1].0);
                     if !has_initial_consonant && !has_consonant_between {
                         let first_vowel = self.raw_input[first_vowel_pos].0;
-                        let is_vietnamese_no_initial =
-                            first_vowel == keys::U && next_key == keys::A;
+                        // Vietnamese no-initial diphthongs:
+                        // - U + modifier + A: ủa, ùa, úa (interjections)
+                        // - A + modifier + O: ảo, ào, áo (ảo giác, ảo tưởng)
+                        let is_vietnamese_no_initial = (first_vowel == keys::U
+                            && next_key == keys::A)
+                            || (first_vowel == keys::A && next_key == keys::O);
                         if !is_vietnamese_no_initial {
                             return true;
                         }
@@ -4328,6 +4431,16 @@ mod tests {
         ("ver", "vẻ"), // v + e + r(hỏi) → vẻ (test for #issue)
         // Post-tone delayed circumflex: o + n + r(hỏi) + o(circumflex) → ổn
         ("onro", "ổn"),
+        // ===== Invalid diphthong blocking =====
+        // When vowel combination is NOT valid Vietnamese diphthong,
+        // same-vowel circumflex should NOT be triggered
+        // Pattern: initial + V1 + V2(invalid) + consonant + V1
+        ("coupo", "coupo"), // [O,U] invalid diphthong → stays raw
+        ("soupo", "soupo"), // [O,U] invalid → stays raw
+        ("beapa", "beapa"), // [E,A] invalid → stays raw
+        ("beipi", "beipi"), // [E,I] invalid → stays raw
+        ("daupa", "daupa"), // [A,U] valid diphthong but "aup" invalid syllable → stays raw
+        ("boemo", "boemo"), // [O,E] valid diphthong but "oem" invalid syllable → stays raw
     ];
 
     const VNI_BASIC: &[(&str, &str)] = &[
