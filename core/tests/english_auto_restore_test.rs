@@ -102,7 +102,16 @@ fn pattern2_oo_vowel_pair() {
 
 #[test]
 fn pattern2_ee_vowel_pair() {
-    telex_auto_restore(&[("keep ", "keep ")]);
+    telex_auto_restore(&[
+        // With space - restore to English (invalid VN ending with -êp)
+        ("keep ", "keep "),
+        ("teep ", "teep "),
+        // Without space - keep Vietnamese transform (word not complete)
+        ("keep", "kêp"),  // k + e + e(circumflex) + p → kêp
+        ("keeps", "kếp"), // k + e + e + p + s(sắc) → kếp
+        ("teep", "têp"),  // t + e + e(circumflex) + p → têp
+        ("teepj", "tệp"), // t + e + e + p + j(nặng) → tệp
+    ]);
 }
 
 #[test]

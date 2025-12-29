@@ -3297,15 +3297,17 @@ impl Engine {
             // AND one of these conditions:
             // 1. Short buffer (<=3 chars) - user just wanted a diphthong
             //    Example: "arro" → "aro" (buffer="aro" = 3 chars, collapse double 'r')
-            // 2. Word starts with "u + ss" - very rare in English (no words start "uss")
-            //    Example: "ussers" → "users" (u+ss is revert artifact, not intentional)
-            // Counter-example: "issue" → "issue" (i+ss is common: issue, mission, etc.)
-            // Counter-example: "worry" → "worry" (consonant start, different pattern)
-            let starts_with_u_double_s = chars.len() >= 3
+            // 2. Word starts with "u + doubled_modifier" - rare pattern in English
+            //    English words rarely start with u+ss, u+ff, u+rr, etc.
+            //    Example: "ussers" → "users" (u+ss is revert artifact)
+            //    Counter-example: "issue" (i+ss is common: issue, issuer)
+            //    Counter-example: "offers" (o+ff is common: offer, office)
+            let tone_modifiers_char = ['s', 'f', 'r', 'x', 'j'];
+            let starts_with_u_doubled_modifier = chars.len() >= 3
                 && chars[0].eq_ignore_ascii_case(&'u')
-                && chars[1].eq_ignore_ascii_case(&'s')
-                && chars[2].eq_ignore_ascii_case(&'s');
-            if self.had_mark_revert && (self.buf.len() <= 3 || starts_with_u_double_s) {
+                && tone_modifiers_char.contains(&chars[1].to_ascii_lowercase())
+                && chars[1].eq_ignore_ascii_case(&chars[2]);
+            if self.had_mark_revert && (self.buf.len() <= 3 || starts_with_u_doubled_modifier) {
                 let tone_modifiers = ['s', 'f', 'r', 'x', 'j'];
                 let mut i = 0;
                 while i + 1 < chars.len() {
@@ -4133,10 +4135,11 @@ impl Engine {
 
         // Pattern 6a: Double E (ee) followed by P at END → English (keep, deep, sleep, seep)
         // Only EE+P, not AA+P or OO+P which can be valid Vietnamese (cấp = caaps)
+        // ONLY check at word boundary - mid-word "kêp" could still become valid Vietnamese
         // Exceptions:
         //   - I+EE+P is Vietnamese "iệp" pattern (nghiệp, hiệp, kiệp, v.v.)
         //   - X+EE+P is Vietnamese "xếp" pattern (xếp = to arrange)
-        if self.raw_input.len() >= 3 {
+        if is_word_complete && self.raw_input.len() >= 3 {
             let len = self.raw_input.len();
             let (last, _, _) = self.raw_input[len - 1];
             if last == keys::P {
