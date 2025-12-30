@@ -2274,6 +2274,13 @@ impl Engine {
                 return None;
             }
 
+            // Issue #162 fix: Don't reposition if vowels are identical (doubled vowels like "oo", "aa", "ee").
+            // These are NOT valid Vietnamese diphthongs and should keep mark on first vowel.
+            // This prevents VNI "o2o" from incorrectly producing "oò" instead of "òo".
+            if vowels.len() == 2 && vowels[0].key == vowels[1].key {
+                return None;
+            }
+
             let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
             let has_final = self.has_final_consonant(last_vowel_pos);
             let has_qu = self.has_qu_initial();
