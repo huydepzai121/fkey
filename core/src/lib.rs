@@ -620,6 +620,60 @@ mod tests {
         ime_clear();
     }
 
+    /// Issue #161: Test that shortcuts containing numbers work correctly via FFI
+    #[test]
+    #[serial]
+    fn test_shortcut_ffi_with_numbers() {
+        ime_init();
+        ime_clear_shortcuts();
+        ime_method(0); // Telex
+
+        // Add shortcut with number via FFI
+        let trigger = CString::new("f1").unwrap();
+        let replacement = CString::new("formula one").unwrap();
+
+        unsafe {
+            ime_add_shortcut(trigger.as_ptr(), replacement.as_ptr());
+        }
+
+        // Verify shortcut was added
+        let guard = lock_engine();
+        if let Some(ref e) = *guard {
+            assert_eq!(e.shortcuts().len(), 1);
+            let shortcut = e.shortcuts().lookup("f1").unwrap().1;
+            assert_eq!(
+                shortcut.condition,
+                engine::shortcut::TriggerCondition::OnWordBoundary,
+                "Mixed letter+number trigger should be word boundary"
+            );
+        }
+        drop(guard);
+
+        // Type "f1" + space and verify shortcut triggers
+        let _ = ime_key(keys::F, false, false);
+        let _ = ime_key(keys::N1, false, false);
+        let r = ime_key(keys::SPACE, false, false);
+
+        assert!(!r.is_null());
+        let result = unsafe { &*r };
+        assert_eq!(
+            result.action,
+            engine::Action::Send as u8,
+            "Shortcut should trigger"
+        );
+        assert_eq!(result.backspace, 2, "Should backspace 2 chars (f1)");
+
+        // Verify output
+        let output: String = (0..result.count as usize)
+            .filter_map(|i| char::from_u32(result.chars[i]))
+            .collect();
+        assert_eq!(output, "formula one ", "Should output replacement + space");
+
+        unsafe { ime_free(r) };
+        ime_clear_shortcuts();
+        ime_clear();
+    }
+
     #[test]
     #[serial]
     fn test_restore_word_ffi() {

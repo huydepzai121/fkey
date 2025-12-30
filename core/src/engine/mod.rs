@@ -469,22 +469,47 @@ impl Engine {
             return Result::none();
         }
 
-        // When IME is disabled, only process break keys for shortcuts
-        // Skip Vietnamese processing (tones, marks, etc.) but allow shortcuts to work
+        // When IME is disabled, process shortcuts but skip Vietnamese transforms
+        // This allows both word shortcuts (btw → by the way) and symbol shortcuts (-> → →)
         if !self.enabled {
-            // Clear Vietnamese state but keep processing break keys for shortcuts
+            // Clear Vietnamese state
             self.buf.clear();
             self.raw_input.clear();
             self.word_history.clear();
             self.spaces_after_commit = 0;
 
-            // Only process break keys for shortcuts when disabled
+            // Word boundary keys (Space, Enter): check for word shortcuts
+            if key == keys::SPACE || key == keys::RETURN || key == keys::ENTER {
+                if !self.shortcut_prefix.is_empty() {
+                    let input_method = self.current_input_method();
+                    if let Some(m) = self.shortcuts.try_match_for_method(
+                        &self.shortcut_prefix,
+                        None,
+                        true, // is_word_boundary = true for word shortcuts
+                        input_method,
+                    ) {
+                        let output: Vec<char> = m.output.chars().collect();
+                        let backspace_count = m.backspace_count as u8;
+                        self.shortcut_prefix.clear();
+                        // For Space, include space in output; for Enter, don't
+                        if key == keys::SPACE {
+                            let mut output_with_space = output;
+                            output_with_space.push(' ');
+                            return Result::send(backspace_count, &output_with_space);
+                        } else {
+                            return Result::send(backspace_count, &output);
+                        }
+                    }
+                }
+                self.shortcut_prefix.clear();
+                return Result::none();
+            }
+
+            // Break keys (punctuation): check for immediate shortcuts like "->"
             if keys::is_break_ext(key, shift) {
-                // Accumulate break chars for potential shortcut matching
                 if let Some(ch) = break_key_to_char(key, shift) {
                     self.shortcut_prefix.push(ch);
 
-                    // Check for immediate shortcut match
                     let input_method = self.current_input_method();
                     if let Some(m) = self.shortcuts.try_match_for_method(
                         &self.shortcut_prefix,
@@ -492,18 +517,25 @@ impl Engine {
                         false,
                         input_method,
                     ) {
-                        // Found a match! Send the replacement
                         let output: Vec<char> = m.output.chars().collect();
                         let backspace_count = (m.backspace_count as u8).saturating_sub(1);
                         self.shortcut_prefix.clear();
                         return Result::send_consumed(backspace_count, &output);
                     }
-                    // No match yet, keep accumulating
                     return Result::none();
                 }
+                // Break key without char mapping (Tab, arrows, etc.) - clear and pass through
+                self.shortcut_prefix.clear();
+                return Result::none();
             }
 
-            // Non-break key: clear shortcut prefix and pass through
+            // Letter and number keys: accumulate for word shortcuts (e.g., "btw", "f1", "a1")
+            if let Some(ch) = utils::key_to_char(key, caps) {
+                self.shortcut_prefix.push(ch);
+                return Result::none();
+            }
+
+            // Unknown keys: clear shortcut prefix and pass through
             self.shortcut_prefix.clear();
             return Result::none();
         }
