@@ -53,11 +53,9 @@ func typeKey(_ char: Character) {
     usleep(30000)  // 30ms = ~33 chars/sec
 }
 
-// Type a test string 3 times (about 10 seconds of typing)
-let text = "the quick brown fox jumps over the lazy dog "
-for _ in 1...5 {
-    for c in text { typeKey(c) }
-}
+// Vietnamese + English mixed text for realistic benchmark
+let text = "Chafo cacs banfj, minhf ddang tesst Gox Nhanh. Smart auto restore: text, expect, perfect, window, with, their, wow, luxury, tesla, life, issue, feature, express, wonderful, support, core, care, saas, sax, push, work, hard, user. Per app memory: VS Code, Slack. Auto disable: Japanese, Korean, Chinese. DDawsk Lawsk, DDawsk Noong, Kroong Buks. Thanks for your wonderful support with thiss software."
+for c in text { typeKey(c) }
 EOF
 
 # Run typing test in background
