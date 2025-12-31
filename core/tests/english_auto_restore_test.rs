@@ -28,7 +28,7 @@
 //! Users should use raw mode (\word) or Esc to restore these manually.
 
 mod common;
-use common::telex_auto_restore;
+use common::{telex, telex_auto_restore};
 
 // =============================================================================
 // PATTERN 1: MODIFIER FOLLOWED BY CONSONANT
@@ -961,5 +961,151 @@ fn pattern10_de_s_vietnamese_words() {
         ("desn ", "dén "), // dén - valid Vietnamese structure
         ("dest ", "dét "), // dét - valid Vietnamese structure
         ("desc ", "déc "), // déc - valid Vietnamese structure (though uncommon)
+    ]);
+}
+
+// =============================================================================
+// PATTERN 11: -ING + TONE MARK = INVALID VIETNAMESE
+// Vietnamese uses -inh (tính, kính), NOT -ing with tone marks.
+// Words like "thíng", "kíng" are invalid → should auto-restore.
+// =============================================================================
+
+#[test]
+fn pattern11_ing_with_tone_invalid() {
+    // -ing + tone mark is NOT valid Vietnamese rhyme
+    // Vietnamese uses -inh for this sound
+    telex_auto_restore(&[
+        // -ings English plural pattern
+        ("things ", "things "), // thíng invalid → restore
+        ("kings ", "kings "),   // kíng invalid → restore
+        ("rings ", "rings "),   // ríng invalid → restore
+        ("sings ", "sings "),   // síng invalid → restore
+        ("wings ", "wings "),   // wíng invalid (also W invalid initial)
+        ("brings ", "brings "), // bríng invalid (also br- cluster)
+        // -ing singular (no 's' at end, but 's' was tone modifier)
+        ("thing ", "thing "), // th + i + n + g + s(modifier) → thíng → restore
+        ("king ", "king "),   // k + i + n + g + s → kíng → restore
+        ("ring ", "ring "),   // r + i + n + g + s → ríng → restore
+        ("sing ", "sing "),   // s + i + n + g + s → síng → restore
+    ]);
+}
+
+#[test]
+fn pattern11_inh_valid_vietnamese() {
+    // -inh WITH tone marks IS valid Vietnamese
+    // These should NOT be restored
+    telex_auto_restore(&[
+        ("tinhs ", "tính "),   // tính (to calculate) - valid
+        ("kinhs ", "kính "),   // kính (glass/respect) - valid
+        ("minhs ", "mính "),   // mính - valid structure
+        ("linhs ", "lính "),   // lính (soldier) - valid
+        ("chinhs ", "chính "), // chính (main/correct) - valid
+    ]);
+}
+
+#[test]
+fn pattern11_ing_immediate_output() {
+    // -ing + tone mark should output correct result IMMEDIATELY (no space needed)
+    // Engine should detect invalid VN and NOT apply tone mark
+    telex(&[
+        ("things", "things"), // th + i + n + g + s → should stay "things", not "thíng"
+        ("kings", "kings"),   // k + i + n + g + s → should stay "kings"
+        ("rings", "rings"),   // r + i + n + g + s → should stay "rings"
+        ("sings", "sings"),   // s + i + n + g + s → should stay "sings"
+                              // Note: "wings" and "brings" have other invalid patterns (w initial, br cluster)
+                              // so they may be handled by other validation rules
+    ]);
+}
+
+// =============================================================================
+// PATTERN 12: C + CIRCUMFLEX VOWEL (from ee/oo) + NO FINAL = INVALID
+// When double vowel creates circumflex but no final consonant,
+// and the result is not a common Vietnamese word → restore.
+// Examples: "see" → "sê" (invalid), "fee" → "fê" (F invalid anyway)
+// Exceptions: "bê" (calf), "mê" (obsessed) - real Vietnamese words
+// =============================================================================
+
+#[test]
+fn pattern12_circumflex_no_final_invalid() {
+    // C + ê/ô (from ee/oo) + no final consonant → likely English
+    telex_auto_restore(&[
+        // "see" → "sê" - not a common Vietnamese word
+        ("see ", "see "),
+        // "fee" → "fê" - F is invalid initial anyway
+        ("fee ", "fee "),
+        // "tee" → "tê" - not common (though "tê" = numb exists, it's rare standalone)
+        ("tee ", "tee "),
+        // "pee" → "pê" - not Vietnamese
+        ("pee ", "pee "),
+        // "lee" → "lê" - this IS valid Vietnamese (pear) - should NOT restore
+        // ("lee ", "lê "), // Skip - lê is valid
+        // "gee" → "gê" - not Vietnamese
+        ("gee ", "gee "),
+    ]);
+}
+
+#[test]
+fn pattern12_circumflex_no_final_valid_vietnamese() {
+    // Some C + ê/ô are valid Vietnamese words - should NOT restore
+    telex_auto_restore(&[
+        ("bee ", "bê "),   // bê (calf) - valid Vietnamese
+        ("mee ", "mê "),   // mê (obsessed) - valid Vietnamese
+        ("lee ", "lê "),   // lê (pear) - valid Vietnamese
+        ("ddee ", "đê "),  // đê (dike) - valid Vietnamese
+        ("khee ", "khê "), // khê (hoarse) - valid Vietnamese
+    ]);
+}
+
+// =============================================================================
+// PATTERN 13: DOUBLE-F PRESERVATION (off, offline, offensive)
+// When user types double 'f', preserve both 'f's in output.
+// Current bug: "off" → "of", "offline" → "ofline" (loses one 'f')
+// =============================================================================
+
+#[test]
+fn pattern13_double_f_in_middle_preserve() {
+    // Double 'f' in the MIDDLE of words should trigger restore
+    // Note: "off" alone is skipped - keeps current behavior (buffer "o")
+    telex_auto_restore(&[
+        // Words starting with off- (ff in middle followed by more letters)
+        ("offline ", "offline "),
+        ("offset ", "offset "),
+        ("offend ", "offend "),
+        ("offer ", "offer "),
+        ("office ", "office "),
+        ("officer ", "officer "),
+        ("official ", "official "),
+        ("offshore ", "offshore "),
+        // Words with ff in middle
+        ("effect ", "effect "),
+        ("effort ", "effort "),
+        ("afford ", "afford "),
+        ("differ ", "differ "),
+        ("suffer ", "suffer "),
+        ("buffer ", "buffer "),
+        ("coffee ", "coffee "),
+        ("traffic ", "traffic "),
+        ("stuff ", "stuff "),
+        ("staff ", "staff "),
+    ]);
+}
+
+// =============================================================================
+// PATTERN 14: SINGLE VOWEL WITH TONES - VALID VIETNAMESE INTERJECTIONS
+// Short vowel patterns like "of" → "ò", "if" → "ì" are SKIPPED (keep current behavior)
+// Common interjections like "à", "ồ" should NOT restore
+// =============================================================================
+
+#[test]
+fn pattern14_single_vowel_valid_vietnamese() {
+    // Single vowel + tone that ARE valid Vietnamese interjections
+    // These should NOT restore
+    telex_auto_restore(&[
+        // Common Vietnamese interjections - keep as Vietnamese
+        ("af ", "à "), // à (ah, I see) - very common
+        ("ax ", "ã "), // ã - interjection
+        ("ofo ", "ồ "), // ồ (oh!) - common exclamation (o + f + o = circumflex + huyền)
+                       // Note: "of" → "ò" and "if" → "ì" are skipped
+                       // We keep current behavior for these short patterns
     ]);
 }
