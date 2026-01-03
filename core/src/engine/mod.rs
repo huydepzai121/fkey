@@ -3481,40 +3481,14 @@ impl Engine {
             }
         }
 
-        // Check 3: Single vowel + uncommon tone = likely English
-        // "ò" (from "of") and "ì" (from "if") are not common Vietnamese
-        // But "à", "ồ" are common interjections - keep them
-        if buffer_keys.len() == 1 {
-            let key = buffer_keys[0];
-            let mark = buffer_marks[0];
-            let tone = buffer_tones[0];
-            if mark > 0 {
-                // Circumflex + ANY mark → valid Vietnamese (ồ, ố, ổ, ỗ, ộ, ầ, etc.)
-                // Horn + ANY mark → valid Vietnamese (ừ, ứ, ử, ữ, ự, ờ, ớ, etc.)
-                // These are typed as VCV pattern and are all valid standalone vowels
-                if tone == tone::CIRCUMFLEX || tone == tone::HORN {
-                    // All circumflex/horn vowels with any tone mark are valid Vietnamese
-                    // Examples: ồ, ố, ổ, ỗ, ộ, ầ, ấ, ẩ, ẫ, ậ, ề, ế, ể, ễ, ệ
-                    //           ừ, ứ, ử, ữ, ự, ờ, ớ, ở, ỡ, ợ
-                    // Skip this - let it pass (valid Vietnamese)
-                } else if tone > 0 {
-                    // Other tones (breve) with marks - check if common
-                    let is_common_circumflex = constants::COMMON_CIRCUMFLEX_VOWEL_WITH_MARK
-                        .iter()
-                        .any(|&(k, t, m)| k == key && t == tone && m == mark);
-                    if !is_common_circumflex && keys::is_vowel(key) {
-                        return true;
-                    }
-                } else {
-                    // Simple vowel + mark (no circumflex/tone modifier)
-                    let is_common = constants::COMMON_SINGLE_VOWEL_WORDS
-                        .iter()
-                        .any(|&(k, m)| k == key && m == mark);
-                    if !is_common && keys::is_vowel(key) {
-                        return true;
-                    }
-                }
-            }
+        // Check 3: Single vowel validation
+        // ALL single vowels with tone marks are valid Vietnamese words
+        // Vietnamese-first logic: valid VN → keep VN
+        // Examples: á, à, ả, ã, ạ, é, è, ẻ, ẽ, ẹ, í, ì, ỉ, ĩ, ị, ...
+        // Also: ồ, ố, ổ, ỗ, ộ (circumflex), ừ, ứ, ử, ữ, ự (horn)
+        if buffer_keys.len() == 1 && keys::is_vowel(buffer_keys[0]) && buffer_marks[0] > 0 {
+            // Single vowel + any mark → valid Vietnamese, skip restore
+            return false;
         }
 
         // Check 4: C + circumflex vowel (from double vowel) + NO MARK + no final = uncommon
@@ -4031,6 +4005,25 @@ impl Engine {
     /// 3. Modifier after first vowel then another vowel: "use" (s between u and e)
     /// 4. Consonant + W + vowel without tone modifiers (only on word complete): "swim"
     fn has_english_modifier_pattern(&self, is_word_complete: bool) -> bool {
+        let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+
+        // Single vowel + modifiers only → valid Vietnamese (á, é, í, ó, ú, ý, etc.)
+        // ALL single vowels with tone marks are valid Vietnamese words
+        // Examples: "as" → "á", "es" → "é", "is" → "í", "or" → "ỏ", "us" → "ú"
+        // Vietnamese-first logic: valid VN → keep VN (don't check if raw looks English)
+        if self.raw_input.len() >= 2 {
+            let (first, _, _) = self.raw_input[0];
+            if keys::is_vowel(first) && first != keys::W {
+                let all_after_are_modifiers = self.raw_input[1..]
+                    .iter()
+                    .all(|(k, _, _)| tone_modifiers.contains(k));
+                if all_after_are_modifiers {
+                    // Vowel + mark modifiers only → valid Vietnamese, not English
+                    return false;
+                }
+            }
+        }
+
         // Check for W at start - W is not a valid Vietnamese initial consonant
         // Words like "wow", "window", "water" start with W
         // Exception: standalone "w" → "ư" is valid Vietnamese
@@ -4047,7 +4040,6 @@ impl Engine {
                 // This means mark modifiers (s, f, r, x, j) immediately after W are tone marks
                 // for the ư vowel, not consonants.
                 // Examples: "wf" → "ừ", "ws" → "ứ", "wmf" → "ừm"
-                let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
 
                 // Check for "W + only mark modifiers" pattern → valid Vietnamese (ừ, ứ, ử, ữ, ự)
                 // This handles standalone W with tone marks like "wf " → "ừ "
