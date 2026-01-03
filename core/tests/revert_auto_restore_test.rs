@@ -175,6 +175,8 @@ fn consecutive_modifiers_followed_by_vowel() {
         ("nursery ", "nursery "),
         // cusor (typo): no consecutive modifiers + vowel pattern → stays Vietnamese
         ("cusor ", "cuỏ "),
+        // carre: double r in middle followed by vowel → restore to "care"
+        ("carre ", "care "),
     ]);
 }
 
@@ -182,6 +184,17 @@ fn consecutive_modifiers_followed_by_vowel() {
 // DOUBLE D (Đ) + AUTO-RESTORE
 // Tests for dd → đ conversion and validation of resulting syllables
 // =============================================================================
+
+/// Test basic mark apply and revert (without auto-restore)
+#[test]
+fn basic_mark_apply_revert() {
+    telex(&[
+        // 'r' adds hỏi to preceding vowel
+        ("car", "cả"),     // c-a-r → cả (r adds hỏi to a)
+        ("carr", "car"),   // c-a-r-r → car (second r reverts, output 'r')
+        ("carre", "care"), // c-a-r-r-e → car + e = care (buffer after revert)
+    ]);
+}
 
 /// Test delayed stroke without auto-restore
 #[test]

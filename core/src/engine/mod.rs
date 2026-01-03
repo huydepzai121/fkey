@@ -3252,6 +3252,67 @@ impl Engine {
             }
         }
 
+        // SPECIAL CASE: Doubled modifier pattern handling
+        // Distinguish between:
+        // - V + doubled_modifier (issue, offer) → restore to raw (common English)
+        // - C + V + doubled_modifier (carre) → keep buffer (Telex revert pattern)
+        if self.had_mark_revert && buffer_invalid_vn && raw_input_valid_en {
+            let tone_mods = [keys::S, keys::F, keys::R, keys::X, keys::J];
+
+            // Find position of doubled modifier in raw_input
+            let mut doubled_pos = None;
+            for i in 0..self.raw_input.len().saturating_sub(1) {
+                let (k1, _, _) = self.raw_input[i];
+                let (k2, _, _) = self.raw_input[i + 1];
+                if tone_mods.contains(&k1) && k1 == k2 {
+                    doubled_pos = Some(i);
+                    break;
+                }
+            }
+
+            if let Some(pos) = doubled_pos {
+                // Check if doubled modifier is at END of word (like "bass", "varr")
+                let is_at_end = pos + 2 >= self.raw_input.len();
+
+                // Check if doubled modifier is RIGHT AFTER initial vowel (like i-ss, o-ff)
+                // Pattern: V + doubled_modifier (position 1)
+                let is_after_initial_vowel = pos == 1 && {
+                    let (first_key, _, _) = self.raw_input[0];
+                    keys::is_vowel(first_key)
+                };
+
+                // Check how many chars follow the doubled modifier
+                // - "carre": rr + 1 char (e) → likely Telex pattern
+                // - "mirror": rr + 2 chars (or) → likely English word
+                // - "sorry": rr + 1 char (y) → English word (not Telex)
+                let chars_after = self.raw_input.len() - pos - 2;
+
+                // Only consider Telex pattern if:
+                // 1. Exactly 1 char after doubled modifier
+                // 2. That char is 'e' (common Telex ending: carre→care, barre→bare)
+                let ends_with_e = self
+                    .raw_input
+                    .last()
+                    .map(|(k, _, _)| *k == keys::E)
+                    .unwrap_or(false);
+                let is_telex_pattern = chars_after == 1 && ends_with_e;
+
+                // Check if 'w' at start was converted to 'ư' (Telex w-vowel)
+                // Words like "worry" start with 'w' in raw but 'ư' in buffer
+                let w_converted_to_horn = !self.raw_input.is_empty() && {
+                    let (first_key, _, _) = self.raw_input[0];
+                    first_key == keys::W && self.buf.get(0).map(|c| c.key) != Some(keys::W)
+                };
+
+                if !is_at_end && !is_after_initial_vowel && is_telex_pattern && !w_converted_to_horn
+                {
+                    // Pattern like "carre" (C + V + rr + single_char) → keep buffer
+                    // Buffer already has the collapsed result from Telex revert
+                    return None;
+                }
+            }
+        }
+
         // UNIFIED: Restore only when buffer is invalid Vietnamese AND raw_input is valid English
         if buffer_invalid_vn && raw_input_valid_en {
             return self.build_raw_chars();
