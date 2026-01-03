@@ -882,3 +882,51 @@ fn bug_desp_to_dep_sac() {
         ("desp ", "dép "), // with space
     ]);
 }
+
+// =============================================================================
+// Issue #150: Control key should clear buffer (break rhythm)
+// https://github.com/user/gonhanh/issues/150
+//
+// EVKey behavior: Z-A-[Control]-L-O-R → "zalỏ"
+// Current: Z-A-[Control]-L-O-R → "zaloo" (Control doesn't break)
+//
+// Root cause: Platform layers don't call clear() on Control keydown.
+// Fix: Platform layers should call ime_clear() when Control is pressed alone.
+// =============================================================================
+
+#[test]
+fn issue150_control_clears_buffer_for_rhythm_break() {
+    let mut e = Engine::new();
+
+    // Type "za"
+    type_word(&mut e, "za");
+
+    // Simulate Control keypress by calling clear()
+    // (Platform layer should call ime_clear() on Control keydown)
+    e.clear();
+
+    // Type "lor" - should start fresh, "r" applies tone to "lo" → "lỏ"
+    let result = type_word(&mut e, "lor");
+    assert_eq!(
+        result, "lỏ",
+        "After buffer clear, 'lor' should produce 'lỏ'"
+    );
+}
+
+#[test]
+fn issue150_without_control_buffer_continues() {
+    let mut e = Engine::new();
+
+    // Type "zalor" continuously without Control break
+    let result = type_word(&mut e, "zalor");
+
+    // "zalor" is not valid Vietnamese, "r" can't apply tone at this position
+    // Should remain as raw or partial transform
+    println!("'zalor' without break -> '{}'", result);
+
+    // The key point: without clear(), the result is different from "za" + clear + "lor"
+    assert_ne!(
+        result, "lỏ",
+        "Without buffer clear, result should differ from 'lỏ'"
+    );
+}
