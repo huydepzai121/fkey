@@ -480,8 +480,10 @@ fn pattern7_vowel_modifier_vowel_with_initial() {
         ("param ", "param "), // p + a + r + a + m → paảm (invalid) → restore
         ("life ", "life "),   // l + i + f + e → lìe (invalid) → restore
         // Short words: consonant + vowel + modifier (no final vowel)
-        ("per ", "per "),    // p + e + r → pẻ (invalid) → restore "per"
-        ("thiss ", "this "), // t + h + i + s + s → double s reverts → buffer "this" (4 chars)
+        ("per ", "per "),      // p + e + r → pẻ (invalid) → restore "per"
+        ("thiss ", "this "),   // t + h + i + s + s → double s reverts → buffer "this" (4 chars)
+        ("mason ", "mason "),  // m + a + s + o + n → máon (invalid VN) → restore "mason"
+        ("masson ", "mason "), // m + a + s + s + o + n → double s reverts → "mason"
     ]);
 }
 

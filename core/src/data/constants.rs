@@ -188,6 +188,27 @@ pub const INVALID_RHYME_ING: &[[u16; 2]] = &[
     [keys::N, keys::G], // -ng final after 'i' with tone = invalid
 ];
 
+/// Open diphthongs (vần mở) - CANNOT take consonant finals (C/K/M/N/P/T/CH/NG/NH)
+/// These diphthongs end with semi-vowel I/O/U/Y that completes the rhyme.
+/// Examples:
+///   - "ai" (tài) ✓, "ain" ✗ (invalid)
+///   - "ao" (cào) ✓, "aon" ✗ (invalid)  ← catches "mason" → "máon"
+///   - "au" (đau) ✓, "aum" ✗ (invalid)
+///   - "oi" (tôi) ✓, "oin" ✗ (invalid)
+///
+/// Note: Diphthongs ia/iê, oa/oă, ua/ưa, uê, uô/ươ, uy CAN take consonant finals.
+pub const OPEN_DIPHTHONGS: &[[u16; 2]] = &[
+    [keys::A, keys::I], // ai - ends with semi-vowel I
+    [keys::A, keys::O], // ao - ends with semi-vowel O
+    [keys::A, keys::U], // au/âu - ends with semi-vowel U
+    [keys::A, keys::Y], // ay/ây - ends with semi-vowel Y
+    [keys::E, keys::O], // eo - ends with semi-vowel O
+    [keys::I, keys::U], // iu - ends with semi-vowel U
+    [keys::O, keys::I], // oi/ôi/ơi - ends with semi-vowel I
+    [keys::U, keys::I], // ui/ưi - ends with semi-vowel I
+    [keys::U, keys::U], // ưu - ends with semi-vowel U
+];
+
 /// Common Vietnamese single-vowel interjections (should NOT be restored)
 /// These standalone vowels with tone marks are valid Vietnamese words
 /// Example: à (ah), ồ (oh!), ừ (yeah)

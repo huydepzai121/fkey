@@ -3703,6 +3703,28 @@ impl Engine {
             }
         }
 
+        // Check 5: Open diphthong + consonant final = INVALID
+        // Open diphthongs (ai, ao, au, ay, eo, iu, oi, ui, ưu) cannot take consonant finals.
+        // Example: "mason" → "máon" has diphthong "ao" + final "n" → invalid
+        // This catches English words like mason, reason, poison, etc.
+        let syllable = syllable::parse(&buffer_keys);
+        if syllable.vowel.len() == 2 && !syllable.final_c.is_empty() {
+            let vowel_pair = [
+                buffer_keys[syllable.vowel[0]],
+                buffer_keys[syllable.vowel[1]],
+            ];
+            // Check if final is a consonant (not semi-vowel that's part of diphthong)
+            let final_key = buffer_keys[syllable.final_c[0]];
+            let is_consonant_final = matches!(
+                final_key,
+                keys::C | keys::K | keys::M | keys::N | keys::P | keys::T
+            ) || (syllable.final_c.len() == 2); // CH, NG, NH are always consonant finals
+
+            if is_consonant_final && constants::OPEN_DIPHTHONGS.contains(&vowel_pair) {
+                return true;
+            }
+        }
+
         false
     }
 
@@ -4012,6 +4034,7 @@ impl Engine {
         // Examples:
         // - "massive" (ss at pos 2-3, then ive) → use raw "massive"
         // - "soffa" (ff at pos 2-3, then just 'a') → use buffer "sofa"
+        // - "masson" (ss at pos 2-3, then on) → use buffer "mason" (open diphthong case)
         let raw_len = self.raw_input.len();
         for i in 0..raw_len.saturating_sub(1) {
             let (k1, _, _) = self.raw_input[i];
@@ -4020,11 +4043,24 @@ impl Engine {
                 // Found double at position i, i+1
                 // Check how many chars follow after the double
                 let chars_after_double = raw_len - (i + 2);
-                if chars_after_double >= 2 {
+
+                // Special case: buffer ends with common single-consonant patterns
+                // like "-son", "-ton", "-ron" (mason, reason, person, etc.)
+                // These are much more common than double-consonant versions
+                // so prefer buffer when this pattern is detected
+                let common_single_consonant_endings = ["son", "ton", "ron", "non", "mon"];
+                let use_buffer_for_ending = common_single_consonant_endings
+                    .iter()
+                    .any(|ending| buf_str.ends_with(ending));
+
+                if chars_after_double >= 2 && !use_buffer_for_ending {
                     // Multiple chars after double → likely English word, use raw
                     return false;
                 }
-                // Only 0-1 char after double → likely revert pattern, continue to suffix check
+                // Only 0-1 char after double, or common ending → likely revert pattern
+                if use_buffer_for_ending {
+                    return true;
+                }
                 break;
             }
         }
