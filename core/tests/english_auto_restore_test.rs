@@ -415,6 +415,8 @@ fn vietnamese_complex_words_preserved() {
         ("truwowcs ", "trước "),   // trước (before)
         ("giuwowngf ", "giường "), // giường (bed)
         ("twong ", "tương "),      // tương (mutual) - shorthand telex
+        ("wng ", "ưng "),          // ưng (agree) - w→ư + ng final
+        ("wong ", "ương "),        // ương (foster) - w→ư, o→ơ horn compound
         // Words with circumflex (â, ê, ô)
         ("caaps ", "cấp "), // cấp (level)
         ("taanf ", "tần "), // tần (frequency)

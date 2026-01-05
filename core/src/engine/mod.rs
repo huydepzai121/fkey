@@ -4485,7 +4485,32 @@ impl Engine {
 
                 // W + vowel + consonant → likely English like "win", "water"
                 // W + consonant only → valid Vietnamese (ưng, ưn, ưm)
+                // EXCEPTION: W+O+final is valid Vietnamese "ươ+final" (ương, ươn, ươm, ươc, ươt, ươp)
                 if !vowels_after.is_empty() && !consonants_after.is_empty() {
+                    // Check for W+O+valid_final pattern (ương, ươn, ươm, etc.)
+                    // raw_input: [W, O, N, G] → valid Vietnamese ương
+                    // raw_input: [W, O, M] → valid Vietnamese ươm
+                    let is_wo_final_pattern = vowels_after.len() == 1
+                        && vowels_after[0] == keys::O
+                        && match consonants_after.len() {
+                            1 => {
+                                // Single consonant finals: n, m, c, t, p
+                                matches!(
+                                    consonants_after[0],
+                                    keys::N | keys::M | keys::C | keys::T | keys::P
+                                )
+                            }
+                            2 => {
+                                // Double consonant finals: ng, nh
+                                let pair = [consonants_after[0], consonants_after[1]];
+                                pair == [keys::N, keys::G] || pair == [keys::N, keys::H]
+                            }
+                            _ => false,
+                        };
+                    if is_wo_final_pattern {
+                        // Valid Vietnamese "ươ+final", don't restore
+                        return false;
+                    }
                     // Both vowels and consonants after W → likely English
                     return true;
                 }
