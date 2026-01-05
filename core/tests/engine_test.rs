@@ -587,48 +587,48 @@ fn delayed_circumflex_diphthong_pattern() {
         // Issue #183: Flexible order - mark AFTER the second vowel trigger
         // Pattern: C + V₁ + V₂ + V₁ + mark → circumflex on V₁ + mark
         // --- âu diphthong (A-U-A pattern) ---
-        ("dauas", "dấu"),  // dấu - sắc
-        ("dauaf", "dầu"),  // dầu - huyền
-        ("dauar", "dẩu"),  // dẩu - hỏi
-        ("dauax", "dẫu"),  // dẫu - ngã
-        ("dauaj", "dậu"),  // dậu - nặng
-        ("xauas", "xấu"),  // xấu
-        ("xauaf", "xầu"),  // xầu
-        ("cauas", "cấu"),  // cấu
-        ("lauas", "lấu"),  // lấu
-        ("mauas", "mấu"),  // mấu
-        ("tauas", "tấu"),  // tấu
+        ("dauas", "dấu"), // dấu - sắc
+        ("dauaf", "dầu"), // dầu - huyền
+        ("dauar", "dẩu"), // dẩu - hỏi
+        ("dauax", "dẫu"), // dẫu - ngã
+        ("dauaj", "dậu"), // dậu - nặng
+        ("xauas", "xấu"), // xấu
+        ("xauaf", "xầu"), // xầu
+        ("cauas", "cấu"), // cấu
+        ("lauas", "lấu"), // lấu
+        ("mauas", "mấu"), // mấu
+        ("tauas", "tấu"), // tấu
         // --- êu diphthong (E-U-E pattern) ---
-        ("neues", "nếu"),  // nếu - sắc
-        ("neuef", "nều"),  // nều - huyền
-        ("neuer", "nểu"),  // nểu - hỏi
-        ("neuex", "nễu"),  // nễu - ngã
-        ("neuej", "nệu"),  // nệu - nặng
-        ("keues", "kếu"),  // kếu
-        ("leues", "lếu"),  // lếu
-        ("meues", "mếu"),  // mếu (crying sound)
-        ("teues", "tếu"),  // tếu
+        ("neues", "nếu"), // nếu - sắc
+        ("neuef", "nều"), // nều - huyền
+        ("neuer", "nểu"), // nểu - hỏi
+        ("neuex", "nễu"), // nễu - ngã
+        ("neuej", "nệu"), // nệu - nặng
+        ("keues", "kếu"), // kếu
+        ("leues", "lếu"), // lếu
+        ("meues", "mếu"), // mếu (crying sound)
+        ("teues", "tếu"), // tếu
         // --- ôi diphthong (O-I-O pattern) ---
-        ("toios", "tối"),  // tối - sắc
-        ("toiof", "tồi"),  // tồi - huyền
-        ("toior", "tổi"),  // tổi - hỏi
-        ("toiox", "tỗi"),  // tỗi - ngã
-        ("toioj", "tội"),  // tội - nặng
-        ("coios", "cối"),  // cối
-        ("doios", "dối"),  // dối
-        ("loios", "lối"),  // lối
-        ("moios", "mối"),  // mối
-        ("noios", "nối"),  // nối
+        ("toios", "tối"), // tối - sắc
+        ("toiof", "tồi"), // tồi - huyền
+        ("toior", "tổi"), // tổi - hỏi
+        ("toiox", "tỗi"), // tỗi - ngã
+        ("toioj", "tội"), // tội - nặng
+        ("coios", "cối"), // cối
+        ("doios", "dối"), // dối
+        ("loios", "lối"), // lối
+        ("moios", "mối"), // mối
+        ("noios", "nối"), // nối
         // --- ây diphthong (A-Y-A pattern) ---
-        ("dayas", "dấy"),  // dấy - sắc
-        ("dayaf", "dầy"),  // dầy - huyền
-        ("dayar", "dẩy"),  // dẩy - hỏi
-        ("dayax", "dẫy"),  // dẫy - ngã
-        ("dayaj", "dậy"),  // dậy - nặng
-        ("cayas", "cấy"),  // cấy
-        ("layas", "lấy"),  // lấy
-        ("mayas", "mấy"),  // mấy
-        ("tayas", "tấy"),  // tấy
+        ("dayas", "dấy"), // dấy - sắc
+        ("dayaf", "dầy"), // dầy - huyền
+        ("dayar", "dẩy"), // dẩy - hỏi
+        ("dayax", "dẫy"), // dẫy - ngã
+        ("dayaj", "dậy"), // dậy - nặng
+        ("cayas", "cấy"), // cấy
+        ("layas", "lấy"), // lấy
+        ("mayas", "mấy"), // mấy
+        ("tayas", "tấy"), // tấy
     ]);
 }
 
