@@ -151,6 +151,7 @@ maps	máp
 dad	đa
 pairs	pái
 themes	thếm
+marry	mary
 es	é
 bias	bía
 marx	mã
@@ -194,6 +195,7 @@ chiefs	chié
 doses	doé
 dense	dến
 pays	páy
+ussr	usr
 guys	guý
 posts	pots
 horn	hỏn
@@ -376,6 +378,7 @@ bosom	bốm
 cos	có
 nuns	nún
 casts	cats
+carr	car
 hast	hát
 cheer	chể
 nests	nets
@@ -435,6 +438,7 @@ vow	vơ
 ter	tẻ
 roast	roát
 nora	noả
+herr	her
 wt	ưt
 mas	má
 casa	cấ
@@ -454,7 +458,9 @@ rosen	roén
 dist	dít
 boris	bói
 laos	láo
+dessert	desert
 raj	rạ
+poisson	poison
 pasta	pất
 oats	oát
 thorn	thỏn
@@ -471,6 +477,7 @@ lor	lỏ
 lois	lói
 loom	lôm
 sus	sú
+ooo	oo
 gis	gí
 cons	cón
 ores	oé
@@ -501,6 +508,7 @@ boer	boẻ
 noses	noé
 wc	ưc
 postscript	potscript
+barr	bar
 paso	páo
 boron	bổn
 mer	mẻ
@@ -524,6 +532,7 @@ cw	cư
 barnard	barnrd
 mores	moé
 mus	mú
+dodd	dod
 bas	bá
 guts	gút
 asp	áp
@@ -669,6 +678,7 @@ chasm	chám
 voir	vỏi
 twas	tứa
 mori	mỏi
+assn	asn
 tex	tẽ
 pere	pể
 posits	poits
@@ -678,6 +688,7 @@ sens	sén
 norse	noé
 bins	bín
 cowan	cơan
+corral	coral
 hee	hê
 soar	soả
 gist	gít
@@ -731,6 +742,7 @@ rams	rám
 sys	sý
 wj	ự
 denser	dển
+barre	bare
 chore	choẻ
 lori	lỏi
 causa	cấu
@@ -794,6 +806,7 @@ tw	tư
 qos	qó
 coop	côp
 vere	vể
+posse	pose
 lisp	líp
 ifn	ìn
 bw	bư
@@ -834,6 +847,7 @@ moser	moẻ
 terse	tế
 reps	rép
 syst	sýt
+mosses	moses
 morn	mỏn
 surat	suảt
 lux	lũ
@@ -855,11 +869,11 @@ sos	só
 nis	ní
 moro	mổ
 tarn	tản
+parr	par
 kris	krí
 hoses	hoé
 postsecondary	potsecondary
 samaj	sậm
-rosario	rôải
 ast	át
 loco	lôc
 lans	lán
@@ -867,6 +881,7 @@ rus	rú
 purana	puẩn
 dens	dén
 bir	bỉ
+garry	gary
 mana	mân
 truest	truét
 booms	bốm
@@ -935,6 +950,7 @@ aas	ấ
 asm	ám
 usaf	ùa
 resp	rép
+parrish	parish
 ens	én
 tics	tíc
 iss	is
@@ -962,6 +978,7 @@ disadvantageous	điavantageous
 thorac	thoảc
 dido	đio
 heen	hên
+marr	mar
 lana	lân
 mies	mié
 hirst	hít
@@ -1248,6 +1265,7 @@ voix	või
 cana	cân
 eof	èo
 norsk	nók
+basses	bases
 ajr	ả
 secs	séc
 sais	sái
@@ -1295,6 +1313,7 @@ itr	ỉt
 atr	ảt
 dado	đao
 susa	súa
+transsexual	transexual
 isr	ỉ
 maa	mâ
 paa	pâ
@@ -1335,7 +1354,9 @@ carre	care
 boars	boá
 carnarvon	carnrvon
 manga	mâng
+basse	base
 woof	uồ
+cassino	casino
 ece	êc
 poo	pô
 bosoms	bosos
@@ -1344,6 +1365,7 @@ heer	hể
 bax	bã
 raya	rây
 haya	hây
+parris	paris
 isms	ims
 aac	âc
 cosas	coá
@@ -1473,6 +1495,7 @@ berets	bết
 kerner	kernr
 yf	ỳ
 dds	đs
+cassio	casio
 ees	ế
 oxon	ỗn
 cus	cú
@@ -1520,6 +1543,7 @@ quire	quiẻ
 buf	bù
 icf	ìc
 dof	dò
+busses	buses
 queste	quết
 maf	mà
 quern	quẻn
@@ -1531,6 +1555,7 @@ kremer	krểm
 samar	sẩm
 ayr	ảy
 ojo	ộ
+issa	isa
 heure	hểu
 taa	tâ
 sejm	sẹm
@@ -1552,6 +1577,7 @@ byes	byé
 sarma	sẩm
 goran	goản
 quos	quó
+chaffee	chafee
 basf	bà
 nys	ný
 dyers	dyé
@@ -1563,6 +1589,7 @@ engr	ẻng
 doon	dôn
 tryst	trýt
 onr	ỏn
+lissa	lisa
 posi	pói
 rasch	rách
 disp	díp
@@ -1587,6 +1614,7 @@ dud	đu
 moores	mốe
 mown	mơn
 nef	nè
+bussy	busy
 afs	á
 chums	chúm
 rois	rói
@@ -1605,6 +1633,7 @@ coser	coẻ
 chasms	chams
 lef	lè
 lus	lú
+tarr	tar
 boor	bổ
 corot	cổt
 doj	dọ
@@ -1619,7 +1648,7 @@ apj	ạp
 nawaz	na
 marya	mẩy
 fetes	ffetes
-ooooo	oooo
+ooooo	ooo
 bongo	bông
 haram	hẩm
 noo	nô
@@ -1688,6 +1717,7 @@ ose	oé
 muons	muón
 tarsi	tái
 bons	bón
+bassin	basin
 bana	bân
 daud	đau
 hangars	hấng
@@ -1703,6 +1733,7 @@ dax	dã
 bist	bít
 rosch	róch
 aya	ây
+chasse	chase
 amf	àm
 hepes	hếp
 comr	cỏm
@@ -1748,6 +1779,7 @@ mers	mé
 susy	suý
 syr	sỷ
 barua	bẩu
+ressources	resources
 garo	gảo
 cori	cỏi
 usw	ứ
@@ -1798,6 +1830,7 @@ berners	bernrs
 hoots	hốt
 wfp	ừp
 seest	sết
+parra	para
 giorno	giổn
 suf	sù
 ursa	úa
@@ -1875,6 +1908,7 @@ pws	pứ
 rara	rẩ
 chooser	chổe
 maja	mậ
+corre	core
 tows	tớ
 choson	chốn
 roams	roám
@@ -1950,6 +1984,7 @@ lowi	lơi
 mums	múm
 uts	út
 sops	sóp
+buffing	bufing
 amax	ẫm
 cwm	cưm
 arawak	ẩk
@@ -1960,6 +1995,7 @@ hwnd	hưnd
 gaf	gà
 rescher	rểch
 suas	súa
+carrol	carol
 khas	khá
 torsos	tố
 vaso	váo
@@ -1973,6 +2009,7 @@ ganja	gận
 sws	sứ
 sif	sì
 comoros	cốm
+harre	hare
 bors	bó
 bair	bải
 swp	sưp
@@ -2000,6 +2037,7 @@ tif	tì
 uas	úa
 ders	dé
 macaw	măc
+rossa	rosa
 nueces	nuếc
 hys	hý
 doxa	doã
@@ -2086,6 +2124,7 @@ imr	ỉm
 lais	lái
 metes	mết
 amj	ạm
+usps	ups
 danda	đân
 tanah	tânh
 taran	tẩn
@@ -2097,6 +2136,7 @@ lese	lế
 bots	bót
 disdains	disdais
 lowa	lơa
+rosse	rose
 larus	láu
 posix	põi
 nias	nía
@@ -2193,6 +2233,7 @@ techs	téch
 dej	dẹ
 borno	bổn
 iasc	íac
+hanssen	hansen
 hoon	hôn
 kins	kín
 gorer	goẻ
@@ -2202,6 +2243,7 @@ moana	moân
 orem	oẻm
 quires	quié
 quar	quả
+verry	very
 pana	pân
 ddi	đi
 sori	sỏi
@@ -2265,6 +2307,7 @@ paysans	paysas
 demes	dếm
 miers	mié
 bori	bỏi
+harrold	harold
 esos	éo
 costo	cốt
 turan	tuản
@@ -2316,6 +2359,7 @@ thirsk	thík
 yere	yể
 sora	soả
 lianas	líân
+passo	paso
 transf	tràn
 puro	puỏ
 yx	ỹ
@@ -2346,6 +2390,7 @@ baji	bại
 lairs	lái
 lary	lảy
 lwr	lử
+cassa	casa
 rias	ría
 tums	túm
 coif	còi
@@ -2403,6 +2448,7 @@ pwn	pưn
 sero	sẻo
 pufa	pùa
 mef	mè
+caffe	cafe
 dadaists	dadaiss
 fdd	fđ
 laf	là
@@ -2420,6 +2466,7 @@ otr	ỏt
 phasors	pháo
 aor	ảo
 parnas	pấn
+risse	rise
 nier	niẻ
 chana	chân
 naif	nài
@@ -2493,6 +2540,7 @@ otf	òt
 isf	ì
 ownerships	ownershis
 twt	tưt
+lossing	losing
 daws	dắ
 bama	bâm
 esk	ék
