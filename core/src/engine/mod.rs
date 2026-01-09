@@ -2327,43 +2327,45 @@ impl Engine {
                             // Let the letter be added normally, auto-restore will handle it
                         } else {
                             // IMPORTANT: Check foreign word pattern BEFORE modifying buffer
-                        // to avoid leaving buffer in inconsistent state if we need to return None.
-                        // Example: "cete" + 'r' → "cêt" (delayed circumflex) + T+R check → foreign
-                        // Without this check, buffer would be left as "cêt" even though we return None.
-                        let temp_buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-                        let temp_buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
-                        // Check what buffer would look like after circumflex (keys without trigger)
-                        let mut post_circumflex_keys = temp_buffer_keys.clone();
-                        post_circumflex_keys.remove(pos2); // simulate removing trigger vowel
-                        let post_circumflex_tones: Vec<u8> = post_circumflex_keys
-                            .iter()
-                            .enumerate()
-                            .map(|(i, _)| {
-                                if i == pos1 {
-                                    tone::CIRCUMFLEX
-                                } else {
-                                    temp_buffer_tones.get(i).copied().unwrap_or(0)
-                                }
-                            })
-                            .collect();
+                            // to avoid leaving buffer in inconsistent state if we need to return None.
+                            // Example: "cete" + 'r' → "cêt" (delayed circumflex) + T+R check → foreign
+                            // Without this check, buffer would be left as "cêt" even though we return None.
+                            let temp_buffer_keys: Vec<u16> =
+                                self.buf.iter().map(|c| c.key).collect();
+                            let temp_buffer_tones: Vec<u8> =
+                                self.buf.iter().map(|c| c.tone).collect();
+                            // Check what buffer would look like after circumflex (keys without trigger)
+                            let mut post_circumflex_keys = temp_buffer_keys.clone();
+                            post_circumflex_keys.remove(pos2); // simulate removing trigger vowel
+                            let post_circumflex_tones: Vec<u8> = post_circumflex_keys
+                                .iter()
+                                .enumerate()
+                                .map(|(i, _)| {
+                                    if i == pos1 {
+                                        tone::CIRCUMFLEX
+                                    } else {
+                                        temp_buffer_tones.get(i).copied().unwrap_or(0)
+                                    }
+                                })
+                                .collect();
 
-                        // Skip delayed circumflex if the resulting buffer would trigger foreign pattern
-                        if is_foreign_word_pattern(
-                            &post_circumflex_keys,
-                            &post_circumflex_tones,
-                            key,
-                        ) {
-                            // Don't apply delayed circumflex - let the letter be added normally
-                        } else {
-                            had_delayed_circumflex = true;
-                            // Apply circumflex to first vowel
-                            if let Some(c) = self.buf.get_mut(pos1) {
-                                c.tone = tone::CIRCUMFLEX;
-                                self.had_any_transform = true;
+                            // Skip delayed circumflex if the resulting buffer would trigger foreign pattern
+                            if is_foreign_word_pattern(
+                                &post_circumflex_keys,
+                                &post_circumflex_tones,
+                                key,
+                            ) {
+                                // Don't apply delayed circumflex - let the letter be added normally
+                            } else {
+                                had_delayed_circumflex = true;
+                                // Apply circumflex to first vowel
+                                if let Some(c) = self.buf.get_mut(pos1) {
+                                    c.tone = tone::CIRCUMFLEX;
+                                    self.had_any_transform = true;
+                                }
+                                // Remove second vowel (it was just a trigger)
+                                self.buf.remove(pos2);
                             }
-                            // Remove second vowel (it was just a trigger)
-                            self.buf.remove(pos2);
-                        }
                         }
                     }
                 }
