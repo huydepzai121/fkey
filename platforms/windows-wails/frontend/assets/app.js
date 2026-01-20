@@ -164,9 +164,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up event listeners
     setupEventListeners();
     setupFormattingEventListeners();
-    
-    // Check for updates (async, non-blocking)
-    checkForUpdates();
 });
 
 async function checkForUpdates() {
