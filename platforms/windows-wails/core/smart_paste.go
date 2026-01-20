@@ -57,28 +57,36 @@ func FixMojibake(s string) (string, bool) {
 		return s, false
 	}
 
-	// Try CP850 first (matches the user's observed pattern)
-	if fixed, ok := tryFixWithCharmap(s, charmap.CodePage850); ok {
-		return fixed, true
+	// Try multiple encodings - CP437 is most common for box drawing mojibake
+	encodings := []struct {
+		name string
+		cm   *charmap.Charmap
+	}{
+		{"CP437", charmap.CodePage437},
+		{"CP850", charmap.CodePage850},
+		{"Windows-1252", charmap.Windows1252},
+		{"ISO-8859-1", charmap.ISO8859_1},
 	}
 
-	// Fallback to Windows-1252
-	if fixed, ok := tryFixWithCharmap(s, charmap.Windows1252); ok {
-		return fixed, true
+	for _, enc := range encodings {
+		if fixed, ok := tryFixWithCharmap(s, enc.cm); ok {
+			return fixed, true
+		}
 	}
 
 	return s, false
 }
 
 // tryFixWithCharmap attempts to fix mojibake by reversing the encoding process:
-// When UTF-8 bytes are wrongly decoded as CP850, each UTF-8 byte becomes a CP850 character.
-// To reverse: encode each character back to CP850 to recover the original UTF-8 bytes.
+// When UTF-8 bytes are wrongly decoded as CP437/CP850, each UTF-8 byte becomes a legacy character.
+// To reverse: encode each character back to the legacy encoding to recover the original UTF-8 bytes.
 func tryFixWithCharmap(s string, cm *charmap.Charmap) (string, bool) {
 	encoder := cm.NewEncoder()
 
 	// Build reverse lookup: for each character in the mojibake string,
 	// find what byte value it represents in the legacy encoding
 	var rawBytes []byte
+	failedChars := 0
 	for _, r := range s {
 		if r < 128 {
 			// ASCII characters map directly
@@ -90,8 +98,15 @@ func tryFixWithCharmap(s string, cm *charmap.Charmap) (string, bool) {
 			if err == nil && len(encoded) > 0 {
 				rawBytes = append(rawBytes, encoded...)
 			} else {
-				// Character doesn't exist in this encoding, skip or use replacement
-				return "", false
+				// Character doesn't exist in this encoding
+				// Be lenient: skip and continue, but track failures
+				failedChars++
+				if failedChars > len(s)/4 {
+					// Too many failures, this encoding is wrong
+					return "", false
+				}
+				// Use replacement character
+				rawBytes = append(rawBytes, '?')
 			}
 		}
 	}

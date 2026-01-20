@@ -82,6 +82,12 @@ type KeyboardHook struct {
 	isProcessing bool
 	mu           sync.Mutex
 
+	// Modifier-only hotkey state tracking
+	// When modifier-only hotkey matches on KEYDOWN, we set this to true
+	// and wait for KEYUP to actually trigger (allows Ctrl+Shift+V to work)
+	modifierOnlyPending bool
+	pendingModifiers    struct{ ctrl, alt, shift bool }
+
 	// Callbacks
 	OnKeyPressed func(keyCode uint16, shift, capsLock bool) bool // returns true if handled
 	OnHotkey     func()
@@ -167,23 +173,42 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		return ret
 	}
 
-	// Only process key down events
+	hookStruct := (*KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
+
+	// Skip our own injected keys
+	if hookStruct.DwExtraInfo == InjectedKeyMarker {
+		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
+		return ret
+	}
+
+	// Skip injected keys from other sources
+	if (hookStruct.Flags & LLKHF_INJECTED) != 0 {
+		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
+		return ret
+	}
+
+	keyCode := uint16(hookStruct.VkCode)
+
+	// Handle KEYUP for modifier-only hotkeys
+	if nCode >= 0 && (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+		isShiftKey := keyCode == VK_SHIFT || keyCode == VK_LSHIFT || keyCode == VK_RSHIFT
+		isCtrlKey := keyCode == VK_CONTROL || keyCode == VK_LCONTROL || keyCode == VK_RCONTROL
+		isAltKey := keyCode == VK_MENU || keyCode == VK_LMENU || keyCode == VK_RMENU
+
+		// If a modifier key is released and we have a pending modifier-only toggle
+		if (isShiftKey || isCtrlKey || isAltKey) && h.modifierOnlyPending {
+			h.modifierOnlyPending = false
+			if h.OnHotkey != nil {
+				h.OnHotkey()
+			}
+			// Don't consume KEYUP, let it pass through
+		}
+		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
+		return ret
+	}
+
+	// Process key down events
 	if nCode >= 0 && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-		hookStruct := (*KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
-
-		// Skip our own injected keys
-		if hookStruct.DwExtraInfo == InjectedKeyMarker {
-			ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
-			return ret
-		}
-
-		// Skip injected keys from other sources
-		if (hookStruct.Flags & LLKHF_INJECTED) != 0 {
-			ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
-			return ret
-		}
-
-		keyCode := uint16(hookStruct.VkCode)
 
 		// Get modifier states
 		// Note: The key currently being pressed may not be reflected in GetAsyncKeyState yet
@@ -206,6 +231,17 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		}
 		if isAltKey {
 			alt = true
+		}
+
+		// Smart Paste: Ctrl+Shift+V (check BEFORE format hotkeys)
+		// Must be checked first to avoid being blocked by format hotkey handlers
+		if ctrl && shift && !alt && keyCode == 0x56 { // VK_V
+			if IsSmartPasteEnabled() {
+				// Mark that a non-modifier key was pressed (prevents modifier-only toggle)
+				h.modifierOnlyPending = false
+				go HandleSmartPaste()
+				return 1 // Block key
+			}
 		}
 
 		// Check format hotkeys BEFORE toggle hotkey
@@ -294,14 +330,17 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		// For modifier-only shortcuts (like Ctrl+Shift), trigger when the last modifier is pressed
 		if h.HotkeyEnabled && h.Hotkey != nil {
 			if h.Hotkey.ModifierOnly {
-				// Modifier-only: trigger when pressing a modifier key while other required modifiers are held
-				// E.g., Ctrl+Shift triggers when pressing Shift while Ctrl is held (or vice versa)
+				// Modifier-only: DON'T trigger immediately on KEYDOWN
+				// Instead, set pending flag and trigger on KEYUP
+				// This allows Ctrl+Shift+V (Smart Paste) to work without triggering toggle first
 				if isShiftKey || isCtrlKey || isAltKey {
 					if h.Hotkey.Matches(keyCode, ctrl, alt, shift) {
-						if h.OnHotkey != nil {
-							h.OnHotkey()
-						}
-						return 1 // Consume the key
+						// Set pending flag - will trigger on KEYUP if no other key pressed
+						h.modifierOnlyPending = true
+						h.pendingModifiers.ctrl = ctrl
+						h.pendingModifiers.alt = alt
+						h.pendingModifiers.shift = shift
+						// Don't consume the key, let modifier pass through
 					}
 				}
 			} else if h.Hotkey.Matches(keyCode, ctrl, alt, shift) {

@@ -38,6 +38,7 @@ const (
 	KeyToggleHotkey       = "ToggleHotkey"
 	KeyCoalescingApps     = "CoalescingApps"
 	KeyShowOSD            = "ShowOSD"
+	KeySmartPaste         = "SmartPaste"
 )
 
 // Settings holds all application settings
@@ -55,6 +56,7 @@ type Settings struct {
 	ToggleHotkey       string // Format: "keycode,modifiers"
 	CoalescingApps     string // Comma-separated list of apps
 	ShowOSD            bool   // Show OSD when switching language
+	SmartPaste         bool   // Smart paste (Ctrl+Shift+V fixes mojibake)
 }
 
 // DefaultSettings returns settings with default values
@@ -73,6 +75,7 @@ func DefaultSettings() *Settings {
 		ToggleHotkey:       "32,1", // Ctrl+Space
 		CoalescingApps:     "discord,discordcanary,discordptb",
 		ShowOSD:            false,  // Default: OFF
+		SmartPaste:         true,   // Default: ON
 	}
 }
 
@@ -121,6 +124,7 @@ func (s *SettingsService) Load() error {
 	s.settings.ToggleHotkey = readString(key, KeyToggleHotkey, "32,1")
 	s.settings.CoalescingApps = readString(key, KeyCoalescingApps, "discord,discordcanary,discordptb")
 	s.settings.ShowOSD = readDWORD(key, KeyShowOSD, 0) == 1
+	s.settings.SmartPaste = readDWORD(key, KeySmartPaste, 1) == 1
 
 	return nil
 }
@@ -146,6 +150,7 @@ func (s *SettingsService) Save() error {
 	writeString(key, KeyToggleHotkey, s.settings.ToggleHotkey)
 	writeString(key, KeyCoalescingApps, s.settings.CoalescingApps)
 	writeDWORD(key, KeyShowOSD, boolToDWORD(s.settings.ShowOSD))
+	writeDWORD(key, KeySmartPaste, boolToDWORD(s.settings.SmartPaste))
 
 	// Update auto-start registry
 	s.updateAutoStart()

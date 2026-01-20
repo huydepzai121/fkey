@@ -365,6 +365,9 @@ func applySettings(loop *core.ImeLoop, settings *services.Settings) {
 	keyCode, ctrl, alt, shift := services.ParseHotkey(settings.ToggleHotkey)
 	loop.SetHotkey(keyCode, ctrl, alt, shift)
 
+	// Set SmartPaste enabled state
+	core.SetSmartPasteEnabled(settings.SmartPaste)
+
 	// Load shortcuts
 	shortcuts, err := settingsSvc.LoadShortcuts()
 	if err == nil {

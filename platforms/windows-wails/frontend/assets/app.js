@@ -269,7 +269,8 @@ function applySettingsToUI(settings) {
         'englishRestore': settings.englishAutoRestore,
         'autoCapitalize': settings.autoCapitalize !== false,
         'autoStart': settings.autoStart,
-        'showOSD': settings.showOSD
+        'showOSD': settings.showOSD,
+        'smartPaste': settings.smartPaste !== false
     };
     
     for (const [id, value] of Object.entries(checkboxes)) {
@@ -402,6 +403,7 @@ function setupEventListeners() {
         'autoCapitalize': 'autoCapitalize',
         'autoStart': 'autoStart',
         'showOSD': 'showOSD',
+        'smartPaste': 'smartPaste',
     };
     
     Object.entries(checkboxMapping).forEach(([elemId, settingKey]) => {
