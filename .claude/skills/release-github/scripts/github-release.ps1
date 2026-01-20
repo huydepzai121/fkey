@@ -11,7 +11,8 @@ param(
     [string]$Repo = "miken90/fkey",
     [switch]$SkipBuild,
     [switch]$Draft,
-    [switch]$Sign
+    [switch]$Sign,
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,11 +37,18 @@ $ZipName = "FKey-v$Version-portable.zip"
 $ZipPath = Join-Path $OutputDir $ZipName
 
 Write-Host "========================================"
-Write-Host " FKey GitHub Release (Go/Wails)"
+if ($DryRun) {
+    Write-Host " FKey GitHub Release (DRY RUN)"
+} else {
+    Write-Host " FKey GitHub Release (Go/Wails)"
+}
 Write-Host "========================================"
 Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
 Write-Host "Project:  $ProjectRoot" -ForegroundColor White
+if ($DryRun) {
+    Write-Host "Mode:     DRY RUN (preview only)" -ForegroundColor Yellow
+}
 Write-Host ""
 
 # Verify gh CLI is available
@@ -60,7 +68,12 @@ if (-not (Test-Path $BuildScript)) {
 }
 
 # Step 1: Build portable package
-if (-not $SkipBuild) {
+if ($DryRun) {
+    Write-Host "[1/4] Skipping build (--DryRun)" -ForegroundColor Gray
+    $ZipSize = "~5"
+    Write-Host ""
+}
+elseif (-not $SkipBuild) {
     Write-Host "[1/4] Building portable package..." -ForegroundColor Yellow
     Write-Host ""
 
@@ -85,24 +98,30 @@ else {
 }
 
 # Step 2: Create ZIP package (single exe only)
-Write-Host "[2/4] Creating ZIP package..." -ForegroundColor Yellow
-
-$ExePath = Join-Path $OutputDir "FKey.exe"
-
-if (-not (Test-Path $ExePath)) {
-    throw "Executable not found: $ExePath"
+if ($DryRun) {
+    Write-Host "[2/4] Skipping ZIP creation (--DryRun)" -ForegroundColor Gray
+    Write-Host ""
 }
+else {
+    Write-Host "[2/4] Creating ZIP package..." -ForegroundColor Yellow
 
-# Create ZIP with single EXE (DLL is embedded)
-if (Test-Path $ZipPath) {
-    Remove-Item $ZipPath -Force
+    $ExePath = Join-Path $OutputDir "FKey.exe"
+
+    if (-not (Test-Path $ExePath)) {
+        throw "Executable not found: $ExePath"
+    }
+
+    # Create ZIP with single EXE (DLL is embedded)
+    if (Test-Path $ZipPath) {
+        Remove-Item $ZipPath -Force
+    }
+
+    Compress-Archive -Path $ExePath -DestinationPath $ZipPath -CompressionLevel Optimal
+
+    $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
+    Write-Host "[OK] Package ready: $ZipName ($ZipSize MB) - Single exe!" -ForegroundColor Green
+    Write-Host ""
 }
-
-Compress-Archive -Path $ExePath -DestinationPath $ZipPath -CompressionLevel Optimal
-
-$ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
-Write-Host "[OK] Package ready: $ZipName ($ZipSize MB) - Single exe!" -ForegroundColor Green
-Write-Host ""
 
 # Step 3: Generate release notes
 Write-Host "[3/4] Generating release notes..." -ForegroundColor Yellow
@@ -276,6 +295,23 @@ $CompareLink
 
     Write-Host "[OK] Release notes generated" -ForegroundColor Green
     Write-Host ""
+    
+    # In DryRun mode, display release notes and exit
+    if ($DryRun) {
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host " RELEASE NOTES PREVIEW" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host $ReleaseNotes
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host " END PREVIEW" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "[DRY RUN] No changes made. Run without -DryRun to release." -ForegroundColor Yellow
+        Remove-Item $NotesFile -ErrorAction SilentlyContinue
+        return
+    }
 }
 finally {
     Pop-Location
