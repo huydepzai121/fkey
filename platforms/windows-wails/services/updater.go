@@ -1,11 +1,10 @@
 package services
 
-// Auto-updater service using GitHub Releases API
-// Checks for new versions and notifies user
+// Auto-updater service using VERSION file from GitHub raw content
+// No API rate limits - fetches version from raw.githubusercontent.com
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,28 +19,15 @@ import (
 const (
 	GitHubOwner      = "miken90"
 	GitHubRepo       = "fkey"
-	GitHubAPIURL     = "https://api.github.com/repos/%s/%s/releases/latest"
+	GitHubBranch     = "main"
+	// Use raw.githubusercontent.com for version check (no rate limit)
+	VersionURL       = "https://raw.githubusercontent.com/%s/%s/%s/VERSION"
+	// Direct download URL for releases
+	DownloadURL      = "https://github.com/%s/%s/releases/download/v%s/FKey-v%s-portable.zip"
+	ReleasePageURL   = "https://github.com/%s/%s/releases/tag/v%s"
 	CheckInterval    = 24 * time.Hour // Check once per day
 	UserAgent        = "FKey-Updater/1.0"
 )
-
-// Release represents a GitHub release
-type Release struct {
-	TagName     string  `json:"tag_name"`
-	Name        string  `json:"name"`
-	Body        string  `json:"body"`
-	HTMLURL     string  `json:"html_url"`
-	PublishedAt string  `json:"published_at"`
-	Assets      []Asset `json:"assets"`
-}
-
-// Asset represents a release asset (downloadable file)
-type Asset struct {
-	Name               string `json:"name"`
-	Size               int64  `json:"size"`
-	BrowserDownloadURL string `json:"browser_download_url"`
-	ContentType        string `json:"content_type"`
-}
 
 // UpdateInfo contains information about an available update
 type UpdateInfo struct {
@@ -60,20 +46,12 @@ type UpdaterService struct {
 	currentVersion string
 	lastCheck      time.Time
 	cachedInfo     *UpdateInfo
-	githubToken    string // Optional: for private repos
 }
 
 // NewUpdaterService creates a new updater service
 func NewUpdaterService(currentVersion string) *UpdaterService {
-	// Try to get GitHub token from environment for private repos
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		token = os.Getenv("GH_TOKEN")
-	}
-	
 	return &UpdaterService{
 		currentVersion: currentVersion,
-		githubToken:    token,
 	}
 }
 
@@ -84,108 +62,71 @@ func (u *UpdaterService) CheckForUpdates(force bool) (*UpdateInfo, error) {
 		return u.cachedInfo, nil
 	}
 
-	release, err := u.fetchLatestRelease()
+	latestVersion, err := u.fetchLatestVersion()
 	if err != nil {
 		return nil, err
 	}
 
-	info := u.compareVersions(release)
+	info := u.buildUpdateInfo(latestVersion)
 	u.cachedInfo = info
 	u.lastCheck = time.Now()
 
 	return info, nil
 }
 
-// fetchLatestRelease gets the latest release from GitHub API
-func (u *UpdaterService) fetchLatestRelease() (*Release, error) {
-	url := fmt.Sprintf(GitHubAPIURL, GitHubOwner, GitHubRepo)
+// fetchLatestVersion gets the latest version from VERSION file (no rate limit)
+func (u *UpdaterService) fetchLatestVersion() (string, error) {
+	url := fmt.Sprintf(VersionURL, GitHubOwner, GitHubRepo, GitHubBranch)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	
-	// Add authorization for private repos
-	if u.githubToken != "" {
-		req.Header.Set("Authorization", "Bearer "+u.githubToken)
-	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch release: %w", err)
+		return "", fmt.Errorf("failed to check version: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		return nil, fmt.Errorf("no releases found")
-	}
-
-	if resp.StatusCode == 403 {
-		// Rate limited - just show simple message, no need for token
-		return nil, fmt.Errorf("Đã kiểm tra quá nhiều lần. Thử lại sau 1 giờ")
+		return "", fmt.Errorf("version file not found")
 	}
 
 	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("GitHub API error: %d - %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("failed to fetch version: %d", resp.StatusCode)
 	}
 
-	var release Release
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return nil, fmt.Errorf("failed to parse release: %w", err)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read version: %w", err)
 	}
 
-	return &release, nil
+	version := strings.TrimSpace(string(body))
+	return version, nil
 }
 
-// compareVersions compares current version with release
-func (u *UpdaterService) compareVersions(release *Release) *UpdateInfo {
+// buildUpdateInfo creates UpdateInfo from version string
+func (u *UpdaterService) buildUpdateInfo(latestVersion string) *UpdateInfo {
+	// Strip 'v' prefix if present for consistency
+	latest := strings.TrimPrefix(latestVersion, "v")
+	
 	info := &UpdateInfo{
 		CurrentVersion: u.currentVersion,
-		LatestVersion:  release.TagName,
-		ReleaseNotes:   release.Body,
-		ReleaseURL:     release.HTMLURL,
+		LatestVersion:  "v" + latest,
+		ReleaseURL:     fmt.Sprintf(ReleasePageURL, GitHubOwner, GitHubRepo, latest),
+		DownloadURL:    fmt.Sprintf(DownloadURL, GitHubOwner, GitHubRepo, latest, latest),
+		AssetName:      fmt.Sprintf("FKey-v%s-portable.zip", latest),
 	}
 
-	// Find Windows asset
-	for _, asset := range release.Assets {
-		if u.IsWindowsAsset(asset.Name) {
-			info.DownloadURL = asset.BrowserDownloadURL
-			info.AssetName = asset.Name
-			info.AssetSize = asset.Size
-			break
-		}
-	}
-
-	// Compare versions (strip 'v' prefix if present)
+	// Compare versions
 	current := strings.TrimPrefix(u.currentVersion, "v")
-	latest := strings.TrimPrefix(release.TagName, "v")
-
-	// Simple version comparison (works for semver)
 	info.Available = u.IsNewerVersion(current, latest)
 
 	return info
-}
-
-// IsWindowsAsset checks if asset is for Windows (exported for testing)
-func (u *UpdaterService) IsWindowsAsset(name string) bool {
-	name = strings.ToLower(name)
-	
-	// Exclude non-Windows platforms explicitly
-	if strings.Contains(name, "darwin") || strings.Contains(name, "macos") || 
-	   strings.Contains(name, "linux") || strings.Contains(name, "mac") {
-		return false
-	}
-	
-	return strings.Contains(name, "windows") ||
-		strings.Contains(name, "win64") ||
-		strings.Contains(name, "win32") ||
-		strings.HasSuffix(name, ".exe") ||
-		(strings.HasSuffix(name, ".zip") && (strings.Contains(name, "win") || strings.Contains(name, "fkey")))
 }
 
 // IsNewerVersion compares two semver strings (exported for testing)
