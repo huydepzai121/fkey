@@ -246,10 +246,10 @@ function applySettingsToUI(settings) {
     });
     
     // Tone style
-    // NOTE: Rust engine uses inverted terminology:
-    // - modern_tone=true  → hoà, thuý (dấu ở nguyên âm sau - actually old style in VietNet)  
-    // - modern_tone=false → hòa, thúy (dấu ở nguyên âm đầu - actually new style in VietNet)
-    // UI shows: "Mới (hòa)" and "Cũ (hoà)", so we invert the mapping
+    // Rust engine terminology:
+    // - modern_tone=true  → hoà, thuý (dấu ở nguyên âm sau)  
+    // - modern_tone=false → hòa, thúy (dấu ở nguyên âm đầu)
+    // UI shows: "Mới (hoà)" and "Cũ (hòa)" - now matches Rust logic directly
     const toneRadios = document.querySelectorAll('input[name="toneStyle"]');
     toneRadios.forEach(radio => {
         radio.checked = (radio.value === 'modern') !== settings.modernTone;

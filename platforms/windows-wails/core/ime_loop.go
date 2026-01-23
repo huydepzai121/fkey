@@ -44,7 +44,7 @@ func DefaultImeSettings() *ImeSettings {
 		EscRestore:         true,
 		FreeTone:           false,
 		EnglishAutoRestore: false,
-		AutoCapitalize:     true,
+		AutoCapitalize:     false, // Default: OFF (user feedback)
 	}
 }
 

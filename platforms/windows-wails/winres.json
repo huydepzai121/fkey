@@ -2,6 +2,9 @@
     "RT_GROUP_ICON":  {
                           "APP":  {
                                       "0000":  [
+                                                   "../../assets/fkey-icon-16.png",
+                                                   "../../assets/fkey-icon-32.png",
+                                                   "../../assets/fkey-icon-48.png",
                                                    "../../assets/fkey-icon-256.png"
                                                ]
                                   }

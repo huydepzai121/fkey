@@ -71,8 +71,8 @@ func DefaultSettings() *Settings {
 		EscRestore:         true,
 		FreeTone:           false,
 		EnglishAutoRestore: false,
-		AutoCapitalize:     true,
-		ToggleHotkey:       "32,1", // Ctrl+Space
+		AutoCapitalize:     false,  // Default: OFF (user feedback)
+		ToggleHotkey:       "0,5",  // Ctrl+Shift (modifier-only)
 		CoalescingApps:     "discord,discordcanary,discordptb",
 		ShowOSD:            false,  // Default: OFF
 		SmartPaste:         true,   // Default: ON

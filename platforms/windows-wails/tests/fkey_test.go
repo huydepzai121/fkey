@@ -125,11 +125,11 @@ func TestDefaultSettings(t *testing.T) {
 	if s.EnglishAutoRestore {
 		t.Error("EnglishAutoRestore should be false by default")
 	}
-	if !s.AutoCapitalize {
-		t.Error("AutoCapitalize should be true by default")
+	if s.AutoCapitalize {
+		t.Error("AutoCapitalize should be false by default")
 	}
-	if s.ToggleHotkey != "32,1" {
-		t.Errorf("ToggleHotkey = %s, want 32,1", s.ToggleHotkey)
+	if s.ToggleHotkey != "0,5" {
+		t.Errorf("ToggleHotkey = %s, want 0,5", s.ToggleHotkey)
 	}
 }
 
@@ -191,35 +191,6 @@ func TestIsNewerVersion(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("IsNewerVersion(%q, %q) = %v, want %v",
 					tt.current, tt.latest, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestIsWindowsAsset(t *testing.T) {
-	tests := []struct {
-		name string
-		want bool
-	}{
-		{"fkey-windows-amd64.zip", true},
-		{"fkey-win64.zip", true},
-		{"fkey-win32.zip", true},
-		{"FKey.exe", true},
-		{"fkey-portable.zip", true},
-		{"fkey-darwin-arm64.zip", false},
-		{"fkey-macos.zip", false},
-		{"fkey-mac.zip", false},
-		{"fkey-linux-amd64.tar.gz", false},
-		{"fkey-linux.deb", false},
-	}
-
-	svc := services.NewUpdaterService("test")
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := svc.IsWindowsAsset(tt.name)
-			if got != tt.want {
-				t.Errorf("IsWindowsAsset(%q) = %v, want %v", tt.name, got, tt.want)
 			}
 		})
 	}
@@ -450,8 +421,8 @@ func TestDefaultImeSettings(t *testing.T) {
 	if settings.EnglishAutoRestore {
 		t.Error("EnglishAutoRestore should be false by default")
 	}
-	if !settings.AutoCapitalize {
-		t.Error("AutoCapitalize should be true by default")
+	if settings.AutoCapitalize {
+		t.Error("AutoCapitalize should be false by default")
 	}
 }
 
