@@ -62,14 +62,15 @@ var (
 
 // Global references for updates
 var (
-	globalApp        *application.App
-	globalTray       *application.SystemTray
-	globalMenu       *application.Menu
-	globalImeLoop    *core.ImeLoop
+	globalApp         *application.App
+	globalTray        *application.SystemTray
+	globalMenu        *application.Menu
+	globalImeLoop     *core.ImeLoop
 	globalSettingsWin application.Window
-	settingsSvc      *services.SettingsService
-	updaterSvc       *services.UpdaterService
-	formattingSvc    *services.FormattingService
+	settingsSvc       *services.SettingsService
+	updaterSvc        *services.UpdaterService
+	formattingSvc     *services.FormattingService
+	wantQuit          bool // Flag to allow quit via tray menu
 )
 
 func main() {
@@ -130,6 +131,11 @@ func main() {
 		Services: []application.Service{
 			application.NewService(appBindings), // Pass pointer directly
 		},
+		// Prevent app from quitting when settings window closes
+		// App should only quit via tray menu "Thoát"
+		ShouldQuit: func() bool {
+			return wantQuit
+		},
 		Windows: application.WindowsOptions{
 			// Windows-specific options
 		},
@@ -145,28 +151,8 @@ func main() {
 		globalTray.SetTooltip("FKey - Tiếng Việt (Tắt)")
 	}
 
-	// Create settings window (hidden by default)
-	globalSettingsWin = globalApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:                       "FKey Settings",
-		Title:                      "FKey - Cài đặt",
-		Width:                      520,
-		Height:                     560,
-		Hidden:                     true,
-		DisableResize:              false,
-		URL:                        "/",
-		DevToolsEnabled:            false,
-		DefaultContextMenuDisabled: true,
-		Windows: application.WindowsWindow{
-			// Show on taskbar when window is visible
-			HiddenOnTaskbar: false,
-		},
-	})
-
-	// Hide window on close instead of quitting
-	globalSettingsWin.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
-		globalSettingsWin.Hide()
-		e.Cancel()
-	})
+	// Settings window created on-demand (lazy-load for RAM optimization)
+	// globalSettingsWin starts as nil - created when user opens settings
 
 	// Create tray menu
 	globalMenu = createTrayMenu(settings.Enabled)
@@ -276,6 +262,7 @@ func performAutoUpdate(downloadURL string) {
 	
 	// Quit app to allow update
 	log.Printf("Quitting for update...")
+	wantQuit = true
 	globalApp.Quit()
 }
 
@@ -306,6 +293,36 @@ func showOSDPopup(isVietnamese bool) {
 	// Create a simple tooltip-style window using MessageBox with timeout
 	// Note: This is a temporary solution. Proper OSD would use layered windows.
 	showTooltipNotification(title, message)
+}
+
+// showSettingsWindow creates settings window on-demand (lazy-load) and hides on close
+// WebView2 stays in RAM after first open, but this prevents app crash
+func showSettingsWindow() {
+	if globalSettingsWin == nil {
+		globalSettingsWin = globalApp.Window.NewWithOptions(application.WebviewWindowOptions{
+			Name:                       "FKey Settings",
+			Title:                      "FKey - Cài đặt",
+			Width:                      520,
+			Height:                     560,
+			Hidden:                     false, // Show immediately
+			DisableResize:              false,
+			URL:                        "/",
+			DevToolsEnabled:            false,
+			DefaultContextMenuDisabled: true,
+			Windows: application.WindowsWindow{
+				HiddenOnTaskbar: false,
+			},
+		})
+
+		// Hide window on close instead of destroying
+		// Wails v3 quits app when last window closes, even with ShouldQuit
+		globalSettingsWin.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
+			globalSettingsWin.Hide()
+			e.Cancel()
+		})
+	}
+	globalSettingsWin.Show()
+	globalSettingsWin.Focus()
 }
 
 // showTooltipNotification shows a brief tooltip notification
@@ -417,8 +434,7 @@ func createTrayMenu(enabled bool) *application.Menu {
 
 	// Settings
 	menu.Add("Cài đặt...").OnClick(func(ctx *application.Context) {
-		globalSettingsWin.Show()
-		globalSettingsWin.Focus()
+		showSettingsWindow()
 	})
 
 	// Check for updates
@@ -461,6 +477,7 @@ func createTrayMenu(enabled bool) *application.Menu {
 
 	// Quit
 	menu.Add("Thoát").OnClick(func(ctx *application.Context) {
+		wantQuit = true
 		globalApp.Quit()
 	})
 

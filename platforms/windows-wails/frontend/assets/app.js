@@ -249,10 +249,11 @@ function applySettingsToUI(settings) {
     // Rust engine terminology:
     // - modern_tone=true  → hoà, thuý (dấu ở nguyên âm sau)  
     // - modern_tone=false → hòa, thúy (dấu ở nguyên âm đầu)
-    // UI shows: "Mới (hoà)" and "Cũ (hòa)" - now matches Rust logic directly
+    // UI shows: "Mới (hoà)" and "Cũ (hòa)"
     const toneRadios = document.querySelectorAll('input[name="toneStyle"]');
     toneRadios.forEach(radio => {
-        radio.checked = (radio.value === 'modern') !== settings.modernTone;
+        // modern_tone=true → select "modern", modern_tone=false → select "old"
+        radio.checked = (radio.value === 'modern') === settings.modernTone;
     });
     
     // Hotkey display
@@ -382,11 +383,11 @@ function setupEventListeners() {
     });
     
     // Tone style change
-    // NOTE: Invert the value because Rust engine uses inverted terminology
+    // modern_tone=true → hoà (new style), modern_tone=false → hòa (old style)
     document.querySelectorAll('input[name="toneStyle"]').forEach(radio => {
         radio.addEventListener('change', async (e) => {
             if (isLoading) return;
-            currentSettings.modernTone = e.target.value !== 'modern';
+            currentSettings.modernTone = e.target.value === 'modern';
             await saveSettings();
         });
     });
